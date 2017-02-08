@@ -178,7 +178,7 @@ model = unet_model()
 
 # In[10]:
 
-subject_dirs = glob.glob("data/*/*")
+subject_dirs = glob.glob("/home/aizenberg/dgellis/brats/data/*/*")
 
 
 # In[11]:
