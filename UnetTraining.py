@@ -1,7 +1,18 @@
+import os
+import glob
+import pickle
+import datetime
 
-# coding: utf-8
+import numpy as np
 
-# In[1]:
+from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input,
+                          BatchNormalization)
+from keras import backend as K
+from keras.models import Model
+from keras.optimizers import Adam
+
+import SimpleITK as sitk
+
 
 pool_size = (2, 2, 2)
 image_shape = (144, 240, 240)
@@ -13,35 +24,14 @@ n_test_subjects = 40
 z_crop = 155 - image_shape[0]
 
 
-# In[2]:
-
-import os
-import glob
-import pickle
-import datetime
-
-import numpy as np
-
-from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input)
-from keras import backend as K
-from keras.models import Model
-from keras.optimizers import Adam
-
-import SimpleITK as sitk
-
-
-# In[3]:
-
 def pickle_dump(item, out_file):
     with open(out_file, "wb") as opened_file:
         pickle.dump(item, opened_file)
 
 
-# In[4]:
-
-K.set_image_dim_ordering('th')   
-
+K.set_image_dim_ordering('th')
 smooth = 1.
+
 
 def dice_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -53,44 +43,81 @@ def dice_coef(y_true, y_pred):
 def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
 
+
 def unet_model():
     inputs = Input(input_shape)
-    conv1 = Conv3D(32, 3, 3, 3, activation='relu', border_mode='same')(inputs)
-    conv1 = Conv3D(32, 3, 3, 3, activation='relu', border_mode='same')(conv1)
-    pool1 = MaxPooling3D(pool_size=pool_size)(conv1)
+    conv1 = Conv3D(32, 3, 3, 3, border_mode='same')(inputs)
+    norm1 = BatchNormalization()(conv1)
+    act1 = Activation(activation='relu')(norm1)
+    conv1 = Conv3D(32, 3, 3, 3, border_mode='same')(act1)
+    norm1 = BatchNormalization()(conv1)
+    act1 = Activation(activation='relu')(norm1)
+    pool1 = MaxPooling3D(pool_size=pool_size)(act1)
 
-    conv2 = Conv3D(64, 3, 3, 3, activation='relu', border_mode='same')(pool1)
-    conv2 = Conv3D(64, 3, 3, 3, activation='relu', border_mode='same')(conv2)
-    pool2 = MaxPooling3D(pool_size=pool_size)(conv2)
+    conv2 = Conv3D(64, 3, 3, 3, border_mode='same')(pool1)
+    norm2 = BatchNormalization()(conv2)
+    act2 = Activation(activation='relu')(norm2)
+    conv2 = Conv3D(64, 3, 3, 3, border_mode='same')(act2)
+    norm2 = BatchNormalization()(conv2)
+    act2 = Activation(activation='relu')(norm2)
+    pool2 = MaxPooling3D(pool_size=pool_size)(act2)
 
-    conv3 = Conv3D(128, 3, 3, 3, activation='relu', border_mode='same')(pool2)
-    conv3 = Conv3D(128, 3, 3, 3, activation='relu', border_mode='same')(conv3)
-    pool3 = MaxPooling3D(pool_size=pool_size)(conv3)
+    conv3 = Conv3D(128, 3, 3, 3, border_mode='same')(pool2)
+    norm3 = BatchNormalization()(conv3)
+    act3 = Activation(activation='relu')(norm3)
+    conv3 = Conv3D(128, 3, 3, 3, border_mode='same')(act3)
+    norm3 = BatchNormalization()(conv3)
+    act3 = Activation(activation='relu')(norm3)
+    pool3 = MaxPooling3D(pool_size=pool_size)(act3)
 
-    conv4 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(pool3)
-    conv4 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(conv4)
-    pool4 = MaxPooling3D(pool_size=pool_size)(conv4)
+    conv4 = Conv3D(256, 3, 3, 3, border_mode='same')(pool3)
+    norm4 = BatchNormalization()(conv4)
+    act4 = Activation(activation='relu')(norm4)
+    conv4 = Conv3D(256, 3, 3, 3, border_mode='same')(act4)
+    norm4 = BatchNormalization()(conv4)
+    act4 = Activation(activation='relu')(norm4)
+    pool4 = MaxPooling3D(pool_size=pool_size)(act4)
 
-    conv5 = Conv3D(512, 3, 3, 3, activation='relu', border_mode='same')(pool4)
-    conv5 = Conv3D(512, 3, 3, 3, activation='relu', border_mode='same')(conv5)
+    conv5 = Conv3D(512, 3, 3, 3, border_mode='same')(pool4)
+    norm5 = BatchNormalization()(conv5)
+    act5 = Activation(activation='relu')(norm5)
+    conv5 = Conv3D(512, 3, 3, 3, border_mode='same')(act5)
+    norm5 = BatchNormalization()(conv5)
+    act5 = Activation(activation='relu')(norm5)
 
-    up6 = merge([UpSampling3D(size=pool_size)(conv5), conv4], mode='concat', concat_axis=1)
-    conv6 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(up6)
-    conv6 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(conv6)
+    up6 = merge([UpSampling3D(size=pool_size)(act5), act4], mode='concat', concat_axis=1)
+    conv6 = Conv3D(256, 3, 3, 3, border_mode='same')(up6)
+    norm6 = BatchNormalization()(conv6)
+    act6 = Activation(activation='relu')(norm6)
+    conv6 = Conv3D(256, 3, 3, 3, border_mode='same')(act6)
+    norm6 = BatchNormalization()(conv6)
+    act6 = Activation(activation='relu')(norm6)
 
-    up7 = merge([UpSampling3D(size=pool_size)(conv6), conv3], mode='concat', concat_axis=1)
-    conv7 = Conv3D(128, 3, 3, 3, activation='relu', border_mode='same')(up7)
-    conv7 = Conv3D(128, 3, 3, 3, activation='relu', border_mode='same')(conv7)
+    up7 = merge([UpSampling3D(size=pool_size)(act6), act3], mode='concat', concat_axis=1)
+    conv7 = Conv3D(128, 3, 3, 3, border_mode='same')(up7)
+    norm7 = BatchNormalization()(conv7)
+    act7 = Activation(activation='relu')(norm7)
+    conv7 = Conv3D(128, 3, 3, 3, border_mode='same')(act7)
+    norm7 = BatchNormalization()(conv7)
+    act7 = Activation(activation='relu')(norm7)
 
-    up8 = merge([UpSampling3D(size=pool_size)(conv7), conv2], mode='concat', concat_axis=1)
-    conv8 = Conv3D(64, 3, 3, 3, activation='relu', border_mode='same')(up8)
-    conv8 = Conv3D(64, 3, 3, 3, activation='relu', border_mode='same')(conv8)
+    up8 = merge([UpSampling3D(size=pool_size)(act7), act2], mode='concat', concat_axis=1)
+    conv8 = Conv3D(64, 3, 3, 3, border_mode='same')(up8)
+    norm8 = BatchNormalization()(conv8)
+    act8 = Activation(activation='relu')(norm8)
+    conv8 = Conv3D(64, 3, 3, 3, border_mode='same')(act8)
+    norm8 = BatchNormalization()(conv8)
+    act8 = Activation(activation='relu')(norm8)
 
-    up9 = merge([UpSampling3D(size=pool_size)(conv8), conv1], mode='concat', concat_axis=1)
-    conv9 = Conv3D(32, 3, 3, 3, activation='relu', border_mode='same')(up9)
-    conv9 = Conv3D(32, 3, 3, 3, activation='relu', border_mode='same')(conv9)
+    up9 = merge([UpSampling3D(size=pool_size)(act8), act1], mode='concat', concat_axis=1)
+    conv9 = Conv3D(32, 3, 3, 3, border_mode='same')(up9)
+    norm9 = BatchNormalization()(conv9)
+    act9 = Activation(activation='relu')(norm9)
+    conv9 = Conv3D(32, 3, 3, 3, border_mode='same')(act9)
+    norm9 = BatchNormalization()(conv9)
+    act9 = Activation(activation='relu')(norm9)
 
-    conv10 = Conv3D(n_labels, 1, 1, 1, activation='sigmoid')(conv9)
+    conv10 = Conv3D(n_labels, 1, 1, 1, activation='sigmoid')(act9)
 
     model = Model(input=inputs, output=conv10)
 
@@ -99,16 +126,13 @@ def unet_model():
     return model
 
 
-# In[5]:
-
 def train_batch(batch, model):
     x_train = batch[:,:3]
     y_train = get_truth(batch)
     del(batch)
     model.train_on_batch(x_train, y_train)
+    del(x_train, y_train)
 
-
-# In[6]:
 
 def read_subject_folder(folder):    
     flair_image = sitk.ReadImage(os.path.join(folder, "Flair.nii.gz"))
@@ -122,8 +146,6 @@ def read_subject_folder(folder):
                      sitk.GetArrayFromImage(truth_image),
                      sitk.GetArrayFromImage(background_image)])
 
-
-# In[7]:
 
 def crop_data(data, background_channel=4):
     if np.all(data[background_channel, :z_crop] == 1):
@@ -167,36 +189,31 @@ for dirname in subject_dirs:
     subjects[dirname.split('_')[-2]] = dirname
 
 
-# In[12]:
-
 subject_ids = subjects.keys()
 np.random.shuffle(subject_ids)
 
-
-# In[13]:
 
 training_ids = subject_ids[:n_test_subjects]
 testing_ids = subject_ids[n_test_subjects:]
 
 
-# In[14]:
-
 pickle_dump(training_ids, "training_ids.pkl")
 pickle_dump(testing_ids, "testing_ids.pkl")
 
-
-# In[15]:
 
 batch = []
 for subject_dir in subject_dirs:
 
     batch.append(crop_data(read_subject_folder(subject_dir)))
-
-    train_batch(np.array(batch), model)
     
+    if len(batch) >= batch_size:
+        train_batch(np.array(batch), model)
+        del(batch)
+        batch = []
+
     date = datetime.datetime.now().date()
     time = datetime.datetime.now().time()
     model_file = "model_{0}{1}{2}_{3}:{4}:{5}.h5".format(date.year, date.month, date.day,
                                                          time.hour, time.minute, time.second)
-    model.save(moel_file)
+    model.save(model_file)
 
