@@ -140,51 +140,54 @@ def get_truth(batch, truth_channel=3):
     return np.array(batch_list)
 
 
+def get_subject_id(subject_dir):
+    return subject_dir.split("_")[-2]
+
+
 def main(overwrite=False):
-    model = unet_model()
-    already_processed = glob.glob("model_*.h5")
-    already_processed.sort()
-    subject_dirs = glob.glob("../data/*/*")[len(already_processed):]
-    if already_processed > 0 or overwrite:
-        model = load_model(already_processed[-1], {dice_coef_loss})
-
-    # reomove duplicate sessions
-    subjects = dict()
-    for dirname in subject_dirs:
-        subjects[dirname.split('_')[-2]] = dirname
-
-    if os.path.exists("training_ids.pkl") and not overwrite:
-        training_ids = pickle.load("training_ids.pkl")
-        testing_ids = pickle.load("testing_ids.pkl")
-
+    model_file = os.path.abspath("3d_unet_model.h5")
+    if not overwrite and os.path.exists(model_file):
+        model = load_model(model_file)
     else:
+        model = unet_model()
+
+    processed_list_file = os.path.abspath("processed_subjects.pkl")
+    if overwrite or not os.path.exists(processed_list_file):
+        processed_list = []
+    else:
+        processed_list = pickle_load(processed_list_file)
+
+    subject_dirs = glob.glob("../data/*/*")
+
+    if os.path.exists("testing_ids.pkl") and not overwrite:
+        testing_ids = pickle.load("testing_ids.pkl")
+    else:
+        # reomove duplicate sessions
+        subjects = dict()
+        for dirname in subject_dirs:
+            subjects[dirname.split('_')[-2]] = dirname
+
         subject_ids = subjects.keys()
         np.random.shuffle(subject_ids)
-
-        training_ids = subject_ids[:n_test_subjects]
         testing_ids = subject_ids[n_test_subjects:]
-
-        pickle_dump(training_ids, "training_ids.pkl")
         pickle_dump(testing_ids, "testing_ids.pkl")
 
     batch = []
     for subject_dir in subject_dirs:
 
-        subject_id = subject_dir.split("_")[-2]
-        if subject_id in testing_ids:
+        subject_id = get_subject_id(subject_dir)
+        if subject_id in testing_ids or subject_id in processed_list:
             continue
+
+        processed_list.append(subject_id)
 
         batch.append(crop_data(read_subject_folder(subject_dir)))
         if len(batch) >= batch_size:
             train_batch(np.array(batch), model)
             del(batch)
             batch = []
-
-            date = datetime.datetime.now().date()
-            time = datetime.datetime.now().time()
-            model_file = "model_{0}{1}{2}_{3}:{4}:{5}.h5".format(date.year, date.month, date.day,
-                                                                 time.hour, time.minute, time.second)
             print("Saving: " + model_file)
+            pickle_dump(processed_list, processed_list_file)
             model.save(model_file)
 
 
