@@ -150,7 +150,10 @@ def main(overwrite=False):
         model = load_model(model_file, custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef})
     else:
         model = unet_model()
+    train_model(model, model_file, overwrite=overwrite)
 
+
+def train_model(model, model_file, overwrite=False):
     processed_list_file = os.path.abspath("processed_subjects.pkl")
     if overwrite or not os.path.exists(processed_list_file):
         processed_list = []
