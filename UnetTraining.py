@@ -1,7 +1,17 @@
+import os
+import glob
+import pickle
+import datetime
 
-# coding: utf-8
+import numpy as np
 
-# In[1]:
+from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input)
+from keras import backend as K
+from keras.models import Model,load_model
+from keras.optimizers import Adam
+
+import SimpleITK as sitk
+
 
 pool_size = (2, 2, 2)
 image_shape = (144, 240, 240)
@@ -13,35 +23,19 @@ n_test_subjects = 40
 z_crop = 155 - image_shape[0]
 
 
-# In[2]:
-
-import os
-import glob
-import pickle
-import datetime
-
-import numpy as np
-
-from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input)
-from keras import backend as K
-from keras.models import Model
-from keras.optimizers import Adam
-
-import SimpleITK as sitk
-
-
-# In[3]:
-
 def pickle_dump(item, out_file):
     with open(out_file, "wb") as opened_file:
         pickle.dump(item, opened_file)
 
 
-# In[4]:
+def pickle_load(in_file):
+    with open(in_file, "rb") as opened_file:
+        return pickle.load(opened_file)
 
-K.set_image_dim_ordering('th')   
 
+K.set_image_dim_ordering('th')
 smooth = 1.
+
 
 def dice_coef(y_true, y_pred):
     y_true_f = K.flatten(y_true)
@@ -52,6 +46,7 @@ def dice_coef(y_true, y_pred):
 
 def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
+
 
 def unet_model():
     inputs = Input(input_shape)
@@ -99,18 +94,16 @@ def unet_model():
     return model
 
 
-# In[5]:
-
 def train_batch(batch, model):
     x_train = batch[:,:3]
     y_train = get_truth(batch)
     del(batch)
     model.train_on_batch(x_train, y_train)
+    del(x_train)
+    del(y_train)
 
 
-# In[6]:
-
-def read_subject_folder(folder):    
+def read_subject_folder(folder):
     flair_image = sitk.ReadImage(os.path.join(folder, "Flair.nii.gz"))
     t1_image = sitk.ReadImage(os.path.join(folder, "T1.nii.gz"))
     t1c_image = sitk.ReadImage(os.path.join(folder, "T1c.nii.gz"))
@@ -123,18 +116,16 @@ def read_subject_folder(folder):
                      sitk.GetArrayFromImage(background_image)])
 
 
-# In[7]:
-
 def crop_data(data, background_channel=4):
     if np.all(data[background_channel, :z_crop] == 1):
         return data[:, z_crop:]
     elif np.all(data[background_channel, data.shape[1] - z_crop:] == 1):
         return data[:, :data.shape[1] - z_crop]
     else:
-        raise Exception("Cannot crop volume")
+        upper = z_crop/2
+        lower = z_crop - upper
+        return data[:, lower:data.shape[1] - upper]
 
-
-# In[8]:
 
 def get_truth(batch, truth_channel=3):
     truth = np.array(batch)[:, truth_channel]
@@ -149,54 +140,53 @@ def get_truth(batch, truth_channel=3):
     return np.array(batch_list)
 
 
-# In[9]:
+def main(overwrite=False):
+    model = unet_model()
+    already_processed = glob.glob("model_*.h5")
+    already_processed.sort()
+    subject_dirs = glob.glob("../data/*/*")[len(already_processed):]
+    if already_processed > 0 or overwrite:
+        model = load_model(already_processed[-1], {dice_coef_loss})
 
-model = unet_model()
+    # reomove duplicate sessions
+    subjects = dict()
+    for dirname in subject_dirs:
+        subjects[dirname.split('_')[-2]] = dirname
+
+    if os.path.exists("training_ids.pkl") and not overwrite:
+        training_ids = pickle.load("training_ids.pkl")
+        testing_ids = pickle.load("testing_ids.pkl")
+
+    else:
+        subject_ids = subjects.keys()
+        np.random.shuffle(subject_ids)
+
+        training_ids = subject_ids[:n_test_subjects]
+        testing_ids = subject_ids[n_test_subjects:]
+
+        pickle_dump(training_ids, "training_ids.pkl")
+        pickle_dump(testing_ids, "testing_ids.pkl")
+
+    batch = []
+    for subject_dir in subject_dirs:
+
+        subject_id = subject_dir.split("_")[-2]
+        if subject_id in testing_ids:
+            continue
+
+        batch.append(crop_data(read_subject_folder(subject_dir)))
+        if len(batch) >= batch_size:
+            train_batch(np.array(batch), model)
+            del(batch)
+            batch = []
+
+            date = datetime.datetime.now().date()
+            time = datetime.datetime.now().time()
+            model_file = "model_{0}{1}{2}_{3}:{4}:{5}.h5".format(date.year, date.month, date.day,
+                                                                 time.hour, time.minute, time.second)
+            print("Saving: " + model_file)
+            model.save(model_file)
 
 
-# In[10]:
-
-subject_dirs = glob.glob("data/*/*")
-
-
-# In[11]:
-
-# reomove duplicate sessions
-subjects = dict()
-for dirname in subject_dirs:
-    subjects[dirname.split('_')[-2]] = dirname
-
-
-# In[12]:
-
-subject_ids = subjects.keys()
-np.random.shuffle(subject_ids)
-
-
-# In[13]:
-
-training_ids = subject_ids[:n_test_subjects]
-testing_ids = subject_ids[n_test_subjects:]
-
-
-# In[14]:
-
-pickle_dump(training_ids, "training_ids.pkl")
-pickle_dump(testing_ids, "testing_ids.pkl")
-
-
-# In[15]:
-
-batch = []
-for subject_dir in subject_dirs:
-
-    batch.append(crop_data(read_subject_folder(subject_dir)))
-
-    train_batch(np.array(batch), model)
-    
-    date = datetime.datetime.now().date()
-    time = datetime.datetime.now().time()
-    model_file = "model_{0}{1}{2}_{3}:{4}:{5}.h5".format(date.year, date.month, date.day,
-                                                         time.hour, time.minute, time.second)
-    model.save(moel_file)
-
+if __name__ == "__main__":
+    main(overwrite=True)

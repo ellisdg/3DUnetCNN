@@ -1,0 +1,7 @@
+*.nii.gz
+*.nii
+.idea
+*.zip
+data
+.ipynb_checkpoints
+models
