@@ -159,8 +159,13 @@ def main(overwrite=False):
 
     subject_dirs = glob.glob("../data/*/*")
 
-    if os.path.exists("testing_ids.pkl") and not overwrite:
-        testing_ids = pickle_load("testing_ids.pkl")
+    testing_ids_file = os.path.abspath("testing_ids.pkl")
+
+    if os.path.exists(testing_ids_file) and not overwrite:
+        testing_ids = pickle_load(testing_ids_file)
+        if len(testing_ids) > n_test_subjects:
+            testing_ids = testing_ids[:n_test_subjects]
+            pickle_dump(testing_ids, testing_ids_file)
     else:
         # reomove duplicate sessions
         subjects = dict()
@@ -169,8 +174,8 @@ def main(overwrite=False):
 
         subject_ids = subjects.keys()
         np.random.shuffle(subject_ids)
-        testing_ids = subject_ids[n_test_subjects:]
-        pickle_dump(testing_ids, "testing_ids.pkl")
+        testing_ids = subject_ids[:n_test_subjects]
+        pickle_dump(testing_ids, testing_ids_file)
 
     batch = []
     for subject_dir in subject_dirs:
