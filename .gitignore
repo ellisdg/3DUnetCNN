@@ -5,3 +5,4 @@
 data
 .ipynb_checkpoints
 models
+*.pkl
