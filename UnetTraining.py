@@ -147,7 +147,7 @@ def get_subject_id(subject_dir):
 def main(overwrite=False):
     model_file = os.path.abspath("3d_unet_model.h5")
     if not overwrite and os.path.exists(model_file):
-        model = load_model(model_file)
+        model = load_model(model_file, custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef})
     else:
         model = unet_model()
 
@@ -160,7 +160,7 @@ def main(overwrite=False):
     subject_dirs = glob.glob("../data/*/*")
 
     if os.path.exists("testing_ids.pkl") and not overwrite:
-        testing_ids = pickle.load("testing_ids.pkl")
+        testing_ids = pickle_load("testing_ids.pkl")
     else:
         # reomove duplicate sessions
         subjects = dict()
@@ -192,4 +192,4 @@ def main(overwrite=False):
 
 
 if __name__ == "__main__":
-    main(overwrite=True)
+    main(overwrite=False)
