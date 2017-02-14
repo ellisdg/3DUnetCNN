@@ -7,7 +7,7 @@ import numpy as np
 
 from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input)
 from keras import backend as K
-from keras.models import Model,load_model
+from keras.models import Model, load_model
 from keras.optimizers import Adam
 
 import SimpleITK as sitk
@@ -153,6 +153,10 @@ def main(overwrite=False):
     train_model(model, model_file, overwrite=overwrite)
 
 
+def get_subject_dirs():
+    return glob.glob("../data/*/*")
+
+
 def train_model(model, model_file, overwrite=False):
     processed_list_file = os.path.abspath("processed_subjects.pkl")
     if overwrite or not os.path.exists(processed_list_file):
@@ -160,7 +164,7 @@ def train_model(model, model_file, overwrite=False):
     else:
         processed_list = pickle_load(processed_list_file)
 
-    subject_dirs = glob.glob("../data/*/*")
+    subject_dirs = get_subject_dirs()
 
     testing_ids_file = os.path.abspath("testing_ids.pkl")
 
@@ -198,6 +202,12 @@ def train_model(model, model_file, overwrite=False):
             pickle_dump(processed_list, processed_list_file)
             model.save(model_file)
 
+    if batch:
+        train_batch(np.array(batch), model)
+        del(batch)
+        print("Saving: " + model_file)
+        pickle_dump(processed_list, processed_list_file)
+        model.save(model_file)
 
 if __name__ == "__main__":
     main(overwrite=False)
