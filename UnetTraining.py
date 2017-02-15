@@ -5,7 +5,8 @@ import datetime
 
 import numpy as np
 
-from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input)
+from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input, Reshape,
+                          Permute)
 from keras import backend as K
 from keras.models import Model, load_model
 from keras.optimizers import Adam
@@ -21,6 +22,7 @@ n_labels = 5
 batch_size = 1
 n_test_subjects = 40
 z_crop = 155 - image_shape[0]
+training_iterations = 5
 
 
 def pickle_dump(item, out_file):
@@ -85,9 +87,10 @@ def unet_model():
     conv9 = Conv3D(32, 3, 3, 3, activation='relu', border_mode='same')(up9)
     conv9 = Conv3D(32, 3, 3, 3, activation='relu', border_mode='same')(conv9)
 
-    conv10 = Conv3D(n_labels, 1, 1, 1, activation='sigmoid')(conv9)
+    conv10 = Conv3D(n_labels, 1, 1, 1)(conv9)
+    act = Activation('sigmoid')(conv10)
 
-    model = Model(input=inputs, output=conv10)
+    model = Model(input=inputs, output=act)
 
     model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
 
@@ -98,7 +101,7 @@ def train_batch(batch, model):
     x_train = batch[:,:3]
     y_train = get_truth(batch)
     del(batch)
-    model.train_on_batch(x_train, y_train)
+    print(model.train_on_batch(x_train, y_train))
     del(x_train)
     del(y_train)
 
@@ -132,8 +135,8 @@ def get_truth(batch, truth_channel=3):
     batch_list = []
     for sample_number in range(truth.shape[0]):
         sample_list = []
-        for label in range(1, n_labels+1):
-            array = np.zeros_like(truth[sample_number])
+        for label in range(n_labels):
+            array = np.zeros(truth[sample_number].shape)
             array[truth[sample_number] == label] = 1
             sample_list.append(array)
         batch_list.append(sample_list)
@@ -150,64 +153,65 @@ def main(overwrite=False):
         model = load_model(model_file, custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef})
     else:
         model = unet_model()
-    train_model(model, model_file, overwrite=overwrite)
+    train_model(model, model_file, overwrite=overwrite, iterations=training_iterations)
 
 
 def get_subject_dirs():
-    return glob.glob("../data/*/*")
+    return glob.glob("../../data/*/*")
 
 
-def train_model(model, model_file, overwrite=False):
-    processed_list_file = os.path.abspath("processed_subjects.pkl")
-    if overwrite or not os.path.exists(processed_list_file):
-        processed_list = []
-    else:
-        processed_list = pickle_load(processed_list_file)
+def train_model(model, model_file, overwrite=False, iterations=1):
+    for i in range(iterations):
+        processed_list_file = os.path.abspath("processed_subjects.pkl")
+        if overwrite or not os.path.exists(processed_list_file) or i > 0:
+            processed_list = []
+        else:
+            processed_list = pickle_load(processed_list_file)
 
-    subject_dirs = get_subject_dirs()
+        subject_dirs = get_subject_dirs()
 
-    testing_ids_file = os.path.abspath("testing_ids.pkl")
+        testing_ids_file = os.path.abspath("testing_ids.pkl")
 
-    if os.path.exists(testing_ids_file) and not overwrite:
-        testing_ids = pickle_load(testing_ids_file)
-        if len(testing_ids) > n_test_subjects:
-            testing_ids = testing_ids[:n_test_subjects]
+        if os.path.exists(testing_ids_file) and not overwrite:
+            testing_ids = pickle_load(testing_ids_file)
+            if len(testing_ids) > n_test_subjects:
+                testing_ids = testing_ids[:n_test_subjects]
+                pickle_dump(testing_ids, testing_ids_file)
+        else:
+            # reomove duplicate sessions
+            subjects = dict()
+            for dirname in subject_dirs:
+                subjects[dirname.split('_')[-2]] = dirname
+
+            subject_ids = subjects.keys()
+            np.random.shuffle(subject_ids)
+            testing_ids = subject_ids[:n_test_subjects]
             pickle_dump(testing_ids, testing_ids_file)
-    else:
-        # reomove duplicate sessions
-        subjects = dict()
-        for dirname in subject_dirs:
-            subjects[dirname.split('_')[-2]] = dirname
 
-        subject_ids = subjects.keys()
-        np.random.shuffle(subject_ids)
-        testing_ids = subject_ids[:n_test_subjects]
-        pickle_dump(testing_ids, testing_ids_file)
+        batch = []
+        for subject_dir in subject_dirs:
 
-    batch = []
-    for subject_dir in subject_dirs:
+            subject_id = get_subject_id(subject_dir)
+            if subject_id in testing_ids or subject_id in processed_list:
+                continue
 
-        subject_id = get_subject_id(subject_dir)
-        if subject_id in testing_ids or subject_id in processed_list:
-            continue
+            processed_list.append(subject_id)
 
-        processed_list.append(subject_id)
+            batch.append(crop_data(read_subject_folder(subject_dir)))
+            if len(batch) >= batch_size:
+                train_batch(np.array(batch), model)
+                del(batch)
+                batch = []
+                print("Saving: " + model_file)
+                pickle_dump(processed_list, processed_list_file)
+                model.save(model_file)
 
-        batch.append(crop_data(read_subject_folder(subject_dir)))
-        if len(batch) >= batch_size:
+        if batch:
             train_batch(np.array(batch), model)
             del(batch)
-            batch = []
             print("Saving: " + model_file)
             pickle_dump(processed_list, processed_list_file)
             model.save(model_file)
-
-    if batch:
-        train_batch(np.array(batch), model)
-        del(batch)
-        print("Saving: " + model_file)
-        pickle_dump(processed_list, processed_list_file)
-        model.save(model_file)
 
 if __name__ == "__main__":
     main(overwrite=False)
