@@ -3,7 +3,7 @@ import os
 from keras.models import load_model
 
 from UnetTraining import (dice_coef, dice_coef_loss, pickle_load, get_subject_dirs, get_subject_id, read_subject_folder,
-                          crop_data, pickle_dump, np)
+                          crop_data, pickle_dump, np, sitk)
 
 
 def test_model(model):
@@ -11,6 +11,10 @@ def test_model(model):
         test_data = crop_data(read_subject_folder(testing_dir))
         prediction = predict(model, test_data)
         pickle_dump(prediction, "prediction.pkl")
+        for i in range(prediction.shape[1]):
+            image = sitk.GetImageFromArray(prediction[0, i])
+            sitk.WriteImage(image, "prediction_{0}.nii.gz".format(i))
+        sitk.WriteImage(sitk.GetImageFromArray(np.argmax(prediction[0], axis=0)), "prediction_labels.nii.gz")
         break
 
 

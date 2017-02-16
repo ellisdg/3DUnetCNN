@@ -2,6 +2,7 @@ import os
 import glob
 import pickle
 import datetime
+from random import shuffle
 
 import numpy as np
 
@@ -22,7 +23,8 @@ n_labels = 5
 batch_size = 1
 n_test_subjects = 40
 z_crop = 155 - image_shape[0]
-training_iterations = 5
+n_epochs = 5
+epoch_weights = 1/np.arange(1, n_epochs+1)
 
 
 def pickle_dump(item, out_file):
@@ -97,11 +99,27 @@ def unet_model():
     return model
 
 
-def train_batch(batch, model):
-    x_train = batch[:,:3]
+def get_training_weights(y_train, n_classes):
+    weights = []
+    for label in range(n_classes):
+        weights.append(get_class_weights(y_train[:, label], n_classes=2))
+    print("Training weights: {0}".format(weights))
+    return np.array(weights)
+
+
+def get_class_weights(labels_array, n_classes):
+    counts = np.bincount(np.array(labels_array.ravel(), dtype=np.uint8), minlength=n_classes)
+    weights = np.zeros(n_classes)
+    weights[counts > 0] = float(counts.max())/counts[counts > 0]
+    return weights
+
+
+def train_batch(batch, model, batch_weight=1):
+    x_train = batch[:, :3]
     y_train = get_truth(batch)
     del(batch)
-    print(model.train_on_batch(x_train, y_train))
+    print(model.train_on_batch(x_train, y_train, sample_weight=np.array([batch_weight] * x_train.shape[0]),
+                               class_weight=get_training_weights(y_train, n_labels)))
     del(x_train)
     del(y_train)
 
@@ -153,7 +171,7 @@ def main(overwrite=False):
         model = load_model(model_file, custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef})
     else:
         model = unet_model()
-    train_model(model, model_file, overwrite=overwrite, iterations=training_iterations)
+    train_model(model, model_file, overwrite=overwrite, iterations=n_epochs)
 
 
 def get_subject_dirs():
@@ -169,6 +187,7 @@ def train_model(model, model_file, overwrite=False, iterations=1):
             processed_list = pickle_load(processed_list_file)
 
         subject_dirs = get_subject_dirs()
+        shuffle(subject_dirs)
 
         testing_ids_file = os.path.abspath("testing_ids.pkl")
 
@@ -184,7 +203,7 @@ def train_model(model, model_file, overwrite=False, iterations=1):
                 subjects[dirname.split('_')[-2]] = dirname
 
             subject_ids = subjects.keys()
-            np.random.shuffle(subject_ids)
+            shuffle(subject_ids)
             testing_ids = subject_ids[:n_test_subjects]
             pickle_dump(testing_ids, testing_ids_file)
 
@@ -207,7 +226,7 @@ def train_model(model, model_file, overwrite=False, iterations=1):
                 model.save(model_file)
 
         if batch:
-            train_batch(np.array(batch), model)
+            train_batch(np.array(batch), model, batch_weight=epoch_weights[i])
             del(batch)
             print("Saving: " + model_file)
             pickle_dump(processed_list, processed_list_file)
