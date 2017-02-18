@@ -90,12 +90,11 @@ def unet_model():
     conv9 = Conv3D(32, 3, 3, 3, activation='relu', border_mode='same')(conv9)
 
     conv10 = Conv3D(n_labels, 1, 1, 1)(conv9)
-    act = Activation('sigmoid')(conv10)
-
-    model = Model(input=inputs, output=act)
-
-    model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
-
+    reshape = Reshape((n_labels, image_shape[0] * image_shape[1] * image_shape[2]))(conv10)
+    softmax = Activation('sigmoid')(reshape)
+    reshape = Reshape((n_labels, image_shape[0], image_shape[1], image_shape[2]))(softmax)
+    model = Model(input=inputs, output=reshape)
+    model.compile(optimizer=Adam(), loss='categorical_cross_entropy')
     return model
 
 
@@ -115,7 +114,7 @@ def get_class_weights(labels_array, n_classes):
 
 
 def train_batch(batch, model, batch_weight=1):
-    x_train = batch[:, :3]
+    x_train = batch[:, :n_channels]
     y_train = get_truth(batch)
     del(batch)
     print(model.train_on_batch(x_train, y_train, sample_weight=np.array([batch_weight] * x_train.shape[0]),
@@ -146,6 +145,10 @@ def crop_data(data, background_channel=4):
         upper = z_crop/2
         lower = z_crop - upper
         return data[:, lower:data.shape[1] - upper]
+
+
+def write_image(data, out_file):
+    sitk.WriteImage(sitk.GetImageFromArray(data), out_file)
 
 
 def get_truth(batch, truth_channel=3):
