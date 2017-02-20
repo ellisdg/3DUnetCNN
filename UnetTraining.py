@@ -1,19 +1,15 @@
 import os
-import glob
 import pickle
-import datetime
-from random import shuffle
+import math
+from functools import partial
 
 import numpy as np
-
-from keras.layers import (Conv3D, AveragePooling3D, MaxPooling3D, Activation, UpSampling3D, merge, Input, Reshape,
-                          Permute)
 from keras import backend as K
+from keras.layers import (Conv3D, MaxPooling3D, Activation, UpSampling3D, merge, Input)
 from keras.models import Model, load_model
 from keras.optimizers import Adam
 
-import SimpleITK as sitk
-
+from DataGenerator import get_training_and_testing_generators
 
 pool_size = (2, 2, 2)
 image_shape = (144, 240, 240)
@@ -24,7 +20,19 @@ batch_size = 1
 n_test_subjects = 40
 z_crop = 155 - image_shape[0]
 n_epochs = 5
-epoch_weights = 1/np.arange(1, n_epochs+1)
+data_dir = "../../sample_data"
+truth_channel = 3
+background_channel = 4
+decay_learning_rate_every_x_epochs = 1
+learning_rate = 0.1
+learning_rate_drop = 0.5
+validation_split = 0.8
+
+
+# learning rate schedule
+def step_decay(epoch, initial_lrate=learning_rate, drop=learning_rate_drop,
+               epochs_drop=decay_learning_rate_every_x_epochs):
+    return initial_lrate * math.pow(drop, math.floor((1+epoch)/float(epochs_drop)))
 
 
 def pickle_dump(item, out_file):
@@ -94,17 +102,60 @@ def unet_model():
 
     model = Model(input=inputs, output=act)
 
-    model.compile(optimizer=Adam(lr=1e-5), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=Adam(), loss=dice_coef_loss, metrics=[dice_coef])
 
     return model
 
 
-def get_training_weights(y_train, n_classes):
+def get_training_weights(training_generator, nb_training_samples, n_classes=2):
+    counts = np.zeros((n_labels, n_classes))
+    i = 0
+    while i < nb_training_samples:
+        _, y_train = training_generator.next()
+        for label in range(n_labels):
+            counts[label, :] += np.bincount(np.array(y_train[:, label].ravel(), dtype=np.uint8), minlength=n_classes)
+        i += 1
+    return counts_to_weights(counts)
+
+
+def counts_to_weights(array):
+    weights_list = []
+    for label in range(array.shape[0]):
+        weights = float(array[label, :].max())/array[label, :]
+        weights_list.append({0: weights[0], 1: weights[1]})
+    if len(weights_list) == 1:
+        return weights_list[0]
+    else:
+        return weights_list
+
+
+def deleteme(array):
+    length = len(array)
+    if length > 2:
+        out_list = []
+        array_sum = array.sum()
+        for item in array:
+            background_count = array_sum - item
+            out_list.append({0:1, 1:float(background_count)/item})
+        return out_list
+    else:
+        out_dict = dict()
+        weights = []
+        for i, item in enumerate(weights):
+            out_dict[i] = item
+        return out_dict
+
+
+def get_training_weights_from_data(y_train):
     weights = []
-    for label in range(n_classes):
-        weights.append(get_class_weights(y_train[:, label], n_classes=2))
+    for label in range(y_train.shape[1]):
+        background, foreground = get_class_weights(y_train[:, label], n_classes=2)
+        weights.append({0: background, 1: foreground})
     print("Training weights: {0}".format(weights))
-    return np.array(weights)
+    if len(weights) == 1:
+        return weights[0]
+    else:
+        return weights
 
 
 def get_class_weights(labels_array, n_classes):
@@ -114,123 +165,30 @@ def get_class_weights(labels_array, n_classes):
     return weights
 
 
-def train_batch(batch, model, batch_weight=1):
-    x_train = batch[:, :3]
-    y_train = get_truth(batch)
-    del(batch)
-    print(model.train_on_batch(x_train, y_train, sample_weight=np.array([batch_weight] * x_train.shape[0]),
-                               class_weight=get_training_weights(y_train, n_labels)))
-    del(x_train)
-    del(y_train)
-
-
-def read_subject_folder(folder):
-    flair_image = sitk.ReadImage(os.path.join(folder, "Flair.nii.gz"))
-    t1_image = sitk.ReadImage(os.path.join(folder, "T1.nii.gz"))
-    t1c_image = sitk.ReadImage(os.path.join(folder, "T1c.nii.gz"))
-    truth_image = sitk.ReadImage(os.path.join(folder, "truth.nii.gz"))
-    background_image = sitk.ReadImage(os.path.join(folder, "background.nii.gz"))
-    return np.array([sitk.GetArrayFromImage(t1_image), 
-                     sitk.GetArrayFromImage(t1c_image), 
-                     sitk.GetArrayFromImage(flair_image),
-                     sitk.GetArrayFromImage(truth_image),
-                     sitk.GetArrayFromImage(background_image)])
-
-
-def crop_data(data, background_channel=4):
-    if np.all(data[background_channel, :z_crop] == 1):
-        return data[:, z_crop:]
-    elif np.all(data[background_channel, data.shape[1] - z_crop:] == 1):
-        return data[:, :data.shape[1] - z_crop]
-    else:
-        upper = z_crop/2
-        lower = z_crop - upper
-        return data[:, lower:data.shape[1] - upper]
-
-
-def get_truth(batch, truth_channel=3):
-    truth = np.array(batch)[:, truth_channel]
-    batch_list = []
-    for sample_number in range(truth.shape[0]):
-        sample_list = []
-        for label in range(n_labels):
-            array = np.zeros(truth[sample_number].shape)
-            array[truth[sample_number] == label] = 1
-            sample_list.append(array)
-        batch_list.append(sample_list)
-    return np.array(batch_list)
-
-
-def get_subject_id(subject_dir):
-    return subject_dir.split("_")[-2]
-
-
 def main(overwrite=False):
     model_file = os.path.abspath("3d_unet_model.h5")
     if not overwrite and os.path.exists(model_file):
         model = load_model(model_file, custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef})
     else:
         model = unet_model()
-    train_model(model, model_file, overwrite=overwrite, iterations=n_epochs)
+    train_model(model, model_file)
 
 
-def get_subject_dirs():
-    return glob.glob("../../data/*/*")
+def train_model(model, model_file):
+    training_generator, testing_generator, nb_training_samples, nb_testing_samples = get_training_and_testing_generators(
+        data_dir=data_dir, batch_size=batch_size, nb_channels=n_channels, truth_channel=truth_channel, z_crop=z_crop,
+        n_labels=n_labels, background_channel=background_channel, validation_split=validation_split)
+    class_weights = get_training_weights(training_generator, nb_training_samples)
+    print("class_weights: {0}".format(class_weights))
+    model.fit_generator(generator=training_generator,
+                        samples_per_epoch=nb_training_samples,
+                        nb_epoch=n_epochs,
+                        validation_data=testing_generator,
+                        nb_val_samples=nb_testing_samples,
+                        class_weight=class_weights,
+                        pickle_safe=True)
+    model.save(model_file)
 
-
-def train_model(model, model_file, overwrite=False, iterations=1):
-    for i in range(iterations):
-        processed_list_file = os.path.abspath("processed_subjects.pkl")
-        if overwrite or not os.path.exists(processed_list_file) or i > 0:
-            processed_list = []
-        else:
-            processed_list = pickle_load(processed_list_file)
-
-        subject_dirs = get_subject_dirs()
-        shuffle(subject_dirs)
-
-        testing_ids_file = os.path.abspath("testing_ids.pkl")
-
-        if os.path.exists(testing_ids_file) and not overwrite:
-            testing_ids = pickle_load(testing_ids_file)
-            if len(testing_ids) > n_test_subjects:
-                testing_ids = testing_ids[:n_test_subjects]
-                pickle_dump(testing_ids, testing_ids_file)
-        else:
-            # reomove duplicate sessions
-            subjects = dict()
-            for dirname in subject_dirs:
-                subjects[dirname.split('_')[-2]] = dirname
-
-            subject_ids = subjects.keys()
-            shuffle(subject_ids)
-            testing_ids = subject_ids[:n_test_subjects]
-            pickle_dump(testing_ids, testing_ids_file)
-
-        batch = []
-        for subject_dir in subject_dirs:
-
-            subject_id = get_subject_id(subject_dir)
-            if subject_id in testing_ids or subject_id in processed_list:
-                continue
-
-            processed_list.append(subject_id)
-
-            batch.append(crop_data(read_subject_folder(subject_dir)))
-            if len(batch) >= batch_size:
-                train_batch(np.array(batch), model)
-                del(batch)
-                batch = []
-                print("Saving: " + model_file)
-                pickle_dump(processed_list, processed_list_file)
-                model.save(model_file)
-
-        if batch:
-            train_batch(np.array(batch), model, batch_weight=epoch_weights[i])
-            del(batch)
-            print("Saving: " + model_file)
-            pickle_dump(processed_list, processed_list_file)
-            model.save(model_file)
 
 if __name__ == "__main__":
     main(overwrite=False)

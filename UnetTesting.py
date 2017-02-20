@@ -2,8 +2,8 @@ import os
 
 from keras.models import load_model
 
-from UnetTraining import (dice_coef, dice_coef_loss, pickle_load, get_subject_dirs, get_subject_id, read_subject_folder,
-                          crop_data, pickle_dump, np, sitk)
+from UnetTraining import (dice_coef, dice_coef_loss, pickle_load, get_subject_dirs, get_subject_id, crop_data, pickle_dump, np, sitk)
+from DataGenerator import read_subject_folder, crop_data
 
 
 def test_model(model):
