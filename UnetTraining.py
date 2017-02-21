@@ -1,11 +1,10 @@
 import os
 import pickle
 import math
-from functools import partial
 
 import numpy as np
 from keras import backend as K
-from keras.layers import (Conv3D, MaxPooling3D, Activation, UpSampling3D, merge, Input)
+from keras.layers import (Conv3D, MaxPooling3D, Activation, UpSampling3D, merge, Input, Reshape)
 from keras.models import Model, load_model
 from keras.optimizers import Adam
 
@@ -15,12 +14,11 @@ pool_size = (2, 2, 2)
 image_shape = (144, 240, 240)
 n_channels = 3
 input_shape = tuple([n_channels] + list(image_shape))
-n_labels = 5
+n_labels = 1  # not including background
 batch_size = 1
-n_test_subjects = 40
 z_crop = 155 - image_shape[0]
-n_epochs = 5
-data_dir = "../../sample_data"
+n_epochs = 50
+data_dir = "/home/neuro-user/PycharmProjects/BRATS/sample_data"
 truth_channel = 3
 background_channel = 4
 decay_learning_rate_every_x_epochs = 1
@@ -99,9 +97,8 @@ def unet_model():
 
     conv10 = Conv3D(n_labels, 1, 1, 1)(conv9)
     act = Activation('sigmoid')(conv10)
-
     model = Model(input=inputs, output=act)
-
+    print(model.output_shape)
     model.compile(optimizer=Adam(), loss=dice_coef_loss, metrics=[dice_coef])
 
     return model
@@ -112,9 +109,14 @@ def get_training_weights(training_generator, nb_training_samples, n_classes=2):
     i = 0
     while i < nb_training_samples:
         _, y_train = training_generator.next()
-        for label in range(n_labels):
-            counts[label, :] += np.bincount(np.array(y_train[:, label].ravel(), dtype=np.uint8), minlength=n_classes)
+        if n_labels > 1:
+            for label in range(n_labels):
+                counts[label, :] += np.bincount(np.array(y_train[:, label].ravel(), dtype=np.uint8),
+                                                minlength=n_classes)
+        else:
+            counts += np.bincount(np.array(y_train.ravel(), dtype=np.uint8), minlength=n_classes)
         i += 1
+    print("Class Counts: {0}".format(counts))
     return counts_to_weights(counts)
 
 
@@ -177,15 +179,13 @@ def main(overwrite=False):
 def train_model(model, model_file):
     training_generator, testing_generator, nb_training_samples, nb_testing_samples = get_training_and_testing_generators(
         data_dir=data_dir, batch_size=batch_size, nb_channels=n_channels, truth_channel=truth_channel, z_crop=z_crop,
-        n_labels=n_labels, background_channel=background_channel, validation_split=validation_split)
-    class_weights = get_training_weights(training_generator, nb_training_samples)
-    print("class_weights: {0}".format(class_weights))
+        background_channel=background_channel, validation_split=validation_split)
+
     model.fit_generator(generator=training_generator,
                         samples_per_epoch=nb_training_samples,
                         nb_epoch=n_epochs,
                         validation_data=testing_generator,
                         nb_val_samples=nb_testing_samples,
-                        class_weight=class_weights,
                         pickle_safe=True)
     model.save(model_file)
 
