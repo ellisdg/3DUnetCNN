@@ -1,12 +1,14 @@
 import os
 import pickle
 import math
+from functools import partial
 
 import numpy as np
 from keras import backend as K
 from keras.layers import (Conv3D, MaxPooling3D, Activation, UpSampling3D, merge, Input, Reshape)
 from keras.models import Model, load_model
 from keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateScheduler
 
 from DataGenerator import get_training_and_testing_generators
 
@@ -22,13 +24,13 @@ data_dir = "/home/neuro-user/PycharmProjects/BRATS/sample_data"
 truth_channel = 3
 background_channel = 4
 decay_learning_rate_every_x_epochs = 1
-learning_rate = 0.1
+initial_learning_rate = 0.1
 learning_rate_drop = 0.5
 validation_split = 0.8
 
 
 # learning rate schedule
-def step_decay(epoch, initial_lrate=learning_rate, drop=learning_rate_drop,
+def step_decay(epoch, initial_lrate=initial_learning_rate, drop=learning_rate_drop,
                epochs_drop=decay_learning_rate_every_x_epochs):
     return initial_lrate * math.pow(drop, math.floor((1+epoch)/float(epochs_drop)))
 
@@ -98,8 +100,8 @@ def unet_model():
     conv10 = Conv3D(n_labels, 1, 1, 1)(conv9)
     act = Activation('sigmoid')(conv10)
     model = Model(input=inputs, output=act)
-    print(model.output_shape)
-    model.compile(optimizer=Adam(), loss=dice_coef_loss, metrics=[dice_coef])
+
+    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss, metrics=[dice_coef])
 
     return model
 
@@ -167,6 +169,25 @@ def get_class_weights(labels_array, n_classes):
     return weights
 
 
+class SaveLossHistory(Callback):
+    def on_train_begin(self, logs={}):
+        self.losses = []
+
+    def on_batch_end(self, batch, logs={}):
+        self.losses.append(logs.get('loss'))
+        pickle_dump(self.losses, "loss_history.pkl")
+
+
+def get_callbacks(model_file):
+    epoch_model_file = model_file.replace(".h", "_latest.h")
+    model_checkpoint = ModelCheckpoint(epoch_model_file)
+    logger = CSVLogger("training.log")
+    history = SaveLossHistory()
+    scheduler = LearningRateScheduler(partial(step_decay, initial_lrate=initial_learning_rate, drop=learning_rate_drop,
+                                              epochs_drop=decay_learning_rate_every_x_epochs))
+    return [model_checkpoint, logger, history, scheduler]
+
+
 def main(overwrite=False):
     model_file = os.path.abspath("3d_unet_model.h5")
     if not overwrite and os.path.exists(model_file):
@@ -186,7 +207,8 @@ def train_model(model, model_file):
                         nb_epoch=n_epochs,
                         validation_data=testing_generator,
                         nb_val_samples=nb_testing_samples,
-                        pickle_safe=True)
+                        pickle_safe=True,
+                        callbacks=get_callbacks(model_file))
     model.save(model_file)
 
 
