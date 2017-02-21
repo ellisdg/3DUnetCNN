@@ -40,7 +40,6 @@ def data_generator(subject_folders, batch_size=1, nb_channels=3, truth_channel=3
         # TODO: Edge case?
         for i in range(nb_subjects/batch_size):
             batch_folders = subject_folders[i*batch_size:(i+1)*batch_size]
-            print(batch_folders)
             batch = read_batch(batch_folders, background_channel, z_crop)
             x_train, y_train = get_training_data(batch, nb_channels, truth_channel, n_labels)
             del batch, batch_folders
