@@ -9,7 +9,7 @@ from keras.models import Model, load_model
 from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateScheduler
 
-from DataGenerator import get_training_and_testing_generators
+from DataGenerator import get_training_and_testing_generators, pickle_dump
 
 pool_size = (2, 2, 2)
 image_shape = (144, 240, 240)
