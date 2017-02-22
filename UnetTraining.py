@@ -1,5 +1,4 @@
 import os
-import pickle
 import math
 from functools import partial
 
@@ -7,7 +6,7 @@ import numpy as np
 from keras import backend as K
 from keras.layers import (Conv3D, MaxPooling3D, Activation, UpSampling3D, merge, Input, Reshape)
 from keras.models import Model, load_model
-from keras.optimizers import Adam
+from keras.optimizers import SGD
 from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateScheduler
 
 from DataGenerator import get_training_and_testing_generators
@@ -33,16 +32,6 @@ validation_split = 0.8
 def step_decay(epoch, initial_lrate=initial_learning_rate, drop=learning_rate_drop,
                epochs_drop=decay_learning_rate_every_x_epochs):
     return initial_lrate * math.pow(drop, math.floor((1+epoch)/float(epochs_drop)))
-
-
-def pickle_dump(item, out_file):
-    with open(out_file, "wb") as opened_file:
-        pickle.dump(item, opened_file)
-
-
-def pickle_load(in_file):
-    with open(in_file, "rb") as opened_file:
-        return pickle.load(opened_file)
 
 
 K.set_image_dim_ordering('th')
@@ -101,7 +90,8 @@ def unet_model():
     act = Activation('sigmoid')(conv10)
     model = Model(input=inputs, output=act)
 
-    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=SGD(lr=initial_learning_rate, decay=0.0, momentum=0.9), loss=dice_coef_loss,
+                  metrics=[dice_coef])
 
     return model
 
@@ -191,6 +181,7 @@ def get_callbacks(model_file):
 def main(overwrite=False):
     model_file = os.path.abspath("3d_unet_model.h5")
     if not overwrite and os.path.exists(model_file):
+        print("Loading pre-trained model")
         model = load_model(model_file, custom_objects={'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef})
     else:
         model = unet_model()

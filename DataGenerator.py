@@ -1,22 +1,38 @@
 import os
 import glob
+import pickle
 from random import shuffle
 
 import SimpleITK as sitk
 import numpy as np
 
 
+def pickle_dump(item, out_file):
+    with open(out_file, "wb") as opened_file:
+        pickle.dump(item, opened_file)
+
+
+def pickle_load(in_file):
+    with open(in_file, "rb") as opened_file:
+        return pickle.load(opened_file)
+
+
 def get_training_and_testing_generators(data_dir, batch_size=1, nb_channels=3, truth_channel=3,
-                                        background_channel=4, z_crop=15, validation_split=0.8):
-    subject_folders = get_subject_folders(data_dir=data_dir)
-    training_list, testing_list = split_list(subject_folders, split=validation_split, shuffle_list=True)
+                                        background_channel=4, z_crop=15, validation_split=0.8, overwrite=False,
+                                        saved_folders_file="training_and_testing_folders.pkl"):
+    if overwrite or not os.path.exists(saved_folders_file):
+        subject_folders = get_subject_folders(data_dir=data_dir)
+        training_list, testing_list = split_list(subject_folders, split=validation_split, shuffle_list=True)
+        pickle_dump((training_list, testing_list), saved_folders_file)
+    else:
+        training_list, testing_list = pickle_load(saved_folders_file)
     training_generator = data_generator(training_list, batch_size=batch_size, nb_channels=nb_channels,
                                         truth_channel=truth_channel, background_channel=background_channel,
                                         z_crop=z_crop)
     testing_generator = data_generator(testing_list, batch_size=batch_size, nb_channels=nb_channels,
                                        truth_channel=truth_channel, background_channel=background_channel,
                                        z_crop=z_crop)
-    return training_generator, testing_generator, len(training_list)/batch_size, len(testing_list)/batch_size
+    return training_generator, testing_generator, len(training_list), len(testing_list)
 
 
 def split_list(input_list, split=0.8, shuffle_list=True):
