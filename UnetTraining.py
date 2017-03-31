@@ -18,7 +18,7 @@ input_shape = tuple([n_channels] + list(image_shape))
 n_labels = 1  # not including background
 batch_size = 1
 n_epochs = 50
-data_dir = "/home/neuro-user/PycharmProjects/BRATS/sample_data"
+data_dir = "/home/neuro-user/PycharmProjects/BRATS/data"
 truth_channel = 3
 background_channel = 4
 decay_learning_rate_every_x_epochs = 1
@@ -172,7 +172,7 @@ def main(overwrite=False):
 
 def train_model(model, model_file):
     training_generator, testing_generator, nb_training_samples, nb_testing_samples = get_training_and_testing_generators(
-        data_dir=data_dir, batch_size=batch_size, nb_channels=n_channels, input_shape=input_shape,
+        data_dir=data_dir, batch_size=batch_size, nb_channels=n_channels, input_shape=image_shape,
         validation_split=validation_split)
 
     model.fit_generator(generator=training_generator,
