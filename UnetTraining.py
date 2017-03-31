@@ -12,12 +12,11 @@ from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateSc
 from DataGenerator import get_training_and_testing_generators, pickle_dump
 
 pool_size = (2, 2, 2)
-image_shape = (144, 240, 240)
+image_shape = (240, 240, 144)
 n_channels = 3
 input_shape = tuple([n_channels] + list(image_shape))
 n_labels = 1  # not including background
 batch_size = 1
-z_crop = 155 - image_shape[0]
 n_epochs = 50
 data_dir = "/home/neuro-user/PycharmProjects/BRATS/sample_data"
 truth_channel = 3
@@ -123,23 +122,6 @@ def counts_to_weights(array):
         return weights_list
 
 
-def deleteme(array):
-    length = len(array)
-    if length > 2:
-        out_list = []
-        array_sum = array.sum()
-        for item in array:
-            background_count = array_sum - item
-            out_list.append({0:1, 1:float(background_count)/item})
-        return out_list
-    else:
-        out_dict = dict()
-        weights = []
-        for i, item in enumerate(weights):
-            out_dict[i] = item
-        return out_dict
-
-
 def get_training_weights_from_data(y_train):
     weights = []
     for label in range(y_train.shape[1]):
@@ -190,8 +172,8 @@ def main(overwrite=False):
 
 def train_model(model, model_file):
     training_generator, testing_generator, nb_training_samples, nb_testing_samples = get_training_and_testing_generators(
-        data_dir=data_dir, batch_size=batch_size, nb_channels=n_channels, truth_channel=truth_channel, z_crop=z_crop,
-        background_channel=background_channel, validation_split=validation_split)
+        data_dir=data_dir, batch_size=batch_size, nb_channels=n_channels, input_shape=input_shape,
+        validation_split=validation_split)
 
     model.fit_generator(generator=training_generator,
                         samples_per_epoch=nb_training_samples,
