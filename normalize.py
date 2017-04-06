@@ -3,8 +3,31 @@ import os
 
 import tables
 import numpy as np
-from nilearn.image import resample_img, reorder_img
+from nilearn.image import resample_img, reorder_img, new_img_like
 import nibabel as nib
+from utils.nilearn_custom_utils.nilearn_utils import crop_img, crop_img_to
+
+
+def find_downsized_info(subject_folders, input_shape):
+    foreground = get_complete_foreground(subject_folders)
+    crop_slices = crop_img(foreground, return_slices=True, copy=True)
+    cropped = crop_img_to(foreground, crop_slices, copy=True)
+    final_image = resize(cropped, new_shape=input_shape, interpolation="nearest")
+    return crop_slices, final_image.affine, final_image.header
+
+
+def get_complete_foreground(subject_folders):
+    for i, subject_folder in enumerate(subject_folders):
+        background_path = os.path.join(subject_folder, "background.nii.gz")
+        image = nib.load(background_path)
+        image_foreground = image.get_data() == 0
+        if i == 0:
+            foreground = image_foreground
+            reference_image = image
+        else:
+            foreground[image_foreground] = 1
+
+    return new_img_like(reference_image, foreground)
 
 
 def normalize_data(data, mean, std):
@@ -45,9 +68,9 @@ def create_data_file(out_file, nb_channels, nb_samples, image_shape):
     return hdf5_file, data_storage, truth_storage
 
 
-def write_folders_to_file(subject_folders, data_storage, truth_storage, image_shape, truth_dtype=np.uint8):
+def write_folders_to_file(subject_folders, data_storage, truth_storage, image_shape, crop=None, truth_dtype=np.uint8):
     for subject_folder in subject_folders:
-        subject_data = read_subject_folder(subject_folder, image_shape)
+        subject_data = read_subject_folder(subject_folder, image_shape, crop=crop)
         data_storage.append(subject_data[:3][np.newaxis])
         truth_storage.append(np.asarray(subject_data[3][np.newaxis][np.newaxis], dtype=truth_dtype))
     return data_storage, truth_storage
@@ -58,7 +81,11 @@ def write_data_to_file(data_folder, out_file, image_shape, truth_dtype=np.uint8,
     nb_samples = len(subject_folders)
     hdf5_file, data_storage, truth_storage = create_data_file(out_file, nb_channels=nb_channels, nb_samples=nb_samples,
                                                               image_shape=image_shape)
-    write_folders_to_file(subject_folders, data_storage, truth_storage, image_shape, truth_dtype=truth_dtype)
+    crop_slices, affine, header = find_downsized_info(subject_folders, image_shape)
+    hdf5_file.create_array(hdf5_file.root, "affine", affine)
+    # hdf5_file.create_array(hdf5_file.root, "header", header)
+    write_folders_to_file(subject_folders, data_storage, truth_storage, image_shape, crop=crop_slices,
+                          truth_dtype=truth_dtype)
     normalize_data_storage(data_storage)
     hdf5_file.close()
     return out_file
@@ -68,18 +95,24 @@ def get_subject_folders(data_dir):
     return glob.glob(os.path.join(data_dir, "*", "*"))
 
 
-def read_subject_folder(folder, image_shape):
-    flair_image = read_image(os.path.join(folder, "Flair.nii.gz"), image_shape=image_shape)
-    t1_image = read_image(os.path.join(folder, "T1.nii.gz"), image_shape=image_shape)
-    t1c_image = read_image(os.path.join(folder, "T1c.nii.gz"), image_shape=image_shape)
+def get_affine_from_subject_folder(subject_folder):
+    return nib.load(os.path.join(subject_folder, "T1.nii.gz")).affine
+
+
+def read_subject_folder(folder, image_shape, crop=None):
+    flair_image = read_image(os.path.join(folder, "Flair.nii.gz"), image_shape=image_shape, crop=crop)
+    t1_image = read_image(os.path.join(folder, "T1.nii.gz"), image_shape=image_shape, crop=crop)
+    t1c_image = read_image(os.path.join(folder, "T1c.nii.gz"), image_shape=image_shape, crop=crop)
     truth_image = read_image(os.path.join(folder, "truth.nii.gz"), image_shape=image_shape,
-                             interpolation="nearest")
+                             interpolation="nearest", crop=crop)
     return np.asarray([t1_image.get_data(), t1c_image.get_data(), flair_image.get_data(), truth_image.get_data()])
 
 
-def read_image(in_file, image_shape, interpolation='continuous'):
+def read_image(in_file, image_shape, interpolation='continuous', crop=None):
     print("Reading: {0}".format(in_file))
     image = nib.load(in_file)
+    if crop:
+        image = crop_img_to(image, crop, copy=True)
     return resize(image, new_shape=image_shape, interpolation=interpolation)
 
 

@@ -7,27 +7,27 @@ import tables
 from keras import backend as K
 from keras.layers import (Conv3D, MaxPooling3D, Activation, UpSampling3D, merge, Input, Reshape)
 from keras.models import Model, load_model
-from keras.optimizers import SGD
+from keras.optimizers import SGD, Adam
 from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateScheduler
 
 from DataGenerator import get_training_and_testing_generators, pickle_dump
 from normalize import write_data_to_file
 
 pool_size = (2, 2, 2)
-image_shape = (240, 240, 144)
+image_shape = (144, 144, 144)
 nb_channels = 3
 input_shape = tuple([nb_channels] + list(image_shape))
 n_labels = 1  # not including background
 batch_size = 1
 n_epochs = 50
-data_dir = "/home/neuro-user/PycharmProjects/BRATS/data"
+data_dir = "/home/neuro-user/PycharmProjects/BRATS/sample_data"
 truth_channel = 3
 background_channel = 4
 decay_learning_rate_every_x_epochs = 1
-initial_learning_rate = 0.1
+initial_learning_rate = 0.00001
 learning_rate_drop = 0.5
 validation_split = 0.8
-hdf5_file = "/home/neuro-user/PycharmProjects/BRATS/data.hdf5"
+hdf5_file = "/home/neuro-user/PycharmProjects/BRATS/sample_data.hdf5"
 
 
 # learning rate schedule
@@ -92,8 +92,7 @@ def unet_model():
     act = Activation('sigmoid')(conv10)
     model = Model(input=inputs, output=act)
 
-    model.compile(optimizer=SGD(lr=initial_learning_rate, decay=0.0, momentum=0.9), loss=dice_coef_loss,
-                  metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss, metrics=[dice_coef])
 
     return model
 
@@ -164,7 +163,8 @@ def get_callbacks(model_file):
 
 
 def main(overwrite=False):
-    write_data_to_file(data_dir, hdf5_file, image_shape=image_shape, nb_channels=nb_channels)
+    if overwrite or not os.path.exists(hdf5_file):
+        write_data_to_file(data_dir, hdf5_file, image_shape=image_shape, nb_channels=nb_channels)
     hdf5_file_opened = tables.open_file(hdf5_file, "r")
     model_file = os.path.abspath("3d_unet_model.h5")
     if not overwrite and os.path.exists(model_file):
