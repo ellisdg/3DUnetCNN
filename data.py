@@ -7,6 +7,7 @@ import tables
 
 from normalize import find_downsized_info, normalize_data_storage, resize
 from utils.nilearn_custom_utils.nilearn_utils import crop_img_to
+from config import config
 
 
 def create_data_file(out_file, nb_channels, nb_samples, image_shape):
@@ -54,16 +55,17 @@ def get_subject_folders(data_dir):
 
 
 def get_affine_from_subject_folder(subject_folder):
-    return nib.load(os.path.join(subject_folder, "T1.nii.gz")).affine
+    return nib.load(os.path.join(subject_folder, config["training_modalities"][0] + ".nii.gz")).affine
 
 
 def read_subject_folder(folder, image_shape, crop=None):
-    flair_image = read_image(os.path.join(folder, "Flair.nii.gz"), image_shape=image_shape, crop=crop)
-    t1_image = read_image(os.path.join(folder, "T1.nii.gz"), image_shape=image_shape, crop=crop)
-    t1c_image = read_image(os.path.join(folder, "T1c.nii.gz"), image_shape=image_shape, crop=crop)
-    truth_image = read_image(os.path.join(folder, "truth.nii.gz"), image_shape=image_shape,
-                             interpolation="nearest", crop=crop)
-    return np.asarray([t1_image.get_data(), t1c_image.get_data(), flair_image.get_data(), truth_image.get_data()])
+    data_list = list()
+    for modality in config["training_modalities"]:
+        data_list.append(read_image(os.path.join(folder, modality + ".nii.gz"), image_shape=image_shape,
+                                    crop=crop)).get_data()
+    data_list.append(read_image(os.path.join(folder, "truth.nii.gz"), image_shape=image_shape, interpolation="nearest",
+                                crop=crop))
+    return np.asarray(data_list)
 
 
 def read_image(in_file, image_shape, interpolation='continuous', crop=None):
