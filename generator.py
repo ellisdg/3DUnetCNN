@@ -1,6 +1,8 @@
 import os
 from random import shuffle
 
+import numpy as np
+
 from utils.utils import pickle_dump, pickle_load
 from config import config
 
@@ -43,16 +45,21 @@ def split_list(input_list, split=0.8, shuffle_list=True):
 
 
 def data_generator(data_file, index_list, batch_size=1, binary=True):
-    nb_subjects = len(index_list)
     while True:
         shuffle(index_list)
-        nb_batches = nb_subjects/batch_size
+        x_list = list()
+        y_list = list()
         # TODO: Edge case? Currently this is handled by flooring the number of training/testing samples
-        for i in range(nb_batches):
-            x = data_file.root.data[i*batch_size:(i+1)*batch_size]
-            y = data_file.root.truth[i*batch_size:(i+1)*batch_size]
-            if binary:
-                y[y > 0] = 1
-            else:
-                raise NotImplementedError("Multi-class labels are not yet implemented")
-            yield x, y
+        for index in index_list:
+            x_list.append(data_file.root.data[index])
+            y_list.append(data_file.root.truth[index])
+            if len(x_list) == batch_size:
+                x = np.asarray(x_list)
+                y = np.asarray(y_list)
+                x_list = list()
+                y_list = list()
+                if binary:
+                    y[y > 0] = 1
+                else:
+                    raise NotImplementedError("Multi-class labels are not yet implemented")
+                yield x, y
