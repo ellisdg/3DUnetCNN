@@ -50,7 +50,7 @@ Adding "T2" to the list could increase the classification performance.
 
 ## Multi-label Classification
 The code is setup to perform binary classification.
-However, since the BRATS data does contain multi-label segmentation maps, the code could be modified to
+However, since the BRATS data does contain multi-label segmentation maps, the code could be modified for
 classification of multiple labels simultaneously.
 Currently, I do not have any need to add multi-label classification.
 However, I would gladly accept a pull request from someone who has implemented this feature.
