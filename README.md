@@ -39,13 +39,13 @@ $ python training.py
 The config.py file contains the default configuration of preferences.
 I highly recommend looking through this file before running the training.
 
-In training I have found that this network requires**a large amount of memory!**
-For an image shape of 144x144x144 the memory required when training using cpu is**around 32GB.**
+In training I have found that this network requires **a large amount of memory!**
+For an image shape of 144x144x144 the memory required when training using cpu is **around 32GB.**
 This can be reduced by reducing the image shape in the configuration file.
 The code will then reduce the resolution of the input images so that they all match the given shape.
 
 By default, the model will use the "T1", "T1c", and "FLAIR" images from the BRATS data set.
-To change which modalities the model will use go to the config.py file and change the**training_modalities**list.
+To change which modalities the model will use go to the config.py file and change the **training_modalities** list.
 Adding "T2" to the list could increase the classification performance.
 
 ## Multi-label Classification
