@@ -31,8 +31,9 @@ def create_data_file(out_file, nb_channels, nb_samples, image_shape):
 def write_folders_to_file(subject_folders, data_storage, truth_storage, image_shape, crop=None, truth_dtype=np.uint8):
     for subject_folder in subject_folders:
         subject_data = read_subject_folder(subject_folder, image_shape, crop=crop)
-        data_storage.append(subject_data[:3][np.newaxis])
-        truth_storage.append(np.asarray(subject_data[3][np.newaxis][np.newaxis], dtype=truth_dtype))
+        data_storage.append(subject_data[:config["nb_channels"]][np.newaxis])
+        truth_storage.append(np.asarray(subject_data[config["truth_channel"]][np.newaxis][np.newaxis],
+                                        dtype=truth_dtype))
     return data_storage, truth_storage
 
 
@@ -62,10 +63,10 @@ def read_subject_folder(folder, image_shape, crop=None):
     data_list = list()
     for modality in config["training_modalities"]:
         data_list.append(read_image(os.path.join(folder, modality + ".nii.gz"), image_shape=image_shape,
-                                    crop=crop)).get_data()
+                                    crop=crop).get_data())
     data_list.append(read_image(os.path.join(folder, "truth.nii.gz"), image_shape=image_shape, interpolation="nearest",
-                                crop=crop))
-    return np.asarray(data_list)
+                                crop=crop).get_data())
+    return np.stack(data_list)
 
 
 def read_image(in_file, image_shape, interpolation='continuous', crop=None):
