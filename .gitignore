@@ -6,3 +6,7 @@ data
 .ipynb_checkpoints
 models
 *.pkl
+data.hdf5
+*.log
+*.h5
+*.ipynb

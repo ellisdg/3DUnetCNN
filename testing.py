@@ -2,10 +2,10 @@ import os
 import numpy as np
 import nibabel as nib
 import tables
-from keras.models import load_model
 
 from utils.utils import pickle_load
 from config import config
+from training import load_old_model
 
 
 def get_prediction_labels(prediction, threshold=0.5):
@@ -27,7 +27,7 @@ def predict_from_data_file(model, open_data_file, index):
 
 
 def predict_and_get_image(model, data, affine):
-    return nib.Nifti1Image(model.predict(data)[0], affine)
+    return nib.Nifti1Image(model.predict(data)[0, 0], affine)
 
 
 def predict_from_data_file_and_get_image(model, open_data_file, index):
@@ -40,15 +40,18 @@ def predict_from_data_file_and_write_image(model, open_data_file, index, out_fil
 
 
 def run_test_case(test_index, out_dir):
-    model = load_model(config["model_file"])
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    model = load_old_model(config["model_file"])
 
     data_file = tables.open_file(config["hdf5_file"], "r")
     data_index = get_test_indices()[test_index]
     affine = data_file.root.affine
-    test_data = data_file.root.data[data_index]
-    for i in range(config["nb_channels"]):
-        image = nib.Nifti1Image(test_data[i], affine)
-        image.to_filename(os.path.join(out_dir, "data_{0}.nii.gz".format(i)))
+    test_data = np.asarray([data_file.root.data[data_index]])
+    for i, modality in enumerate(config["training_modalities"]):
+        image = nib.Nifti1Image(test_data[0, i], affine)
+        image.to_filename(os.path.join(out_dir, "data_{0}.nii.gz".format(modality)))
 
     test_truth = nib.Nifti1Image(data_file.root.truth[data_index][0], affine)
     test_truth.to_filename(os.path.join(out_dir, "truth.nii.gz"))
