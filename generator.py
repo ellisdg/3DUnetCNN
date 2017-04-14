@@ -7,17 +7,13 @@ from utils.utils import pickle_dump, pickle_load
 from config import config
 
 
-# TODO: Rescale images to integer
-# TODO: include normalization script from raw BRATS data
-
-
 def get_training_and_testing_generators(data_file, batch_size, data_split=0.8, overwrite=False):
     training_list, testing_list = get_validation_split(data_file, data_split=data_split, overwrite=overwrite)
     training_generator = data_generator(data_file, training_list, batch_size=batch_size)
     testing_generator = data_generator(data_file, testing_list, batch_size=batch_size)
     # Set the number of training and testing samples per epoch correctly
-    nb_training_samples = len(training_list)/batch_size * batch_size
-    nb_testing_samples = len(testing_list)/batch_size * batch_size
+    nb_training_samples = len(training_list)
+    nb_testing_samples = len(testing_list)
     return training_generator, testing_generator, nb_training_samples, nb_testing_samples
 
 
@@ -49,17 +45,23 @@ def data_generator(data_file, index_list, batch_size=1, binary=True):
         shuffle(index_list)
         x_list = list()
         y_list = list()
-        # TODO: Edge case? Currently this is handled by flooring the number of training/testing samples
         for index in index_list:
             x_list.append(data_file.root.data[index])
             y_list.append(data_file.root.truth[index])
             if len(x_list) == batch_size:
-                x = np.asarray(x_list)
-                y = np.asarray(y_list)
+                yield convert_data(x_list, y_list, binary=binary)
                 x_list = list()
                 y_list = list()
-                if binary:
-                    y[y > 0] = 1
-                else:
-                    raise NotImplementedError("Multi-class labels are not yet implemented")
-                yield x, y
+        if len(x_list) > 0:
+            yield convert_data(x_list, y_list, binary=binary)
+
+
+def convert_data(x_list, y_list, binary=True):
+    x = np.asarray(x_list)
+    y = np.asarray(y_list)
+    if binary:
+        y[y > 0] = 1
+    else:
+        raise NotImplementedError("Multi-class labels are not yet implemented")
+    return x, y
+
