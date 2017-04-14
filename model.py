@@ -1,7 +1,12 @@
 from keras import backend as K
-from keras.engine import Input, merge, Model
+from keras.engine import Input, Model
 from keras.layers import Conv3D, MaxPooling3D, UpSampling3D, Activation
 from keras.optimizers import Adam
+
+try:
+    from keras.engine import merge
+except ImportError:
+    from keras.layers import merge
 
 from config import config
 
