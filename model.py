@@ -26,18 +26,18 @@ def unet_model_3d():
     pool3 = MaxPooling3D(pool_size=config["pool_size"])(conv3)
 
     conv4 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(pool3)
-    conv4 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(conv4)
+    conv4 = Conv3D(512, 3, 3, 3, activation='relu', border_mode='same')(conv4)
     up4 = merge([UpSampling3D(size=config["pool_size"])(conv4), conv3], mode='concat', concat_axis=1)
 
-    conv5 = Conv3D(512, 3, 3, 3, activation='relu', border_mode='same')(up4)
+    conv5 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(up4)
     conv5 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(conv5)
     up5 = merge([UpSampling3D(size=config["pool_size"])(conv5), conv2], mode='concat', concat_axis=1)
 
-    conv6 = Conv3D(256, 3, 3, 3, activation='relu', border_mode='same')(up5)
+    conv6 = Conv3D(128, 3, 3, 3, activation='relu', border_mode='same')(up5)
     conv6 = Conv3D(128, 3, 3, 3, activation='relu', border_mode='same')(conv6)
     up6 = merge([UpSampling3D(size=config["pool_size"])(conv6), conv1], mode='concat', concat_axis=1)
 
-    conv7 = Conv3D(128, 3, 3, 3, activation='relu', border_mode='same')(up6)
+    conv7 = Conv3D(64, 3, 3, 3, activation='relu', border_mode='same')(up6)
     conv7 = Conv3D(64, 3, 3, 3, activation='relu', border_mode='same')(conv7)
 
     conv8 = Conv3D(config["n_labels"], 1, 1, 1)(conv7)
