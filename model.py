@@ -18,45 +18,45 @@ if config["deconvolution"]:
 def unet_model_3d():
     inputs = Input(config["input_shape"])
     conv1 = Conv3D(int(32/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(inputs)
+                   padding='same')(inputs)
     conv1 = Conv3D(int(64/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(conv1)
+                   padding='same')(conv1)
     pool1 = MaxPooling3D(pool_size=config["pool_size"])(conv1)
 
     conv2 = Conv3D(int(64/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(pool1)
+                   padding='same')(pool1)
     conv2 = Conv3D(int(128/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(conv2)
+                   padding='same')(conv2)
     pool2 = MaxPooling3D(pool_size=config["pool_size"])(conv2)
 
     conv3 = Conv3D(int(128/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(pool2)
+                   padding='same')(pool2)
     conv3 = Conv3D(int(256/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(conv3)
+                   padding='same')(conv3)
     pool3 = MaxPooling3D(pool_size=config["pool_size"])(conv3)
 
     conv4 = Conv3D(int(256/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(pool3)
+                   padding='same')(pool3)
     conv4 = Conv3D(int(512/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(conv4)
+                   padding='same')(conv4)
 
     up5 = concatenate([get_upconv(depth=2, nb_filters=int(512/config["downsize_nb_filters_factor"]))(conv4), conv3],
                       axis=1)
-    conv5 = Conv3D(int(256/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu', border_mode='same')(up5)
+    conv5 = Conv3D(int(256/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu', padding='same')(up5)
     conv5 = Conv3D(int(256/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(conv5)
+                   padding='same')(conv5)
 
     up6 = concatenate([get_upconv(depth=1, nb_filters=int(256/config["downsize_nb_filters_factor"]))(conv5), conv2],
                       axis=1)
-    conv6 = Conv3D(int(128/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu', border_mode='same')(up6)
+    conv6 = Conv3D(int(128/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu', padding='same')(up6)
     conv6 = Conv3D(int(128/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(conv6)
+                   padding='same')(conv6)
 
     up7 = concatenate([get_upconv(depth=0, nb_filters=int(128/config["downsize_nb_filters_factor"]))(conv6), conv1],
                       axis=1)
-    conv7 = Conv3D(int(64/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu', border_mode='same')(up7)
+    conv7 = Conv3D(int(64/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu', padding='same')(up7)
     conv7 = Conv3D(int(64/config["downsize_nb_filters_factor"]), (3, 3, 3), activation='relu',
-                   border_mode='same')(conv7)
+                   padding='same')(conv7)
 
     conv8 = Conv3D(config["n_labels"], 1, 1, 1)(conv7)
     act = Activation('sigmoid')(conv8)
