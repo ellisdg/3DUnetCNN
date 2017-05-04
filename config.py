@@ -23,3 +23,5 @@ config["nb_channels"] = len(config["training_modalities"])
 config["input_shape"] = tuple([config["nb_channels"]] + list(config["image_shape"]))
 config["truth_channel"] = config["nb_channels"]
 config["background_channel"] = config["nb_channels"] + 1
+config["deconvolution"] = True  # use deconvolution instead of up-sampling. Requires keras-contrib.
+config["downsize_nb_filters_factor"] = 1

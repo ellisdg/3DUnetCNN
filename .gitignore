@@ -10,3 +10,7 @@ data.hdf5
 *.log
 *.h5
 *.ipynb
+*.pyc
+*.json
+test_dir
+old_training.py
