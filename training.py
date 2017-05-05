@@ -72,12 +72,12 @@ def load_old_model(model_file):
                                       'dice_coef': dice_coef})
 
 
-def train_model(model, model_file, training_generator, testing_generator, nb_training_samples, nb_testing_samples):
+def train_model(model, model_file, training_generator, testing_generator, steps_per_epoch, validation_steps):
     model.fit_generator(generator=training_generator,
-                        samples_per_epoch=nb_training_samples,
-                        nb_epoch=config["n_epochs"],
+                        steps_per_epoch=steps_per_epoch,
+                        epochs=config["n_epochs"],
                         validation_data=testing_generator,
-                        nb_val_samples=nb_testing_samples,
+                        validation_steps=validation_steps,
                         pickle_safe=True,
                         callbacks=get_callbacks(model_file))
     model.save(model_file)
