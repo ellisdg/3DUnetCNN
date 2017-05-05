@@ -75,7 +75,7 @@ def load_old_model(model_file):
 def train_model(model, model_file, training_generator, testing_generator, steps_per_epoch, validation_steps):
     model.fit_generator(generator=training_generator,
                         steps_per_epoch=steps_per_epoch,
-                        nb_epoch=config["n_epochs"],
+                        epochs=config["n_epochs"],
                         validation_data=testing_generator,
                         validation_steps=validation_steps,
                         pickle_safe=True,
