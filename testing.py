@@ -13,8 +13,8 @@ def get_prediction_labels(prediction, threshold=0.5):
     label_arrays = []
     for sample_number in range(n_samples):
         label_data = np.argmax(prediction[sample_number], axis=0) + 1
-        label_data[np.max(prediction) > threshold] = 0
-        label_arrays.append(label_data)
+        label_data[np.max(prediction[sample_number], axis=0) < threshold] = 0
+        label_arrays.append(np.array(label_data, dtype=np.uint8))
     return label_arrays
 
 
@@ -95,7 +95,7 @@ def run_test_case(test_index, out_dir, output_label_map=False, threshold=0.5):
     if isinstance(prediction, list):
         for i, image in enumerate(prediction_image):
             image.to_filename(os.path.join(out_dir, "prediction_{0}.nii.gz".format(i + 1)))
-        else:
-            prediction_image.to_filename(os.path.join(out_dir, "prediction.nii.gz"))
+    else:
+        prediction_image.to_filename(os.path.join(out_dir, "prediction.nii.gz"))
 
     data_file.close()
