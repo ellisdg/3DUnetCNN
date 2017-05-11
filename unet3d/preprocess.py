@@ -5,14 +5,14 @@ Correcting the bias requires that N4BiasFieldCorrection be installed!
 """
 
 
-import os
 import glob
+import os
 
 import SimpleITK as sitk
 import numpy as np
 from nipype.interfaces.ants import N4BiasFieldCorrection
 
-from config import config
+from unet3d.config import config
 
 
 def append_basename(in_file, append):

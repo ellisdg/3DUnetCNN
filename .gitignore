@@ -13,4 +13,3 @@ data.hdf5
 *.pyc
 *.json
 test_dir
-old_training.py

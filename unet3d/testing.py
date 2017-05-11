@@ -1,11 +1,12 @@
 import os
-import numpy as np
-import nibabel as nib
-import tables
 
-from utils.utils import pickle_load
-from config import config
+import nibabel as nib
+import numpy as np
+import tables
 from training import load_old_model
+
+from unet3d.config import config
+from unet3d.utils import pickle_load
 
 
 def get_prediction_labels(prediction, threshold=0.5):

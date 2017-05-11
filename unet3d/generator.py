@@ -3,8 +3,8 @@ from random import shuffle
 
 import numpy as np
 
-from utils.utils import pickle_dump, pickle_load
-from config import config
+from unet3d.config import config
+from unet3d.utils import pickle_dump, pickle_load
 
 
 def get_training_and_testing_generators(data_file, batch_size, data_split=0.8, overwrite=False,

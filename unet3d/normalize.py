@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 from nilearn.image import resample_img, reorder_img, new_img_like
 
-from utils.nilearn_custom_utils.nilearn_utils import crop_img, crop_img_to
+from unet3d.utils import crop_img, crop_img_to
 
 
 def find_downsized_info(subject_folders, input_shape):
@@ -57,13 +57,3 @@ def resize(image, new_shape, interpolation="continuous"):
     new_affine = np.copy(ras_image.affine)
     new_affine[:3, :3] = ras_image.affine[:3, :3] * np.diag(new_spacing)
     return resample_img(ras_image, target_affine=new_affine, target_shape=output_shape, interpolation=interpolation)
-
-
-def get_truth(batch, truth_channel=3):
-    truth = np.array(batch)[:, truth_channel]
-    batch_list = []
-    for sample_number in range(truth.shape[0]):
-        array = np.zeros(truth[sample_number].shape)
-        array[truth[sample_number] > 0] = 1
-        batch_list.append([array])
-    return np.array(batch_list)

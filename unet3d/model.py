@@ -9,7 +9,7 @@ try:
 except ImportError:
     from keras.layers.merge import concatenate
 
-from config import config
+from unet3d.config import config
 
 if config["deconvolution"]:
     from keras_contrib.layers import Deconvolution3D

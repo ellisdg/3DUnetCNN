@@ -3,14 +3,14 @@ import os
 from functools import partial
 
 import tables
+from generator import get_training_and_testing_generators, pickle_dump
 from keras import backend as K
 from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateScheduler
 from keras.models import load_model
 
-from generator import get_training_and_testing_generators, pickle_dump
-from config import config
-from model import unet_model_3d, dice_coef, dice_coef_loss
 from data import write_data_to_file
+from unet3d.config import config
+from unet3d.model import unet_model_3d, dice_coef, dice_coef_loss
 
 K.set_image_dim_ordering('th')
 

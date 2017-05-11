@@ -4,10 +4,10 @@ import os
 import nibabel as nib
 import numpy as np
 import tables
+from .normalize import find_downsized_info, normalize_data_storage, resize
 
-from normalize import find_downsized_info, normalize_data_storage, resize
-from utils.nilearn_custom_utils.nilearn_utils import crop_img_to
-from config import config
+from .config import config
+from .utils import crop_img_to
 
 
 def create_data_file(out_file, nb_channels, nb_samples, image_shape):
