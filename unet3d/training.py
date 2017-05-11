@@ -1,23 +1,19 @@
-import math
 import os
+import math
 from functools import partial
 
-import tables
-from generator import get_training_and_testing_generators, pickle_dump
 from keras import backend as K
 from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateScheduler
 from keras.models import load_model
 
-from data import write_data_to_file
-from unet3d.config import config
-from unet3d.model import unet_model_3d, dice_coef, dice_coef_loss
+from .generator import pickle_dump
+from .model import dice_coef, dice_coef_loss
 
 K.set_image_dim_ordering('th')
 
 
 # learning rate schedule
-def step_decay(epoch, initial_lrate=config["initial_learning_rate"], drop=config["learning_rate_drop"],
-               epochs_drop=config["decay_learning_rate_every_x_epochs"]):
+def step_decay(epoch, initial_lrate, drop, epochs_drop):
     return initial_lrate * math.pow(drop, math.floor((1+epoch)/float(epochs_drop)))
 
 
@@ -30,39 +26,15 @@ class SaveLossHistory(Callback):
         pickle_dump(self.losses, "loss_history.pkl")
 
 
-def get_callbacks(model_file):
+def get_callbacks(model_file, initial_learning_rate, learning_rate_drop, learning_rate_epochs, logging_dir="."):
     model_checkpoint = ModelCheckpoint(model_file, save_best_only=True)
-    logger = CSVLogger("training.log")
+    logger = CSVLogger(os.path.join(logging_dir, "training.log"))
     history = SaveLossHistory()
     scheduler = LearningRateScheduler(partial(step_decay,
-                                              initial_lrate=config["initial_learning_rate"],
-                                              drop=config["learning_rate_drop"],
-                                              epochs_drop=config["decay_learning_rate_every_x_epochs"]))
+                                              initial_lrate=initial_learning_rate,
+                                              drop=learning_rate_drop,
+                                              epochs_drop=learning_rate_epochs))
     return [model_checkpoint, logger, history, scheduler]
-
-
-def main(overwrite=False):
-    # convert input images into an hdf5 file
-    if overwrite or not os.path.exists(config["hdf5_file"]):
-        write_data_to_file(config["data_dir"],
-                           config["hdf5_file"],
-                           image_shape=config["image_shape"],
-                           nb_channels=config["nb_channels"])
-    hdf5_file_opened = tables.open_file(config["hdf5_file"], "r")
-
-    if not overwrite and os.path.exists(config["model_file"]):
-        model = load_old_model(config["model_file"])
-    else:
-        # instantiate new model
-        model = unet_model_3d()
-
-    # get training and testing generators
-    train_generator, test_generator, nb_train_samples, nb_test_samples = get_training_and_testing_generators(
-        hdf5_file_opened, batch_size=config["batch_size"], data_split=config["validation_split"], overwrite=overwrite)
-
-    # run training
-    train_model(model, config["model_file"], train_generator, test_generator, nb_train_samples, nb_test_samples)
-    hdf5_file_opened.close()
 
 
 def load_old_model(model_file):
@@ -72,16 +44,15 @@ def load_old_model(model_file):
                                       'dice_coef': dice_coef})
 
 
-def train_model(model, model_file, training_generator, testing_generator, steps_per_epoch, validation_steps):
+def train_model(model, model_file, training_generator, testing_generator, steps_per_epoch, validation_steps,
+                initial_learning_rate, learning_rate_drop, learning_rate_epochs, n_epochs):
     model.fit_generator(generator=training_generator,
                         steps_per_epoch=steps_per_epoch,
-                        epochs=config["n_epochs"],
+                        epochs=n_epochs,
                         validation_data=testing_generator,
                         validation_steps=validation_steps,
                         pickle_safe=True,
-                        callbacks=get_callbacks(model_file))
+                        callbacks=get_callbacks(model_file, initial_learning_rate=initial_learning_rate,
+                                                learning_rate_drop=learning_rate_drop,
+                                                learning_rate_epochs=learning_rate_epochs))
     model.save(model_file)
-
-
-if __name__ == "__main__":
-    main(overwrite=False)

@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 from nilearn.image import resample_img, reorder_img, new_img_like
 
-from unet3d.utils import crop_img, crop_img_to
+from .utils import crop_img, crop_img_to
 
 
 def find_downsized_info(subject_folders, input_shape):
