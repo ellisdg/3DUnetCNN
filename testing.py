@@ -13,8 +13,8 @@ def get_prediction_labels(prediction, threshold=0.5):
     label_arrays = []
     for sample_number in range(n_samples):
         label_data = np.argmax(prediction[sample_number], axis=0) + 1
-        label_data[np.max(prediction) > threshold] = 0
-        label_arrays.append(label_data)
+        label_data[np.max(prediction[sample_number], axis=0) < threshold] = 0
+        label_arrays.append(np.array(label_data, dtype=np.uint8))
     return label_arrays
 
 
@@ -39,7 +39,41 @@ def predict_from_data_file_and_write_image(model, open_data_file, index, out_fil
     image.to_filename(out_file)
 
 
-def run_test_case(test_index, out_dir):
+def prediction_to_image(prediction, affine, label_map=False, threshold=0.5):
+    if prediction.shape[1] == 1:
+        data = prediction[0, 0]
+        if label_map:
+            label_map_data = np.zeros(prediction[0, 0].shape, np.int8)
+            label_map_data[data > threshold] = 1
+            data = label_map_data
+    elif prediction.shape[1] > 1:
+        if label_map:
+            label_map_data = get_prediction_labels(prediction, threshold=threshold)
+            data = label_map_data[0]
+        else:
+            return multi_class_prediction(prediction, affine)
+    else:
+        raise RuntimeError("Invalid prediction array shape: {0}".format(prediction.shape))
+    return nib.Nifti1Image(data, affine)
+
+
+def multi_class_prediction(prediction, affine):
+    prediction_images = []
+    for i in range(prediction.shape[1]):
+        prediction_images.append(nib.Nifti1Image(prediction[0, i], affine))
+    return prediction_images
+
+
+def run_test_case(test_index, out_dir, output_label_map=False, threshold=0.5):
+    """
+    Runs a test case and writes predicted images to file.
+    :param test_index: Index from of the list of test cases to get an image prediction from.  
+    :param out_dir: Where to write prediction images.
+    :param output_label_map: If True, will write out a single image with one or more labels. Otherwise outputs
+    the (sigmoid) prediction values from the model.
+    :param threshold: If output_label_map is set to True, this threshold defines the value above which is 
+    considered a positive result and will be assigned a label.  
+    """
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
@@ -56,7 +90,12 @@ def run_test_case(test_index, out_dir):
     test_truth = nib.Nifti1Image(data_file.root.truth[data_index][0], affine)
     test_truth.to_filename(os.path.join(out_dir, "truth.nii.gz"))
 
-    prediction = predict_and_get_image(model, test_data, affine)
-    prediction.to_filename(os.path.join(out_dir, "prediction.nii.gz"))
+    prediction = model.predict(test_data)
+    prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold)
+    if isinstance(prediction_image, list):
+        for i, image in enumerate(prediction_image):
+            image.to_filename(os.path.join(out_dir, "prediction_{0}.nii.gz".format(i + 1)))
+    else:
+        prediction_image.to_filename(os.path.join(out_dir, "prediction.nii.gz"))
 
     data_file.close()
