@@ -92,7 +92,7 @@ def run_test_case(test_index, out_dir, output_label_map=False, threshold=0.5):
 
     prediction = model.predict(test_data)
     prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold)
-    if isinstance(prediction, list):
+    if isinstance(prediction_image, list):
         for i, image in enumerate(prediction_image):
             image.to_filename(os.path.join(out_dir, "prediction_{0}.nii.gz".format(i + 1)))
     else:
