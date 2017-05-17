@@ -4,7 +4,7 @@
 *.zip
 data
 .ipynb_checkpoints
-models
+brats/models
 *.pkl
 data.hdf5
 *.log
@@ -13,4 +13,3 @@ data.hdf5
 *.pyc
 *.json
 test_dir
-old_training.py

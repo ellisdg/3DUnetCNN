@@ -1,11 +1,11 @@
 import os
-import numpy as np
+
 import nibabel as nib
+import numpy as np
 import tables
 
-from utils.utils import pickle_load
-from config import config
-from training import load_old_model
+from .training import load_old_model
+from .utils import pickle_load
 
 
 def get_prediction_labels(prediction, threshold=0.5):
@@ -18,8 +18,8 @@ def get_prediction_labels(prediction, threshold=0.5):
     return label_arrays
 
 
-def get_test_indices():
-    return pickle_load(config["testing_file"])
+def get_test_indices(testing_file):
+    return pickle_load(testing_file)
 
 
 def predict_from_data_file(model, open_data_file, index):
@@ -64,7 +64,8 @@ def multi_class_prediction(prediction, affine):
     return prediction_images
 
 
-def run_test_case(test_index, out_dir, output_label_map=False, threshold=0.5):
+def run_test_case(test_index, out_dir, model_file, hdf5_file, testing_file, training_modalities, output_label_map=False,
+                  threshold=0.5):
     """
     Runs a test case and writes predicted images to file.
     :param test_index: Index from of the list of test cases to get an image prediction from.  
@@ -77,13 +78,13 @@ def run_test_case(test_index, out_dir, output_label_map=False, threshold=0.5):
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    model = load_old_model(config["model_file"])
+    model = load_old_model(model_file)
 
-    data_file = tables.open_file(config["hdf5_file"], "r")
-    data_index = get_test_indices()[test_index]
+    data_file = tables.open_file(hdf5_file, "r")
+    data_index = get_test_indices(testing_file)[test_index]
     affine = data_file.root.affine
     test_data = np.asarray([data_file.root.data[data_index]])
-    for i, modality in enumerate(config["training_modalities"]):
+    for i, modality in enumerate(training_modalities):
         image = nib.Nifti1Image(test_data[0, i], affine)
         image.to_filename(os.path.join(out_dir, "data_{0}.nii.gz".format(modality)))
 
