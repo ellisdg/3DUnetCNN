@@ -6,16 +6,31 @@ import numpy as np
 from .utils import pickle_dump, pickle_load
 
 
-def get_training_and_testing_generators(data_file, batch_size, n_labels, training_file, testing_file, data_split=0.8,
-                                        overwrite=False):
-    training_list, testing_list = get_validation_split(data_file, data_split=data_split, overwrite=overwrite,
-                                                       training_file=training_file, testing_file=testing_file)
+def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
+                                           data_split=0.8, overwrite=False):
+    """
+    Creates the training and validation generators that can be used when training the model.
+    :param data_file: hdf5 file to load the data from.
+    :param batch_size: Size of the batches that the training generator will provide.
+    :param n_labels: Number of binary labels.
+    :param training_keys_file: Pickle file where the index locations of the training data will be stored.
+    :param validation_keys_file: Pickle file where the index locations of the validation data will be stored.
+    :param data_split: How the training and validation data will be split. 0 means all the data will be used for
+    validation and none of it will be used for training. 1 means that all the data will be used for training and none
+    will be used for validation. Default is 0.8 or 80%.
+    :param overwrite: If set to True, previous files will be overwritten. The default mode is false, so that the
+    training and validation splits won't be overwritten when rerunning model training.
+    :return: Training data generator, validation data generator, number of training steps, number of validation steps
+    """
+    training_list, validation_list = get_validation_split(data_file, data_split=data_split, overwrite=overwrite,
+                                                          training_file=training_keys_file,
+                                                          testing_file=validation_keys_file)
     training_generator = data_generator(data_file, training_list, batch_size=batch_size, n_labels=n_labels)
-    testing_generator = data_generator(data_file, testing_list, batch_size=batch_size, n_labels=n_labels)
+    validation_generator = data_generator(data_file, validation_list, batch_size=1, n_labels=n_labels)
     # Set the number of training and testing samples per epoch correctly
     num_training_steps = len(training_list)//batch_size
-    num_validation_steps = len(testing_list)//batch_size
-    return training_generator, testing_generator, num_training_steps, num_validation_steps
+    num_validation_steps = len(validation_list)
+    return training_generator, validation_generator, num_training_steps, num_validation_steps
 
 
 def get_validation_split(data_file, training_file, testing_file, data_split=0.8, overwrite=False):

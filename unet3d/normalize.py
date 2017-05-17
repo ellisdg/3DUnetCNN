@@ -1,5 +1,3 @@
-import os
-
 import nibabel as nib
 import numpy as np
 from nilearn.image import resample_img, reorder_img, new_img_like
@@ -7,26 +5,36 @@ from nilearn.image import resample_img, reorder_img, new_img_like
 from .utils import crop_img, crop_img_to
 
 
-def find_downsized_info(subject_folders, input_shape):
-    foreground = get_complete_foreground(subject_folders)
+def find_downsized_info(training_data_files, input_shape):
+    foreground = get_complete_foreground(training_data_files)
     crop_slices = crop_img(foreground, return_slices=True, copy=True)
     cropped = crop_img_to(foreground, crop_slices, copy=True)
     final_image = resize(cropped, new_shape=input_shape, interpolation="nearest")
     return crop_slices, final_image.affine, final_image.header
 
 
-def get_complete_foreground(subject_folders):
-    for i, subject_folder in enumerate(subject_folders):
-        background_path = os.path.join(subject_folder, "background.nii.gz")
-        image = nib.load(background_path)
-        image_foreground = image.get_data() == 0
+def get_complete_foreground(training_data_files):
+    for i, set_of_files in enumerate(training_data_files):
+        subject_foreground = get_foreground_from_set_of_files(set_of_files)
         if i == 0:
-            foreground = image_foreground
-            reference_image = image
+            foreground = subject_foreground
         else:
-            foreground[image_foreground] = 1
+            foreground[subject_foreground > 0] = 1
 
-    return new_img_like(reference_image, foreground)
+    return new_img_like(nib.load(training_data_files[0][-1]), foreground)
+
+
+def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance=0.00001):
+    for i, image_file in enumerate(set_of_files):
+        image = nib.load(image_file)
+        is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
+                                      image.get_data() > (background_value + tolerance))
+        if i == 0:
+            foreground = np.zeros(is_foreground.shape, dtype=np.uint8)
+
+        foreground[is_foreground] = 1
+
+    return foreground
 
 
 def normalize_data(data, mean, std):

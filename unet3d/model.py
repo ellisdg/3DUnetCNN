@@ -10,8 +10,20 @@ except ImportError:
     from keras.layers.merge import concatenate
 
 
-def unet_model_3d(input_shape, downsize_filters_factor, pool_size, n_labels, initial_learning_rate,
-                  deconvolution=False):
+def unet_model_3d(input_shape, downsize_filters_factor=1, pool_size=(2, 2, 2), n_labels=1,
+                  initial_learning_rate=0.00001, deconvolution=False):
+    """
+    Builds the 3D UNet Keras model.
+    :param input_shape: Shape of the input data (n_chanels, x_size, y_size, z_size). 
+    :param downsize_filters_factor: Factor to which to reduce the number of filters. Making this value larger will
+    reduce the amount of memory the model will need during training.
+    :param pool_size: Pool size for the max pooling operations.
+    :param n_labels: Number of binary labels that the model is learning.
+    :param initial_learning_rate: Initial learning rate for the model. This will be decayed during training.
+    :param deconvolution: If set to True, will use transpose convolution(deconvolution) instead of upsamping. This
+    increases the amount memory required during training.
+    :return: Untrained 3D UNet Model
+    """
     inputs = Input(input_shape)
     conv1 = Conv3D(int(32/downsize_filters_factor), (3, 3, 3), activation='relu',
                    padding='same')(inputs)

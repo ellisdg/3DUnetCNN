@@ -4,7 +4,7 @@
 *.zip
 data
 .ipynb_checkpoints
-models
+brats/models
 *.pkl
 data.hdf5
 *.log
