@@ -7,7 +7,7 @@ welcome!
 
 The code was written to be trained using the 
 [BRATS](https://sites.google.com/site/braintumorsegmentation/home/brats2015) data set for brain tumors, but it can
-be easily modify to be used in other 3D applications. To adapt the network, you might have to play with the input size
+be easily modified to be used in other 3D applications. To adapt the network, you might have to play with the input size
 to get something that works for your data.
 
 I used [Bohdan Pavlyshenko](https://www.kaggle.com/bpavlyshenko)'s 
