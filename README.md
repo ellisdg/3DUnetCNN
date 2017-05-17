@@ -40,6 +40,8 @@ Where ```config["data_dir"]``` is the location where the raw BRATS data will be 
 
 4. Run the training:
 ```
+$ cd ..
+$ export PYTHONPATH=${PWD}:$PYTHONPATH
 $ python brats/train.py
 ```
 
