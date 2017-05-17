@@ -44,14 +44,14 @@ def load_old_model(model_file):
                                       'dice_coef': dice_coef})
 
 
-def train_model(model, model_file, training_generator, testing_generator, steps_per_epoch, validation_steps,
+def train_model(model, model_file, training_generator, validation_generator, steps_per_epoch, validation_steps,
                 initial_learning_rate, learning_rate_drop, learning_rate_epochs, n_epochs):
     """
     Train a Keras model.
     :param model: Keras model that will be trained. 
     :param model_file: Where to save the Keras model.
     :param training_generator: Generator that iterates through the training data.
-    :param testing_generator: Generator that iterates through the validation data.
+    :param validation_generator: Generator that iterates through the validation data.
     :param steps_per_epoch: Number of batches that the training generator will provide during a given epoch.
     :param validation_steps: Number of batches that the validation generator will provide during a given epoch.
     :param initial_learning_rate: Learning rate at the beginning of training.
@@ -63,7 +63,7 @@ def train_model(model, model_file, training_generator, testing_generator, steps_
     model.fit_generator(generator=training_generator,
                         steps_per_epoch=steps_per_epoch,
                         epochs=n_epochs,
-                        validation_data=testing_generator,
+                        validation_data=validation_generator,
                         validation_steps=validation_steps,
                         pickle_safe=True,
                         callbacks=get_callbacks(model_file, initial_learning_rate=initial_learning_rate,
