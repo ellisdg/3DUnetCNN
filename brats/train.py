@@ -25,8 +25,7 @@ def main(overwrite=False):
     if overwrite or not os.path.exists(config["hdf5_file"]):
         training_files = fetch_training_data_files()
 
-        write_data_to_file(training_files,
-                           config["hdf5_file"], image_shape=config["image_shape"])
+        write_data_to_file(training_files, config["hdf5_file"], image_shape=config["image_shape"])
     hdf5_file_opened = tables.open_file(config["hdf5_file"], "r")
 
     if not overwrite and os.path.exists(config["model_file"]):
@@ -39,15 +38,16 @@ def main(overwrite=False):
                               initial_learning_rate=config["initial_learning_rate"])
 
     # get training and testing generators
-    train_generator, test_generator, nb_train_samples, nb_test_samples = get_training_and_validation_generators(
+    train_generator, validation_generator, nb_train_samples, nb_test_samples = get_training_and_validation_generators(
         hdf5_file_opened, batch_size=config["batch_size"], data_split=config["validation_split"], overwrite=overwrite,
-        validation_keys_file=config["testing_file"], training_keys_file=config["training_file"],
+        validation_keys_file=config["validation_file"], training_keys_file=config["training_file"],
         n_labels=config["n_labels"])
 
     # run training
     train_model(model=model, model_file=config["model_file"], training_generator=train_generator,
-                testing_generator=test_generator, steps_per_epoch=nb_train_samples, validation_steps=nb_test_samples,
-                initial_learning_rate=config["initial_learning_rate"], learning_rate_drop=config["learning_rate_drop"],
+                validation_generator=validation_generator, steps_per_epoch=nb_train_samples,
+                validation_steps=nb_test_samples, initial_learning_rate=config["initial_learning_rate"],
+                learning_rate_drop=config["learning_rate_drop"],
                 learning_rate_epochs=config["decay_learning_rate_every_x_epochs"], n_epochs=config["n_epochs"])
     hdf5_file_opened.close()
 
