@@ -21,8 +21,8 @@ nibabel,
 keras,
 pytables,
 nilearn
-3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add it to the PATH environmental
-variable.
+3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add the location of the ANTs 
+binaries to the PATH environmental variable.
 4. Convert the data to nifti format and perform image wise normalization and correction:
 ```
 $ cd brats
