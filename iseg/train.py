@@ -48,7 +48,7 @@ def main():
     train_generator, validation_generator, nb_train_samples, nb_test_samples = get_training_and_validation_generators(
         hdf5_file_opened, batch_size=config["batch_size"], data_split=config["validation_split"],
         validation_keys_file=config["validation_file"], training_keys_file=config["training_file"],
-        n_labels=config["n_labels"], labels=config["labels"])
+        n_labels=config["n_labels"], labels=config["labels"], augment=True)
 
     # run training
     train_model(model=model, model_file=config["model_file"], training_generator=train_generator,

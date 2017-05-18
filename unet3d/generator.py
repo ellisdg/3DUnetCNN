@@ -4,10 +4,11 @@ from random import shuffle
 import numpy as np
 
 from .utils import pickle_dump, pickle_load
+from .augment import augment_data
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
-                                           data_split=0.8, overwrite=False, labels=None):
+                                           data_split=0.8, overwrite=False, labels=None, augment=False):
     """
     Creates the training and validation generators that can be used when training the model.
     :param labels: List or tuple containing the ordered label values in the image files. The length of the list or tuple
@@ -30,7 +31,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                           training_file=training_keys_file,
                                                           testing_file=validation_keys_file)
     training_generator = data_generator(data_file, training_list, batch_size=batch_size, n_labels=n_labels,
-                                        labels=labels)
+                                        labels=labels, augment=augment)
     validation_generator = data_generator(data_file, validation_list, batch_size=1, n_labels=n_labels)
     # Set the number of training and testing samples per epoch correctly
     num_training_steps = len(training_list)//batch_size
@@ -61,18 +62,27 @@ def split_list(input_list, split=0.8, shuffle_list=True):
     return training, testing
 
 
-def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None):
-    x_list = list()
-    y_list = list()
+def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False):
     while True:
+        x_list = list()
+        y_list = list()
         shuffle(index_list)
         for index in index_list:
-            x_list.append(data_file.root.data[index])
-            y_list.append(data_file.root.truth[index])
+            add_data(x_list, y_list, data_file, index, augment=augment)
             if len(x_list) == batch_size:
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
+
+
+def add_data(x_list, y_list, data_file, index, augment=False):
+    data = data_file.root.data[index]
+    truth = data_file.root.truth[index, 0]
+    if augment:
+        data, truth = augment_data(data, truth, data_file.root.affine)
+
+    x_list.append(data)
+    y_list.append([truth])
 
 
 def convert_data(x_list, y_list, n_labels=1, labels=None):

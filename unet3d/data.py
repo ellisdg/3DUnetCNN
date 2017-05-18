@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import tables
+import nibabel as nib
 
 from unet3d.utils.utils import read_image_files
 from .normalize import find_downsized_info, normalize_data_storage
