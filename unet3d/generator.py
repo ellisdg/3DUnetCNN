@@ -11,6 +11,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                            data_split=0.8, overwrite=False, labels=None, augment=False):
     """
     Creates the training and validation generators that can be used when training the model.
+    :param augment: If True, training data will be distorted on the fly so as to avoid over-fitting.
     :param labels: List or tuple containing the ordered label values in the image files. The length of the list or tuple
     should be equal to the n_labels value.
     Example: (10, 25, 50)
@@ -32,7 +33,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                           testing_file=validation_keys_file)
     training_generator = data_generator(data_file, training_list, batch_size=batch_size, n_labels=n_labels,
                                         labels=labels, augment=augment)
-    validation_generator = data_generator(data_file, validation_list, batch_size=1, n_labels=n_labels)
+    validation_generator = data_generator(data_file, validation_list, batch_size=1, n_labels=n_labels, labels=labels)
     # Set the number of training and testing samples per epoch correctly
     num_training_steps = len(training_list)//batch_size
     num_validation_steps = len(validation_list)
