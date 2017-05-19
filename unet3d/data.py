@@ -1,11 +1,11 @@
 import os
 
-import nibabel as nib
 import numpy as np
 import tables
+import nibabel as nib
 
-from .normalize import find_downsized_info, normalize_data_storage, resize
-from .utils import crop_img_to
+from unet3d.utils.utils import read_image_files
+from .normalize import find_downsized_info, normalize_data_storage
 
 
 def create_data_file(out_file, nb_channels, nb_samples, image_shape):
@@ -42,7 +42,7 @@ def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=n
     :return: Location of the hdf5 file with the image data written to it. 
     """
     n_samples = len(training_data_files)
-    n_channels = len(training_data_files[0])
+    n_channels = len(training_data_files[0]) - 1
 
     try:
         hdf5_file, data_storage, truth_storage = create_data_file(out_file, nb_channels=n_channels,
@@ -59,22 +59,3 @@ def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=n
     normalize_data_storage(data_storage)
     hdf5_file.close()
     return out_file
-
-
-def get_affine(in_file):
-    return nib.load(in_file).affine
-
-
-def read_image_files(image_files, image_shape, crop=None):
-    data_list = list()
-    for image_file in image_files:
-        data_list.append(read_image(image_file, image_shape=image_shape, crop=crop).get_data())
-    return np.stack(data_list)
-
-
-def read_image(in_file, image_shape, interpolation='continuous', crop=None):
-    print("Reading: {0}".format(in_file))
-    image = nib.load(in_file)
-    if crop:
-        image = crop_img_to(image, crop, copy=True)
-    return resize(image, new_shape=image_shape, interpolation=interpolation)

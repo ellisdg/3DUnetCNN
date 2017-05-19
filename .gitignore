@@ -2,7 +2,8 @@
 *.nii
 .idea
 *.zip
-data
+HGG/
+LGG/
 .ipynb_checkpoints
 brats/models
 *.pkl
@@ -13,3 +14,5 @@ data.hdf5
 *.pyc
 *.json
 test_dir
+*.hdr
+*.img

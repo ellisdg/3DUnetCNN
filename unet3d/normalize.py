@@ -1,8 +1,8 @@
-import nibabel as nib
 import numpy as np
-from nilearn.image import resample_img, reorder_img, new_img_like
+from nilearn.image import new_img_like
 
-from .utils import crop_img, crop_img_to
+from unet3d.utils.utils import resize
+from .utils import crop_img, crop_img_to, read_image
 
 
 def find_downsized_info(training_data_files, input_shape):
@@ -21,12 +21,12 @@ def get_complete_foreground(training_data_files):
         else:
             foreground[subject_foreground > 0] = 1
 
-    return new_img_like(nib.load(training_data_files[0][-1]), foreground)
+    return new_img_like(read_image(training_data_files[0][-1]), foreground)
 
 
 def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance=0.00001):
     for i, image_file in enumerate(set_of_files):
-        image = nib.load(image_file)
+        image = read_image(image_file)
         is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
                                       image.get_data() > (background_value + tolerance))
         if i == 0:
@@ -57,11 +57,3 @@ def normalize_data_storage(data_storage):
     return data_storage
 
 
-def resize(image, new_shape, interpolation="continuous"):
-    input_shape = np.asarray(image.shape, dtype=np.float16)
-    ras_image = reorder_img(image, resample=interpolation)
-    output_shape = np.asarray(new_shape)
-    new_spacing = input_shape/output_shape
-    new_affine = np.copy(ras_image.affine)
-    new_affine[:3, :3] = ras_image.affine[:3, :3] * np.diag(new_spacing)
-    return resample_img(ras_image, target_affine=new_affine, target_shape=output_shape, interpolation=interpolation)

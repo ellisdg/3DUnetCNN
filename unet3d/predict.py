@@ -8,12 +8,15 @@ from .training import load_old_model
 from .utils import pickle_load
 
 
-def get_prediction_labels(prediction, threshold=0.5):
+def get_prediction_labels(prediction, threshold=0.5, labels=None):
     n_samples = prediction.shape[0]
     label_arrays = []
     for sample_number in range(n_samples):
         label_data = np.argmax(prediction[sample_number], axis=0) + 1
         label_data[np.max(prediction[sample_number], axis=0) < threshold] = 0
+        if labels:
+            for value in np.unique(label_data).tolist()[1:]:
+                label_data[label_data == value] = labels[value - 1]
         label_arrays.append(np.array(label_data, dtype=np.uint8))
     return label_arrays
 
@@ -39,16 +42,20 @@ def predict_from_data_file_and_write_image(model, open_data_file, index, out_fil
     image.to_filename(out_file)
 
 
-def prediction_to_image(prediction, affine, label_map=False, threshold=0.5):
+def prediction_to_image(prediction, affine, label_map=False, threshold=0.5, labels=None):
     if prediction.shape[1] == 1:
         data = prediction[0, 0]
         if label_map:
             label_map_data = np.zeros(prediction[0, 0].shape, np.int8)
-            label_map_data[data > threshold] = 1
+            if labels:
+                label = labels[0]
+            else:
+                label = 1
+            label_map_data[data > threshold] = label
             data = label_map_data
     elif prediction.shape[1] > 1:
         if label_map:
-            label_map_data = get_prediction_labels(prediction, threshold=threshold)
+            label_map_data = get_prediction_labels(prediction, threshold=threshold, labels=labels)
             data = label_map_data[0]
         else:
             return multi_class_prediction(prediction, affine)
@@ -64,8 +71,8 @@ def multi_class_prediction(prediction, affine):
     return prediction_images
 
 
-def run_test_case(test_index, out_dir, model_file, hdf5_file, testing_file, training_modalities, output_label_map=False,
-                  threshold=0.5):
+def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_keys_file, training_modalities,
+                        output_label_map=False, threshold=0.5, labels=None):
     """
     Runs a test case and writes predicted images to file.
     :param test_index: Index from of the list of test cases to get an image prediction from.  
@@ -81,7 +88,7 @@ def run_test_case(test_index, out_dir, model_file, hdf5_file, testing_file, trai
     model = load_old_model(model_file)
 
     data_file = tables.open_file(hdf5_file, "r")
-    data_index = get_test_indices(testing_file)[test_index]
+    data_index = get_test_indices(validation_keys_file)[test_index]
     affine = data_file.root.affine
     test_data = np.asarray([data_file.root.data[data_index]])
     for i, modality in enumerate(training_modalities):
@@ -92,7 +99,8 @@ def run_test_case(test_index, out_dir, model_file, hdf5_file, testing_file, trai
     test_truth.to_filename(os.path.join(out_dir, "truth.nii.gz"))
 
     prediction = model.predict(test_data)
-    prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold)
+    prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold,
+                                           labels=labels)
     if isinstance(prediction_image, list):
         for i, image in enumerate(prediction_image):
             image.to_filename(os.path.join(out_dir, "prediction_{0}.nii.gz".format(i + 1)))
