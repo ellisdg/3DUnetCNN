@@ -39,9 +39,13 @@ def get_callbacks(model_file, initial_learning_rate, learning_rate_drop, learnin
 
 def load_old_model(model_file):
     print("Loading pre-trained model")
-    return load_model(model_file,
-                      custom_objects={'dice_coef_loss': dice_coef_loss,
-                                      'dice_coef': dice_coef})
+    custom_objects = {'dice_coef_loss': dice_coef_loss, 'dice_coef': dice_coef}
+    try:
+        from keras_contrib.layers import Deconvolution3D
+        custom_objects["Deconvolution3D"] = Deconvolution3D
+    except ImportError:
+        print("Could not import Deconvolution3D. To use Deconvolution3D install keras-contrib.")
+    return load_model(model_file, custom_objects=custom_objects)
 
 
 def train_model(model, model_file, training_generator, validation_generator, steps_per_epoch, validation_steps,
