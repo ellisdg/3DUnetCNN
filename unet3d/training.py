@@ -73,4 +73,3 @@ def train_model(model, model_file, training_generator, validation_generator, ste
                         callbacks=get_callbacks(model_file, initial_learning_rate=initial_learning_rate,
                                                 learning_rate_drop=learning_rate_drop,
                                                 learning_rate_epochs=learning_rate_epochs))
-    model.save(model_file)

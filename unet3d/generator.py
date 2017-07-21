@@ -8,9 +8,14 @@ from .augment import augment_data
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
-                                           data_split=0.8, overwrite=False, labels=None, augment=False):
+                                           data_split=0.8, overwrite=False, labels=None, augment=False,
+                                           augment_flip=True, augment_distortion_factor=0.25):
     """
     Creates the training and validation generators that can be used when training the model.
+    :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
+    :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
+    that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
+    augmentation from distorting the data in this way.
     :param augment: If True, training data will be distorted on the fly so as to avoid over-fitting.
     :param labels: List or tuple containing the ordered label values in the image files. The length of the list or tuple
     should be equal to the n_labels value.
@@ -32,8 +37,10 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                           training_file=training_keys_file,
                                                           testing_file=validation_keys_file)
     training_generator = data_generator(data_file, training_list, batch_size=batch_size, n_labels=n_labels,
-                                        labels=labels, augment=augment)
-    validation_generator = data_generator(data_file, validation_list, batch_size=1, n_labels=n_labels, labels=labels)
+                                        labels=labels, augment=augment, augment_flip=augment_flip,
+                                        augment_distortion_factor=augment_distortion_factor)
+    validation_generator = data_generator(data_file, validation_list, batch_size=batch_size, n_labels=n_labels,
+                                          labels=labels)
     # Set the number of training and testing samples per epoch correctly
     num_training_steps = len(training_list)//batch_size
     num_validation_steps = len(validation_list)
@@ -63,24 +70,42 @@ def split_list(input_list, split=0.8, shuffle_list=True):
     return training, testing
 
 
-def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False):
+def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
+                   augment_distortion_factor=0.25):
     while True:
         x_list = list()
         y_list = list()
         shuffle(index_list)
         for index in index_list:
-            add_data(x_list, y_list, data_file, index, augment=augment)
+            add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
+                     augment_distortion_factor=augment_distortion_factor)
             if len(x_list) == batch_size:
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
 
 
-def add_data(x_list, y_list, data_file, index, augment=False):
+def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
+             augment_distortion_factor=0.25):
+    """
+    Adds data from the data file to the given lists of feature and target data
+    :param x_list: list of data to which data from the data_file will be appended.
+    :param y_list: list of data to which the target data from the data_file will be appended.
+    :param data_file: hdf5 data file.
+    :param index: index of the data file from which to extract the data.
+    :param augment: if True, data will be augmented according to the other augmentation parameters (augment_flip and
+    augment_distortion_factor)
+    :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
+    :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
+    that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
+    augmentation from distorting the data in this way.
+    :return:
+    """
     data = data_file.root.data[index]
     truth = data_file.root.truth[index, 0]
     if augment:
-        data, truth = augment_data(data, truth, data_file.root.affine)
+        data, truth = augment_data(data, truth, data_file.root.affine, flip=augment_flip,
+                                   scale_deviation=augment_distortion_factor)
 
     x_list.append(data)
     y_list.append([truth])
