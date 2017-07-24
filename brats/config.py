@@ -25,4 +25,3 @@ config["truth_channel"] = config["nb_channels"]
 config["background_channel"] = config["nb_channels"] + 1
 config["deconvolution"] = False  # use deconvolution instead of up-sampling. Requires keras-contrib.
 # divide the number of filters used by by a given factor. This will reduce memory consumption.
-config["downsize_nb_filters_factor"] = 1

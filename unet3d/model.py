@@ -4,65 +4,60 @@ from keras.engine import Input, Model
 from keras.layers import Conv3D, MaxPooling3D, UpSampling3D, Activation
 from keras.optimizers import Adam
 
+K.set_image_data_format("channels_first")
+
 try:
     from keras.engine import merge
 except ImportError:
     from keras.layers.merge import concatenate
 
 
-def unet_model_3d(input_shape, downsize_filters_factor=1, pool_size=(2, 2, 2), n_labels=1,
-                  initial_learning_rate=0.00001, deconvolution=False):
+def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
+                  depth=4, n_base_filters=32):
     """
     Builds the 3D UNet Keras model.
-    :param input_shape: Shape of the input data (n_chanels, x_size, y_size, z_size). 
-    :param downsize_filters_factor: Factor to which to reduce the number of filters. Making this value larger will
-    reduce the amount of memory the model will need during training.
+    :param n_base_filters: The number of filters that the first layer in the convolution network will have. Following
+    layers will contain a multiple of this number. Lowering this number will likely reduce the amount of memory required
+    to train the model.
+    :param depth: indicates the depth of the U-shape for the model. The greater the depth, the more max pooling
+    layers will be added to the model. Lowering the depth may reduce the amount of memory required for training.
+    :param input_shape: Shape of the input data (n_chanels, x_size, y_size, z_size). The x, y, and z sizes must be
+    divisible by the pool size to the power of the depth of the UNet, that is pool_size^depth.
     :param pool_size: Pool size for the max pooling operations.
     :param n_labels: Number of binary labels that the model is learning.
     :param initial_learning_rate: Initial learning rate for the model. This will be decayed during training.
-    :param deconvolution: If set to True, will use transpose convolution(deconvolution) instead of upsamping. This
+    :param deconvolution: If set to True, will use transpose convolution(deconvolution) instead of up-sampling. This
     increases the amount memory required during training.
     :return: Untrained 3D UNet Model
     """
     inputs = Input(input_shape)
-    conv1 = Conv3D(int(32/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(inputs)
-    conv1 = Conv3D(int(64/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(conv1)
-    pool1 = MaxPooling3D(pool_size=pool_size)(conv1)
+    current_layer = inputs
+    levels = list()
 
-    conv2 = Conv3D(int(64/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(pool1)
-    conv2 = Conv3D(int(128/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(conv2)
-    pool2 = MaxPooling3D(pool_size=pool_size)(conv2)
+    # add levels with max pooling
+    for layer_number in range(depth):
+        layer1 = Conv3D(n_base_filters*(2**layer_number), (3, 3, 3), activation='relu', padding='same')(current_layer)
+        layer2 = Conv3D(n_base_filters*(2**layer_number)*2, (3, 3, 3), activation='relu', padding='same')(layer1)
+        current_layer = MaxPooling3D(pool_size=pool_size)(layer2)
+        levels.append([layer1, layer2, current_layer])
 
-    conv3 = Conv3D(int(128/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(pool2)
-    conv3 = Conv3D(int(256/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(conv3)
-    pool3 = MaxPooling3D(pool_size=pool_size)(conv3)
+    # add levels with up-convolution or up-sampling
+    for layer_number in range(depth-2, -1, -1):
+        up_convolution = get_up_convolution(pool_size=pool_size, deconvolution=deconvolution, depth=layer_number+1,
+                                            n_filters=current_layer._keras_shape[1],
+                                            image_shape=input_shape[-3:])(current_layer)
+        concat = concatenate([up_convolution, levels[layer_number][-1]], axis=1)
+        current_layer = Conv3D(levels[layer_number][1]._keras_shape[1], (3, 3, 3), activation='relu',
+                               padding='same')(concat)
+        current_layer = Conv3D(levels[layer_number][1]._keras_shape[1], (3, 3, 3), activation='relu',
+                               padding='same')(current_layer)
 
-    conv4 = Conv3D(int(256/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(pool3)
-    conv4 = Conv3D(int(512/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(conv4)
-
-    up5 = get_upconv(pool_size=pool_size, deconvolution=deconvolution, depth=2,
-                     nb_filters=int(512/downsize_filters_factor), image_shape=input_shape[-3:])(conv4)
-    up5 = concatenate([up5, conv3], axis=1)
-    conv5 = Conv3D(int(256/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(up5)
-    conv5 = Conv3D(int(256/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(conv5)
-
-    up6 = get_upconv(pool_size=pool_size, deconvolution=deconvolution, depth=1,
-                     nb_filters=int(256/downsize_filters_factor), image_shape=input_shape[-3:])(conv5)
-    up6 = concatenate([up6, conv2], axis=1)
-    conv6 = Conv3D(int(128/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(up6)
-    conv6 = Conv3D(int(128/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(conv6)
-
-    up7 = get_upconv(pool_size=pool_size, deconvolution=deconvolution, depth=0,
-                     nb_filters=int(128/downsize_filters_factor), image_shape=input_shape[-3:])(conv6)
-    up7 = concatenate([up7, conv1], axis=1)
-    conv7 = Conv3D(int(64/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(up7)
-    conv7 = Conv3D(int(64/downsize_filters_factor), (3, 3, 3), activation='relu', padding='same')(conv7)
-
-    conv8 = Conv3D(n_labels, (1, 1, 1))(conv7)
-    act = Activation('sigmoid')(conv8)
+    final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
+    act = Activation('sigmoid')(final_convolution)
     model = Model(inputs=inputs, outputs=act)
 
-    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss, metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss, metrics=[dice_coef,
+                                                                                          label_wise_dice_coefficient])
 
     return model
 
@@ -78,36 +73,38 @@ def dice_coef_loss(y_true, y_pred):
     return -dice_coef(y_true, y_pred)
 
 
-def compute_level_output_shape(filters, depth, pool_size, image_shape):
+def label_wise_dice_coefficient(y_true, y_pred):
+    return [dice_coef(y_true[:, index], y_pred[:, index]) for index in range(y_pred.shape[1])]
+
+
+def compute_level_output_shape(n_filters, depth, pool_size, image_shape):
     """
     Each level has a particular output shape based on the number of filters used in that level and the depth or number 
     of max pooling operations that have been done on the data at that point.
     :param image_shape: shape of the 3d image.
     :param pool_size: the pool_size parameter used in the max pooling operation.
-    :param filters: Number of filters used by the last node in a given level.
+    :param n_filters: Number of filters used by the last node in a given level.
     :param depth: The number of levels down in the U-shaped model a given node is.
     :return: 5D vector of the shape of the output node 
     """
-    if depth != 0:
-        output_image_shape = np.divide(image_shape, np.multiply(pool_size, depth)).tolist()
-    else:
-        output_image_shape = image_shape
-    return tuple([None, filters] + [int(x) for x in output_image_shape])
+    output_image_shape = np.asarray(np.divide(image_shape, np.power(pool_size, depth)), dtype=np.int32).tolist()
+    return tuple([None, n_filters] + output_image_shape)
 
 
-def get_upconv(depth, nb_filters, pool_size, image_shape, kernel_size=(2, 2, 2), strides=(2, 2, 2),
-               deconvolution=False):
+def get_up_convolution(depth, n_filters, pool_size, image_shape, kernel_size=(2, 2, 2), strides=(2, 2, 2),
+                       deconvolution=False):
     if deconvolution:
         try:
             from keras_contrib.layers import Deconvolution3D
         except ImportError:
-            raise ImportError("Install keras_contrib in order to use deconvolution. Otherwise set deconvolution=False.")
+            raise ImportError("Install keras_contrib in order to use deconvolution. Otherwise set deconvolution=False."
+                              "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
 
-        return Deconvolution3D(filters=nb_filters, kernel_size=kernel_size,
-                               output_shape=compute_level_output_shape(filters=nb_filters, depth=depth,
+        return Deconvolution3D(filters=n_filters, kernel_size=kernel_size,
+                               output_shape=compute_level_output_shape(n_filters=n_filters, depth=depth,
                                                                        pool_size=pool_size, image_shape=image_shape),
-                               strides=strides, input_shape=compute_level_output_shape(filters=nb_filters,
-                                                                                       depth=depth+1,
+                               strides=strides, input_shape=compute_level_output_shape(n_filters=n_filters,
+                                                                                       depth=depth,
                                                                                        pool_size=pool_size,
                                                                                        image_shape=image_shape))
     else:

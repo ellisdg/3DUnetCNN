@@ -39,7 +39,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     training_generator = data_generator(data_file, training_list, batch_size=batch_size, n_labels=n_labels,
                                         labels=labels, augment=augment, augment_flip=augment_flip,
                                         augment_distortion_factor=augment_distortion_factor)
-    validation_generator = data_generator(data_file, validation_list, batch_size=batch_size, n_labels=n_labels,
+    validation_generator = data_generator(data_file, validation_list, batch_size=1, n_labels=n_labels,
                                           labels=labels)
     # Set the number of training and testing samples per epoch correctly
     num_training_steps = len(training_list)//batch_size

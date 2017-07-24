@@ -33,7 +33,6 @@ def main(overwrite=False):
     else:
         # instantiate new model
         model = unet_model_3d(input_shape=config["input_shape"],
-                              downsize_filters_factor=config["downsize_nb_filters_factor"],
                               pool_size=config["pool_size"], n_labels=config["n_labels"],
                               initial_learning_rate=config["initial_learning_rate"])
 
