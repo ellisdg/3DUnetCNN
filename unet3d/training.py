@@ -7,7 +7,7 @@ from keras.callbacks import ModelCheckpoint, CSVLogger, Callback, LearningRateSc
 from keras.models import load_model
 
 from .generator import pickle_dump
-from .model import dice_coef, dice_coef_loss
+from unet3d.metrics import dice_coef, dice_coef_loss
 
 K.set_image_dim_ordering('th')
 
