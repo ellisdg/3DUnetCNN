@@ -15,9 +15,11 @@ except ImportError:
 
 
 def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
-                  depth=4, n_base_filters=32):
+                  depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False, metrics=(dice_coef)):
     """
     Builds the 3D UNet Keras model.
+    :param include_label_wise_dice_coefficients: If True and n_labels is greater than 1, model will report the dice
+    coefficient for each label as metric.
     :param n_base_filters: The number of filters that the first layer in the convolution network will have. Following
     layers will contain a multiple of this number. Lowering this number will likely reduce the amount of memory required
     to train the model.
@@ -62,9 +64,14 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     act = Activation('sigmoid')(final_convolution)
     model = Model(inputs=inputs, outputs=act)
 
-    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss,
-                  metrics=[dice_coef] + [get_label_dice_coefficient_function(index) for index in range(n_labels)])
+    if include_label_wise_dice_coefficients and n_labels > 1:
+        label_wise_dice_metrics = [get_label_dice_coefficient_function(index) for index in range(n_labels)]
+        if metrics:
+            metrics = list(metrics) + label_wise_dice_metrics
+        else:
+            metrics = label_wise_dice_metrics
 
+    model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss, metrics=metrics)
     return model
 
 
