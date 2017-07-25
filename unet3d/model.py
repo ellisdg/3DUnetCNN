@@ -59,8 +59,7 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     model = Model(inputs=inputs, outputs=act)
 
     model.compile(optimizer=Adam(lr=initial_learning_rate), loss=dice_coef_loss,
-                  metrics=[dice_coef] + [partial(label_wise_dice_coefficient,
-                                                 label_index=index) for index in range(n_labels)])
+                  metrics=[dice_coef] + [get_label_dice_coefficient_function(index) for index in range(n_labels)])
 
     return model
 
@@ -78,6 +77,12 @@ def dice_coef_loss(y_true, y_pred):
 
 def label_wise_dice_coefficient(y_true, y_pred, label_index):
     return dice_coef(y_true[:, label_index], y_pred[:, label_index])
+
+
+def get_label_dice_coefficient_function(label_index):
+    f = partial(label_wise_dice_coefficient, label_index=label_index)
+    f.__setattr__('__name__', 'label_{0}_dice_coef'.format(label_index))
+    return f
 
 
 def compute_level_output_shape(n_filters, depth, pool_size, image_shape):
