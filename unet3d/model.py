@@ -40,15 +40,19 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     for layer_number in range(depth):
         layer1 = Conv3D(n_base_filters*(2**layer_number), (3, 3, 3), activation='relu', padding='same')(current_layer)
         layer2 = Conv3D(n_base_filters*(2**layer_number)*2, (3, 3, 3), activation='relu', padding='same')(layer1)
-        current_layer = MaxPooling3D(pool_size=pool_size)(layer2)
-        levels.append([layer1, layer2, current_layer])
+        if layer_number < depth - 1:
+            current_layer = MaxPooling3D(pool_size=pool_size)(layer2)
+            levels.append([layer1, layer2, current_layer])
+        else:
+            current_layer = layer2
+            levels.append([layer1, layer2])
 
     # add levels with up-convolution or up-sampling
     for layer_number in range(depth-2, -1, -1):
-        up_convolution = get_up_convolution(pool_size=pool_size, deconvolution=deconvolution, depth=layer_number+1,
+        up_convolution = get_up_convolution(pool_size=pool_size, deconvolution=deconvolution, depth=layer_number,
                                             n_filters=current_layer._keras_shape[1],
                                             image_shape=input_shape[-3:])(current_layer)
-        concat = concatenate([up_convolution, levels[layer_number][-1]], axis=1)
+        concat = concatenate([up_convolution, levels[layer_number][1]], axis=1)
         current_layer = Conv3D(levels[layer_number][1]._keras_shape[1], (3, 3, 3), activation='relu',
                                padding='same')(concat)
         current_layer = Conv3D(levels[layer_number][1]._keras_shape[1], (3, 3, 3), activation='relu',
