@@ -13,6 +13,24 @@ def find_downsized_info(training_data_files, input_shape):
     return crop_slices, final_image.affine, final_image.header
 
 
+def get_cropping_parameters(in_files):
+    foreground = get_complete_foreground(in_files)
+    return crop_img(foreground, return_slices=True, copy=True)
+
+
+def reslice_image_set(in_files, image_shape, out_files=None):
+    crop_slices = get_cropping_parameters([in_files])
+    images = list()
+    for in_file in in_files:
+        images.append(read_image(in_file, image_shape=image_shape, crop=crop_slices))
+    if out_files:
+        for image, out_file in zip(images, out_files):
+            image.to_filename(out_file)
+        return out_files
+    else:
+        return images
+
+
 def get_complete_foreground(training_data_files):
     for i, set_of_files in enumerate(training_data_files):
         subject_foreground = get_foreground_from_set_of_files(set_of_files)

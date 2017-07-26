@@ -2,10 +2,8 @@ import os
 
 import numpy as np
 import tables
-import nibabel as nib
 
-from unet3d.utils.utils import read_image_files
-from .normalize import find_downsized_info, normalize_data_storage
+from .normalize import normalize_data_storage, reslice_image_set
 
 
 def create_data_file(out_file, nb_channels, nb_samples, image_shape):
@@ -17,15 +15,19 @@ def create_data_file(out_file, nb_channels, nb_samples, image_shape):
                                            filters=filters, expectedrows=nb_samples)
     truth_storage = hdf5_file.create_earray(hdf5_file.root, 'truth', tables.UInt8Atom(), shape=truth_shape,
                                             filters=filters, expectedrows=nb_samples)
-    return hdf5_file, data_storage, truth_storage
+    affine_storage = hdf5_file.create_earray(hdf5_file.root, 'affine', tables.Float32Atom(), shape=(0, 4, 4),
+                                             filters=filters, expectedrows=nb_samples)
+    return hdf5_file, data_storage, truth_storage, affine_storage
 
 
-def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, crop=None,
+def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, affine_storage,
                              truth_dtype=np.uint8):
     for set_of_files in image_files:
-        subject_data = read_image_files(set_of_files, image_shape, crop=crop)
+        images = reslice_image_set(set_of_files, image_shape)
+        subject_data = np.asarray([image.get_data() for image in images])
         data_storage.append(subject_data[:n_channels][np.newaxis])
         truth_storage.append(np.asarray(subject_data[n_channels][np.newaxis][np.newaxis], dtype=truth_dtype))
+        affine_storage.append(np.asarray(images[0].affine)[np.newaxis])
     return data_storage, truth_storage
 
 
@@ -45,17 +47,16 @@ def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=n
     n_channels = len(training_data_files[0]) - 1
 
     try:
-        hdf5_file, data_storage, truth_storage = create_data_file(out_file, nb_channels=n_channels,
-                                                                  nb_samples=n_samples, image_shape=image_shape)
+        hdf5_file, data_storage, truth_storage, affine_storage = create_data_file(out_file, nb_channels=n_channels,
+                                                                                  nb_samples=n_samples,
+                                                                                  image_shape=image_shape)
     except Exception as e:
         # If something goes wrong, delete the incomplete data file
         os.remove(out_file)
         raise e
 
-    crop_slices, affine, header = find_downsized_info(training_data_files, image_shape)
-    hdf5_file.create_array(hdf5_file.root, "affine", affine)
-    write_image_data_to_file(training_data_files, data_storage, truth_storage, image_shape, crop=crop_slices,
-                             truth_dtype=truth_dtype, n_channels=n_channels)
+    write_image_data_to_file(training_data_files, data_storage, truth_storage, image_shape,
+                             truth_dtype=truth_dtype, n_channels=n_channels, affine_storage=affine_storage)
     normalize_data_storage(data_storage)
     hdf5_file.close()
     return out_file
