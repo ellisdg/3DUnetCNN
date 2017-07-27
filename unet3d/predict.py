@@ -89,7 +89,7 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
 
     data_file = tables.open_file(hdf5_file, "r")
     data_index = get_test_indices(validation_keys_file)[test_index]
-    affine = data_file.root.affine
+    affine = data_file.root.affine[data_index]
     test_data = np.asarray([data_file.root.data[data_index]])
     for i, modality in enumerate(training_modalities):
         image = nib.Nifti1Image(test_data[0, i], affine)

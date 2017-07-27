@@ -23,7 +23,7 @@ def create_data_file(out_file, nb_channels, nb_samples, image_shape):
 def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, affine_storage,
                              truth_dtype=np.uint8):
     for set_of_files in image_files:
-        images = reslice_image_set(set_of_files, image_shape)
+        images = reslice_image_set(set_of_files, image_shape, label_indices=len(set_of_files) - 1)
         subject_data = np.asarray([image.get_data() for image in images])
         data_storage.append(subject_data[:n_channels][np.newaxis])
         truth_storage.append(np.asarray(subject_data[n_channels][np.newaxis][np.newaxis], dtype=truth_dtype))
