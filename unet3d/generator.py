@@ -9,7 +9,8 @@ from .augment import augment_data
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
-                                           augment_flip=True, augment_distortion_factor=0.25):
+                                           augment_flip=True, augment_distortion_factor=0.25, patch_size=None,
+                                           patch_step=None):
     """
     Creates the training and validation generators that can be used when training the model.
     :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
@@ -33,17 +34,28 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     training and validation splits won't be overwritten when rerunning model training.
     :return: Training data generator, validation data generator, number of training steps, number of validation steps
     """
-    training_list, validation_list = get_validation_split(data_file, data_split=data_split, overwrite=overwrite,
+    training_list, validation_list = get_validation_split(data_file,
+                                                          data_split=data_split,
+                                                          overwrite=overwrite,
                                                           training_file=training_keys_file,
                                                           testing_file=validation_keys_file)
-    training_generator = data_generator(data_file, training_list, batch_size=batch_size, n_labels=n_labels,
-                                        labels=labels, augment=augment, augment_flip=augment_flip,
-                                        augment_distortion_factor=augment_distortion_factor)
-    validation_generator = data_generator(data_file, validation_list, batch_size=1, n_labels=n_labels,
-                                          labels=labels)
+
     # Set the number of training and testing samples per epoch correctly
     num_training_steps = len(training_list)//batch_size
     num_validation_steps = len(validation_list)
+
+    training_generator = data_generator(data_file, training_list,
+                                        batch_size=batch_size,
+                                        n_labels=n_labels,
+                                        labels=labels,
+                                        augment=augment,
+                                        augment_flip=augment_flip,
+                                        augment_distortion_factor=augment_distortion_factor)
+    validation_generator = data_generator(data_file, validation_list,
+                                          batch_size=1,
+                                          n_labels=n_labels,
+                                          labels=labels)
+
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
 
@@ -104,7 +116,7 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
     data = data_file.root.data[index]
     truth = data_file.root.truth[index, 0]
     if augment:
-        data, truth = augment_data(data, truth, data_file.root.affine, flip=augment_flip,
+        data, truth = augment_data(data, truth, data_file.root.affine[index], flip=augment_flip,
                                    scale_deviation=augment_distortion_factor)
 
     x_list.append(data)
