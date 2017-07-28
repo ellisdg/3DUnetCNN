@@ -1,16 +1,19 @@
 import os
 from random import shuffle
+import itertools
 
 import numpy as np
 
 from .utils import pickle_dump, pickle_load
+from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .augment import augment_data
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
-                                           augment_flip=True, augment_distortion_factor=0.25, patch_size=None,
-                                           patch_step=None):
+                                           augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
+                                           patch_step=None, validation_patch_overlap=0,
+                                           training_patch_start_offset=None):
     """
     Creates the training and validation generators that can be used when training the model.
     :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
@@ -44,17 +47,27 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     num_training_steps = len(training_list)//batch_size
     num_validation_steps = len(validation_list)
 
+    if patch_shape:
+        num_training_steps *= len(compute_patch_indices(data_file.root.data.shape[-3:], patch_shape, overlap=0))
+        num_validation_steps *= len(compute_patch_indices(data_file.root.data.shape[-3:], patch_shape,
+                                                          overlap=validation_patch_overlap))
+
     training_generator = data_generator(data_file, training_list,
                                         batch_size=batch_size,
                                         n_labels=n_labels,
                                         labels=labels,
                                         augment=augment,
                                         augment_flip=augment_flip,
-                                        augment_distortion_factor=augment_distortion_factor)
+                                        augment_distortion_factor=augment_distortion_factor,
+                                        patch_shape=patch_shape,
+                                        patch_overlap=0,
+                                        patch_start_offset=training_patch_start_offset)
     validation_generator = data_generator(data_file, validation_list,
                                           batch_size=1,
                                           n_labels=n_labels,
-                                          labels=labels)
+                                          labels=labels,
+                                          patch_shape=patch_shape,
+                                          patch_overlap=validation_patch_overlap)
 
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
@@ -83,22 +96,37 @@ def split_list(input_list, split=0.8, shuffle_list=True):
 
 
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
-                   augment_distortion_factor=0.25):
+                   augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
+                   shuffle_index_list=True):
     while True:
         x_list = list()
         y_list = list()
-        shuffle(index_list)
+        if shuffle_index_list:
+            shuffle(index_list)
+        if patch_shape:
+            index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
+                                                 patch_start_offset)
         for index in index_list:
             add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
-                     augment_distortion_factor=augment_distortion_factor)
+                     augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape)
             if len(x_list) == batch_size:
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
 
 
+def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):
+    patch_index = list()
+    for index in index_list:
+        if patch_start_offset:
+            patch_start_offset = np.negative(get_random_nd_index(patch_start_offset))
+        patches = compute_patch_indices(image_shape, patch_shape, overlap=patch_overlap, start=patch_start_offset)
+        patch_index.append(itertools.product(index, patches))
+    return patch_index
+
+
 def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
-             augment_distortion_factor=0.25):
+             augment_distortion_factor=0.25, patch_shape=False):
     """
     Adds data from the data file to the given lists of feature and target data
     :param x_list: list of data to which data from the data_file will be appended.
@@ -113,14 +141,24 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
     augmentation from distorting the data in this way.
     :return:
     """
-    data = data_file.root.data[index]
-    truth = data_file.root.truth[index, 0]
+    data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
     if augment:
         data, truth = augment_data(data, truth, data_file.root.affine[index], flip=augment_flip,
                                    scale_deviation=augment_distortion_factor)
 
     x_list.append(data)
     y_list.append([truth])
+
+
+def get_data_from_file(data_file, index, patch_shape=None):
+    if patch_shape:
+        index, patch_index = index
+        data, truth = get_data_from_file(data_file, index, patch_shape=None)
+        patch_x = get_patch_from_3d_data(data, patch_shape, patch_index)
+        patch_y = get_patch_from_3d_data(truth, patch_shape, patch_index)
+        return patch_x, patch_y
+    else:
+        return data_file.root.data[index], data_file.root.truth[index, 0]
 
 
 def convert_data(x_list, y_list, n_labels=1, labels=None):
