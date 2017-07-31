@@ -49,7 +49,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
         num_validation_steps = len(validation_list)*len(compute_patch_indices(data_file.root.data.shape[-3:], patch_shape,
                                                                               overlap=validation_patch_overlap))
     else:
-        num_training_steps = len(training_list)//batch_size
+        num_training_steps = len(training_list)//batch_size + 1
         num_validation_steps = len(validation_list)
 
     training_generator = data_generator(data_file, training_list,
@@ -116,10 +116,11 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
                                                  patch_start_offset)
         if shuffle_index_list:
             shuffle(index_list)
-        for index in index_list:
+        while len(index_list) > 0:
+            index = index_list.pop()
             add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
                      augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape)
-            if len(x_list) == batch_size:
+            if len(x_list) == batch_size or len(index_list) == 0:
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
@@ -193,7 +194,8 @@ def get_multi_class_labels(data, n_labels, labels=None):
     :param data: numpy array containing the label map with shape: (n_samples, 1, ...).
     :param n_labels: number of labels.
     :param labels: integer values of the labels.
-    :return: binary numpy array of shape: (n_samples, n_labels, ...)
+    :return: binary numpy array of shape: (n_samples, n_labels, .
+    ..)
     """
     new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
     y = np.zeros(new_shape, np.int8)
