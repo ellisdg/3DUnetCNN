@@ -42,7 +42,7 @@ def get_patch_from_3d_data(data, patch_shape, patch_index):
     :param patch_index: corner index of the patch.
     :return: numpy array take from the data with the patch shape specified.
     """
-    patch_index = np.asarray(patch_index)
+    patch_index = np.asarray(patch_index, dtype=np.int16)
     patch_shape = np.asarray(patch_shape)
     image_shape = data.shape[-3:]
     if np.any(patch_index < 0) or np.any((patch_index + patch_shape) > image_shape):
@@ -60,8 +60,8 @@ def fix_out_of_bound_patch_attempt(data, patch_shape, patch_index, ndim=3):
     :return: padded data, fixed patch index
     """
     image_shape = data.shape[-ndim:]
-    pad_before = np.negative((patch_index < 0) * patch_index)
-    pad_after = ((patch_index + patch_shape) > image_shape) * ((patch_index + patch_shape) - image_shape)
+    pad_before = np.abs((patch_index < 0) * patch_index)
+    pad_after = np.abs(((patch_index + patch_shape) > image_shape) * ((patch_index + patch_shape) - image_shape))
     pad_args = np.stack([pad_before, pad_after], axis=1)
     if pad_args.shape[0] < len(data.shape):
         pad_args = np.vstack([[[0, 0] * (len(data.shape) - pad_args.shape[0])], pad_args])

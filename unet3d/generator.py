@@ -12,8 +12,7 @@ from .augment import augment_data
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
                                            augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
-                                           patch_step=None, validation_patch_overlap=0,
-                                           training_patch_start_offset=None):
+                                           validation_patch_overlap=0, training_patch_start_offset=None):
     """
     Creates the training and validation generators that can be used when training the model.
     :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
@@ -44,13 +43,14 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                           testing_file=validation_keys_file)
 
     # Set the number of training and testing samples per epoch correctly
-    num_training_steps = len(training_list)//batch_size
-    num_validation_steps = len(validation_list)
-
     if patch_shape:
-        num_training_steps *= len(compute_patch_indices(data_file.root.data.shape[-3:], patch_shape, overlap=0))
-        num_validation_steps *= len(compute_patch_indices(data_file.root.data.shape[-3:], patch_shape,
-                                                          overlap=validation_patch_overlap))
+        num_training_steps = (len(training_list)*len(compute_patch_indices(data_file.root.data.shape[-3:], 
+                                                                           patch_shape, overlap=0)))//batch_size
+        num_validation_steps = len(validation_list)*len(compute_patch_indices(data_file.root.data.shape[-3:], patch_shape,
+                                                                              overlap=validation_patch_overlap))
+    else:
+        num_training_steps = len(training_list)//batch_size
+        num_validation_steps = len(validation_list)
 
     training_generator = data_generator(data_file, training_list,
                                         batch_size=batch_size,
@@ -98,14 +98,15 @@ def split_list(input_list, split=0.8, shuffle_list=True):
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
                    augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
                    shuffle_index_list=True):
+    orig_index_list = index_list
     while True:
         x_list = list()
         y_list = list()
+        if patch_shape:
+            index_list = create_patch_index_list(orig_index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
+                                                 patch_start_offset)
         if shuffle_index_list:
             shuffle(index_list)
-        if patch_shape:
-            index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
-                                                 patch_start_offset)
         for index in index_list:
             add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
                      augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape)
@@ -118,10 +119,12 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
 def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):
     patch_index = list()
     for index in index_list:
-        if patch_start_offset:
-            patch_start_offset = np.negative(get_random_nd_index(patch_start_offset))
-        patches = compute_patch_indices(image_shape, patch_shape, overlap=patch_overlap, start=patch_start_offset)
-        patch_index.append(itertools.product(index, patches))
+        if patch_start_offset is not None:
+            random_start_offset = np.negative(get_random_nd_index(patch_start_offset))
+            patches = compute_patch_indices(image_shape, patch_shape, overlap=patch_overlap, start=random_start_offset)
+        else:
+            patches = compute_patch_indices(image_shape, patch_shape, overlap=patch_overlap)
+        patch_index.extend(itertools.product([index], patches))
     return patch_index
 
 
@@ -143,7 +146,11 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
     """
     data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
     if augment:
-        data, truth = augment_data(data, truth, data_file.root.affine[index], flip=augment_flip,
+        if patch_shape is not None:
+            affine = data_file.root.affine[index[0]]
+        else:
+            affine = data_file.root.affine[index]
+        data, truth = augment_data(data, truth, affine, flip=augment_flip,
                                    scale_deviation=augment_distortion_factor)
 
     x_list.append(data)
