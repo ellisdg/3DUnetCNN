@@ -40,7 +40,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                           data_split=data_split,
                                                           overwrite=overwrite,
                                                           training_file=training_keys_file,
-                                                          testing_file=validation_keys_file)
+                                                          validation_file=validation_keys_file)
 
     # Set the number of training and testing samples per epoch correctly
     if patch_shape:
@@ -72,18 +72,27 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
 
-def get_validation_split(data_file, training_file, testing_file, data_split=0.8, overwrite=False):
+def get_validation_split(data_file, training_file, validation_file, data_split=0.8, overwrite=False):
+    """
+    Splits the data into the training and validation indices list.
+    :param data_file: pytables hdf5 data file
+    :param training_file:
+    :param validation_file:
+    :param data_split:
+    :param overwrite:
+    :return:
+    """
     if overwrite or not os.path.exists(training_file):
         print("Creating validation split...")
         nb_samples = data_file.root.data.shape[0]
         sample_list = list(range(nb_samples))
         training_list, testing_list = split_list(sample_list, split=data_split)
         pickle_dump(training_list, training_file)
-        pickle_dump(testing_list, testing_file)
+        pickle_dump(testing_list, validation_file)
         return training_list, testing_list
     else:
         print("Loading previous validation split...")
-        return pickle_load(training_file), pickle_load(testing_file)
+        return pickle_load(training_file), pickle_load(validation_file)
 
 
 def split_list(input_list, split=0.8, shuffle_list=True):
@@ -179,10 +188,17 @@ def convert_data(x_list, y_list, n_labels=1, labels=None):
 
 
 def get_multi_class_labels(data, n_labels, labels=None):
+    """
+    Translates a label map into a set of binary labels.
+    :param data: numpy array containing the label map with shape: (n_samples, 1, ...).
+    :param n_labels: number of labels.
+    :param labels: integer values of the labels.
+    :return: binary numpy array of shape: (n_samples, n_labels, ...)
+    """
     new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
     y = np.zeros(new_shape, np.int8)
     for label_index in range(n_labels):
-        if labels:
+        if labels is not None:
             y[:, label_index][data[:, 0] == labels[label_index]] = 1
         else:
             y[:, label_index][data[:, 0] == (label_index + 1)] = 1
