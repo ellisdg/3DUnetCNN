@@ -3,11 +3,47 @@ from unittest import TestCase
 
 import numpy as np
 
-from unet3d.generator import get_multi_class_labels, get_training_and_validation_generators
 from unet3d.data import add_data_to_storage, create_data_file
+from unet3d.generator import get_multi_class_labels, get_training_and_validation_generators
 
 
 class TestDataGenerator(TestCase):
+    def create_data_file(self, n_samples=20, len_x=5, len_y=5, len_z=10, n_channels=1):
+        self.data_file_path = "./temporary_data_test_file.h5"
+        self.training_keys_file = "./temporary_training_keys_file.pkl"
+        self.validation_keys_file = "./temporary_validation_keys_file.pkl"
+        self.tmp_files = [self.data_file_path, self.training_keys_file, self.validation_keys_file]
+
+        self.rm_tmp_files()
+
+        self.n_samples = n_samples
+        self.n_channels = n_channels
+        self.n_labels = 1
+
+        image_shape = (len_x, len_y, len_z)
+        data_size = self.n_samples * self.n_channels * len_x * len_y * len_z
+        data = np.asarray(np.arange(data_size).reshape((self.n_samples, self.n_channels, len_x, len_y, len_z)),
+                          dtype=np.int16)
+        self.assertEqual(data.shape[-3:], image_shape)
+        truth = (data == 3).astype(np.int8)
+        affine = np.diag(np.ones(4))
+        affine[:, -1] = 1
+        self.data_file, data_storage, truth_storage, affine_storage = create_data_file(self.data_file_path,
+                                                                                       self.n_channels, self.n_samples,
+                                                                                       image_shape)
+
+        for index in range(self.n_samples):
+            add_data_to_storage(data_storage, truth_storage, affine_storage,
+                                np.stack([data[index], truth[index]], axis=1)[0], affine=affine,
+                                n_channels=self.n_channels,
+                                truth_dtype=np.int16)
+            self.assertTrue(np.all(data_storage[index] == data[index]))
+            self.assertTrue(np.all(truth_storage[index] == truth[index]))
+
+    def rm_tmp_files(self):
+        for tmp_file in self.tmp_files:
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
 
     def test_multi_class_labels(self):
         n_labels = 5
@@ -20,71 +56,65 @@ class TestDataGenerator(TestCase):
             self.assertTrue(np.all(binary_labels[:, label - 1][label_map[:, 0] == label] == 1))
 
     def test_get_training_and_validation_generators(self):
-        data_file_path = "./temporary_data_test_file.h5"
-        training_keys_file = "./temporary_training_keys_file.pkl"
-        validation_keys_file = "./temporary_validation_keys_file.pkl"
-        tmp_files = [data_file_path, training_keys_file, validation_keys_file]
+        self.create_data_file()
 
-        def rm_tmp_files():
-            for tmp_file in tmp_files:
-                if os.path.exists(tmp_file):
-                    os.remove(tmp_file)
-
-        rm_tmp_files()
-
-        n_samples = 20
         validation_split = 0.8
-        n_channels = 1
-        len_x = 5
-        len_y = 5
-        len_z = 10
         batch_size = 3
         validation_batch_size = 3
-        n_labels = 1
-        image_shape = (len_x, len_y, len_z)
-        data_size = n_samples * n_channels * len_x * len_y * len_z
-        data = np.asarray(np.arange(data_size).reshape((n_samples, n_channels, len_x, len_y, len_z)), dtype=np.int16)
-        self.assertEqual(data.shape[-3:], image_shape)
-        truth = (data == 3).astype(np.int8)
-        affine = np.diag(np.ones(4))
-        affine[:, -1] = 1
-        data_file, data_storage, truth_storage, affine_storage = create_data_file(data_file_path, n_channels, n_samples,
-                                                                                  image_shape)
 
-        for index in range(n_samples):
-            add_data_to_storage(data_storage, truth_storage, affine_storage,
-                                np.stack([data[index], truth[index]], axis=1)[0], affine=affine, n_channels=n_channels,
-                                truth_dtype=np.int16)
-            self.assertTrue(np.all(data_storage[index] == data[index]))
-            self.assertTrue(np.all(truth_storage[index] == truth[index]))
-
-        generators = get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file,
-                                                            validation_keys_file, data_split=validation_split,
+        generators = get_training_and_validation_generators(self.data_file, batch_size, self.n_labels,
+                                                            self.training_keys_file, self.validation_keys_file,
+                                                            data_split=validation_split,
                                                             validation_batch_size=validation_batch_size)
         training_generator, validation_generator, n_training_steps, n_validation_steps = generators
 
-        # check that the training covers all the samples
-        n_training_samples = 0
-        training_samples = list()
-        for i in range(n_training_steps):
-            x, y = next(training_generator)
-            hash_x = hash(str(x))
-            self.assertNotIn(hash_x, training_samples)
-            training_samples.append(hash_x)
-            n_training_samples += x.shape[0]
-        self.assertEqual(n_training_samples, n_samples * validation_split)
+        self.verify_generator(training_generator, n_training_steps, batch_size,
+                              np.round(validation_split * self.n_samples))
 
-        # check that the validation covers all the samples
+        self.verify_generator(validation_generator, n_validation_steps, validation_batch_size,
+                              np.round((1 - validation_split) * self.n_samples))
+
+        self.data_file.close()
+        self.rm_tmp_files()
+
+    def verify_generator(self, generator, steps, batch_size, expected_samples):
+        # check that the generator covers all the samples
         n_validation_samples = 0
         validation_samples = list()
-        for i in range(n_validation_steps):
-            x, y = next(validation_generator)
+        for i in range(steps):
+            x, y = next(generator)
             hash_x = hash(str(x))
             self.assertNotIn(hash_x, validation_samples)
             validation_samples.append(hash_x)
             n_validation_samples += x.shape[0]
-            if i + 1 != n_validation_steps:
-                self.assertEqual(x.shape[0], validation_batch_size)
-        self.assertEqual(n_training_samples, n_samples * validation_split)
+            if i + 1 != steps:
+                self.assertEqual(x.shape[0], batch_size)
+        self.assertEqual(n_validation_samples, expected_samples)
 
-        rm_tmp_files()
+    def test_patch_generators(self):
+        self.create_data_file(len_x=4, len_y=4, len_z=4)
+
+        validation_split = 0.8
+        batch_size = 10
+        validation_batch_size = 3
+        patch_shape = (2, 2, 2)
+
+        generators = get_training_and_validation_generators(self.data_file, batch_size, self.n_labels,
+                                                            self.training_keys_file, self.validation_keys_file,
+                                                            data_split=validation_split,
+                                                            validation_batch_size=validation_batch_size,
+                                                            patch_shape=patch_shape)
+        training_generator, validation_generator, n_training_steps, n_validation_steps = generators
+
+        expected_training_samples = int(np.round(self.n_samples * validation_split)) * 2**3
+
+        self.verify_generator(training_generator, n_training_steps, batch_size, expected_training_samples)
+
+        expected_validation_samples = int(np.round(self.n_samples * (1 - validation_split))) * 2**3
+
+        self.verify_generator(validation_generator, n_validation_steps, validation_batch_size,
+                              expected_validation_samples)
+
+        self.data_file.close()
+        self.rm_tmp_files()
+

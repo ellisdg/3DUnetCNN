@@ -45,11 +45,10 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
 
     # Set the number of training and testing samples per epoch correctly
     if patch_shape:
-        num_training_steps = (len(training_list)*len(compute_patch_indices(data_file.root.data.shape[-3:], 
-                                                                           patch_shape, overlap=0)))//batch_size
-        num_validation_steps = len(validation_list)*len(compute_patch_indices(data_file.root.data.shape[-3:],
-                                                                              patch_shape,
-                                                                              overlap=validation_patch_overlap))
+        num_training_steps = get_number_of_steps(len(training_list)*len(compute_patch_indices(
+            data_file.root.data.shape[-3:], patch_shape, overlap=0)), batch_size)
+        num_validation_steps = get_number_of_steps(len(validation_list)*len(compute_patch_indices(
+            data_file.root.data.shape[-3:], patch_shape, overlap=validation_patch_overlap)), validation_batch_size)
     else:
         num_training_steps = get_number_of_steps(len(training_list), batch_size)
         num_validation_steps = get_number_of_steps(len(validation_list), validation_batch_size)
