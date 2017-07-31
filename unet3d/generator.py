@@ -12,7 +12,8 @@ from .augment import augment_data
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
                                            augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
-                                           validation_patch_overlap=0, training_patch_start_offset=None):
+                                           validation_patch_overlap=0, training_patch_start_offset=None,
+                                           validation_batch_size=1):
     """
     Creates the training and validation generators that can be used when training the model.
     :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
@@ -46,11 +47,12 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     if patch_shape:
         num_training_steps = (len(training_list)*len(compute_patch_indices(data_file.root.data.shape[-3:], 
                                                                            patch_shape, overlap=0)))//batch_size
-        num_validation_steps = len(validation_list)*len(compute_patch_indices(data_file.root.data.shape[-3:], patch_shape,
+        num_validation_steps = len(validation_list)*len(compute_patch_indices(data_file.root.data.shape[-3:],
+                                                                              patch_shape,
                                                                               overlap=validation_patch_overlap))
     else:
-        num_training_steps = len(training_list)//batch_size + 1
-        num_validation_steps = len(validation_list)
+        num_training_steps = get_number_of_steps(len(training_list), batch_size)
+        num_validation_steps = get_number_of_steps(len(validation_list), validation_batch_size)
 
     training_generator = data_generator(data_file, training_list,
                                         batch_size=batch_size,
@@ -63,13 +65,23 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         patch_overlap=0,
                                         patch_start_offset=training_patch_start_offset)
     validation_generator = data_generator(data_file, validation_list,
-                                          batch_size=1,
+                                          batch_size=validation_batch_size,
                                           n_labels=n_labels,
                                           labels=labels,
                                           patch_shape=patch_shape,
                                           patch_overlap=validation_patch_overlap)
 
     return training_generator, validation_generator, num_training_steps, num_validation_steps
+
+
+def get_number_of_steps(n_samples, batch_size):
+    if n_samples <= batch_size:
+        return n_samples
+    elif np.remainder(n_samples, batch_size) == 0:
+        return n_samples//batch_size
+    else:
+        return n_samples//batch_size + 1
+
 
 
 def get_validation_split(data_file, training_file, validation_file, data_split=0.8, overwrite=False):

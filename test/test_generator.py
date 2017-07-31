@@ -39,6 +39,7 @@ class TestDataGenerator(TestCase):
         len_y = 5
         len_z = 10
         batch_size = 3
+        validation_batch_size = 3
         n_labels = 1
         image_shape = (len_x, len_y, len_z)
         data_size = n_samples * n_channels * len_x * len_y * len_z
@@ -58,7 +59,8 @@ class TestDataGenerator(TestCase):
             self.assertTrue(np.all(truth_storage[index] == truth[index]))
 
         generators = get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file,
-                                                            validation_keys_file, data_split=validation_split)
+                                                            validation_keys_file, data_split=validation_split,
+                                                            validation_batch_size=validation_batch_size)
         training_generator, validation_generator, n_training_steps, n_validation_steps = generators
 
         # check that the training covers all the samples
@@ -78,10 +80,11 @@ class TestDataGenerator(TestCase):
         for i in range(n_validation_steps):
             x, y = next(validation_generator)
             hash_x = hash(str(x))
-            print(hash_x)
             self.assertNotIn(hash_x, validation_samples)
             validation_samples.append(hash_x)
             n_validation_samples += x.shape[0]
+            if i + 1 != n_validation_steps:
+                self.assertEqual(x.shape[0], validation_batch_size)
         self.assertEqual(n_training_samples, n_samples * validation_split)
 
         rm_tmp_files()
