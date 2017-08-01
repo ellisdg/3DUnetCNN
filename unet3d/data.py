@@ -31,8 +31,8 @@ def write_image_data_to_file(image_files, data_storage, truth_storage, image_sha
 
 
 def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_data, affine, n_channels, truth_dtype):
-    data_storage.append(np.asarray(subject_data[:n_channels][np.newaxis]))
-    truth_storage.append(np.asarray(subject_data[n_channels][np.newaxis][np.newaxis], dtype=truth_dtype))
+    data_storage.append(np.asarray(subject_data[:n_channels])[np.newaxis])
+    truth_storage.append(np.asarray(subject_data[n_channels], dtype=truth_dtype)[np.newaxis][np.newaxis])
     affine_storage.append(np.asarray(affine)[np.newaxis])
 
 

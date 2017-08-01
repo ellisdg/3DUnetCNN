@@ -9,13 +9,14 @@ from unet3d.model import unet_model_3d
 from unet3d.training import load_old_model, train_model
 
 config = dict()
-config["image_shape"] = (133, 153, 109)  # This is the maximum cropped size of all them images (including test)
+config["image_shape"] = (133, 153, 109)  # This is the maximum cropped size of all the images (including test)
 config["patch_size"] = (64, 64, 64)
 config["patch_overlap"] = 16
 config["pool_size"] = (2, 2, 2)
 config["labels"] = (10, 150, 250)
 config["n_labels"] = len(config["labels"])
-config["batch_size"] = 6
+config["batch_size"] = 7
+config["validation_batch_size"] = 12
 config["n_epochs"] = 3000
 config["decay_learning_rate_every_x_epochs"] = 500
 config["initial_learning_rate"] = 0.00001
@@ -23,8 +24,8 @@ config["learning_rate_drop"] = 0.5
 config["validation_split"] = 0.8
 config["hdf5_file"] = "./optimized_patch_iseg_data.hdf5"
 config["model_file"] = "./optimized_iseg_patches_model.h5"
-config["training_file"] = "./patch_training_ids.pkl"
-config["validation_file"] = "./patch_testing_ids.pkl"
+config["training_file"] = "./training_ids.pkl"
+config["validation_file"] = "./testing_ids.pkl"
 config["n_channels"] = 2
 config["input_shape"] = tuple([config["n_channels"]] + list(config["patch_size"]))
 config["augment"] = True
@@ -68,8 +69,10 @@ def main():
         augment_flip=config["augment_flip"],
         augment_distortion_factor=config["augment_distortion"],
         patch_shape=config["patch_size"],
-        validation_patch_overlap=config["patch_overlap"])
+        validation_patch_overlap=config["patch_overlap"],
+        validation_batch_size=config["validation_batch_size"])
 
+    print(nb_test_samples)
     # run training
     train_model(model=model,
                 model_file=config["model_file"],
