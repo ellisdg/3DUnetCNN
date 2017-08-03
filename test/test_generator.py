@@ -118,3 +118,35 @@ class TestDataGenerator(TestCase):
         self.data_file.close()
         self.rm_tmp_files()
 
+    def test_random_patch_start(self):
+        self.create_data_file(len_x=10, len_y=10, len_z=10)
+
+        validation_split = 0.8
+        batch_size = 10
+        validation_batch_size = 3
+        patch_shape = (5, 5, 5)
+        random_start = (3, 3, 3)
+        overlap = 2
+
+        generators = get_training_and_validation_generators(self.data_file, batch_size, self.n_labels,
+                                                            self.training_keys_file, self.validation_keys_file,
+                                                            data_split=validation_split,
+                                                            validation_batch_size=validation_batch_size,
+                                                            patch_shape=patch_shape,
+                                                            training_patch_start_offset=random_start,
+                                                            validation_patch_overlap=overlap)
+        training_generator, validation_generator, n_training_steps, n_validation_steps = generators
+
+        expected_training_samples = int(np.round(self.n_samples * validation_split)) * 2**3
+
+        self.verify_generator(training_generator, n_training_steps, batch_size, expected_training_samples)
+
+        expected_validation_samples = int(np.round(self.n_samples * (1 - validation_split))) * 4**3
+
+        self.verify_generator(validation_generator, n_validation_steps, validation_batch_size,
+                              expected_validation_samples)
+
+        self.data_file.close()
+        self.rm_tmp_files()
+
+
