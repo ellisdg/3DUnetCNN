@@ -82,7 +82,6 @@ def get_number_of_steps(n_samples, batch_size):
         return n_samples//batch_size + 1
 
 
-
 def get_validation_split(data_file, training_file, validation_file, data_split=0.8, overwrite=False):
     """
     Splits the data into the training and validation indices list.
