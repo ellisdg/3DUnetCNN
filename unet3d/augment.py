@@ -45,10 +45,10 @@ def distort_image(image, flip_axis=None, scale_factor=None):
     return image
 
 
-def augment_data(data, truth, affine, scale=True, flip=True):
+def augment_data(data, truth, affine, scale_deviation=None, flip=True):
     n_dim = len(truth.shape)
-    if scale:
-        scale_factor = random_scale_factor(n_dim)
+    if scale_deviation:
+        scale_factor = random_scale_factor(n_dim, std=scale_deviation)
     else:
         scale_factor = None
     if flip:
