@@ -1,6 +1,6 @@
 Keras>=2
 numpy>=1.12.1
-keras_contrib>=1.2.1
+keras_contrib>=0.0.2
 nilearn>=0.3.0
 tables>=3.4.2
 nibabel>=2.1.0
