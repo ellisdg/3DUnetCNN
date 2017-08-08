@@ -16,7 +16,8 @@ def compute_patch_indices(image_shape, patch_size, overlap, start=None):
 
 
 def get_set_of_patch_indices(start, stop, step):
-    return np.mgrid[start[0]:stop[0]:step[0], start[1]:stop[1]:step[1], start[2]:stop[2]:step[2]].reshape(3, -1).T
+    return np.asarray(np.mgrid[start[0]:stop[0]:step[0], start[1]:stop[1]:step[1],
+                               start[2]:stop[2]:step[2]].reshape(3, -1).T, dtype=np.int)
 
 
 def get_random_patch_index(image_shape, patch_shape):
@@ -68,3 +69,30 @@ def fix_out_of_bound_patch_attempt(data, patch_shape, patch_index, ndim=3):
     data = np.pad(data, pad_args, mode="edge")
     patch_index += pad_before
     return data, patch_index
+
+
+def reconstruct_from_patches(patches, patch_indices, data_shape, default_value=0):
+    """
+    Reconstructs an array of the original shape from the lists of patches and corresponding patch indices. Overlapping
+    patches are averaged.
+    :param patches: List of numpy array patches.
+    :param patch_indices: List of indices that corresponds to the list of patches.
+    :param data_shape: Shape of the array from which the patches were extracted.
+    :param default_value: The default value of the resulting data. if the patch coverage is complete, this value will
+    be overwritten.
+    :return: numpy array containing the data reconstructed by the patches.
+    """
+    data = np.ones(data_shape) * default_value
+    for patch, index in zip(patches, patch_indices):
+        if np.any(index < 0):
+            fix_patch = np.asarray((index < 0) * np.abs(index), dtype=np.int)
+            patch = patch[fix_patch[0]:, fix_patch[1]:, fix_patch[2]:]
+            index[index < 0] = 0
+        if np.any((index + patch.shape) >= data_shape):
+            fix_patch = np.asarray(patch.shape - (((index + patch.shape) >= data_shape)
+                                                  * ((index + patch.shape) - data_shape)), dtype=np.int)
+            patch = patch[:fix_patch[0], :fix_patch[1], :fix_patch[2]]
+        data[index[0]:index[0]+patch.shape[0],
+             index[1]:index[1]+patch.shape[1],
+             index[2]:index[2]+patch.shape[2]] = patch
+    return data
