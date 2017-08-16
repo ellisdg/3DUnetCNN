@@ -6,6 +6,32 @@ import tables
 
 from .training import load_old_model
 from .utils import pickle_load
+from .utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
+
+
+def patch_wise_prediction(model, data, overlap=0, batch_size=1):
+    """
+    TODO: add batch prediction to speed things up
+    TODO: add option for multiple labels
+    :param model:
+    :param data:
+    :param overlap:
+    :return:
+    """
+    patch_shape = tuple(model.input.shape.as_list()[-3:])
+    predictions = list()
+    indices = compute_patch_indices(data.shape[-3:], patch_size=patch_shape, overlap=overlap)
+    batch = list()
+    i = 0
+    while i < len(indices):
+        while len(batch) < batch_size:
+            patch = get_patch_from_3d_data(data, patch_shape=patch_shape, patch_index=indices[i])
+            batch.append(patch)
+        prediction = model.predict(np.asarray(batch))
+        for predicted_patch in prediction:
+            predictions.append(predicted_patch[0])
+        i += 1
+    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=data.shape[-3:])
 
 
 def get_prediction_labels(prediction, threshold=0.5, labels=None):
