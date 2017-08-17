@@ -38,7 +38,6 @@ config["distort"] = 0.9  # switch to None if you want no distortion
 config["validation_patch_overlap"] = 8
 config["training_patch_start_offset"] = (16, 16, 16)
 
-config["data_dir"] = os.path.abspath("./brats/data")
 config["hdf5_file"] = os.path.abspath("brats_data.hdf5")
 config["model_file"] = os.path.abspath("tumor_segmentation_model.h5")
 config["training_file"] = os.path.abspath("training_ids.pkl")
@@ -47,7 +46,7 @@ config["validation_file"] = os.path.abspath("validation_ids.pkl")
 
 def fetch_training_data_files():
     training_data_files = list()
-    for subject_dir in glob.glob(os.path.join(config["data_dir"], "*", "*")):
+    for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data", "*", "*")):
         subject_files = list()
         for modality in config["training_modalities"] + ["truth"]:
             subject_files.append(os.path.join(subject_dir, modality + ".nii.gz"))
