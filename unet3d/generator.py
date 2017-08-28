@@ -13,9 +13,17 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
                                            augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
                                            validation_patch_overlap=0, training_patch_start_offset=None,
-                                           validation_batch_size=1):
+                                           validation_batch_size=1, skip_blank=True):
     """
     Creates the training and validation generators that can be used when training the model.
+    :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
+    :param validation_batch_size: Batch size for the validation data.
+    :param training_patch_start_offset: Tuple of length 3 containing integer values. Training data will randomly be
+    offset by a number of pixels between (0, 0, 0) and the given tuple. (default is None)
+    :param validation_patch_overlap: Number of pixels/voxels that will be overlapped in the validation data. (requires
+    patch_shape to not be None)
+    :param patch_shape: Shape of the data to return with the generator. If None, the whole image will be returned.
+    (default is None)
     :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
     :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
     that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
@@ -62,13 +70,15 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         augment_distortion_factor=augment_distortion_factor,
                                         patch_shape=patch_shape,
                                         patch_overlap=0,
-                                        patch_start_offset=training_patch_start_offset)
+                                        patch_start_offset=training_patch_start_offset,
+                                        skip_blank=skip_blank)
     validation_generator = data_generator(data_file, validation_list,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
                                           labels=labels,
                                           patch_shape=patch_shape,
-                                          patch_overlap=validation_patch_overlap)
+                                          patch_overlap=validation_patch_overlap,
+                                          skip_blank=skip_blank)
 
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
@@ -116,7 +126,7 @@ def split_list(input_list, split=0.8, shuffle_list=True):
 
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
                    augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                   shuffle_index_list=True):
+                   shuffle_index_list=True, skip_blank=True):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -129,7 +139,8 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
         while len(index_list) > 0:
             index = index_list.pop()
             add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
-                     augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape)
+                     augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
+                     skip_blank=skip_blank)
             if len(x_list) == batch_size or len(index_list) == 0:
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
@@ -149,9 +160,11 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
 
 
 def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
-             augment_distortion_factor=0.25, patch_shape=False):
+             augment_distortion_factor=0.25, patch_shape=False, skip_blank=True):
     """
     Adds data from the data file to the given lists of feature and target data
+    :param skip_blank: Data will not be added if the truth vector is all zeros (default is True).
+    :param patch_shape: Shape of the patch to add to the data lists. If None, the whole image will be added.
     :param x_list: list of data to which data from the data_file will be appended.
     :param y_list: list of data to which the target data from the data_file will be appended.
     :param data_file: hdf5 data file.
@@ -173,8 +186,9 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
         data, truth = augment_data(data, truth, affine, flip=augment_flip,
                                    scale_deviation=augment_distortion_factor)
 
-    x_list.append(data)
-    y_list.append([truth])
+    if not skip_blank or np.any(truth != 0):
+        x_list.append(data)
+        y_list.append([truth])
 
 
 def get_data_from_file(data_file, index, patch_shape=None):
