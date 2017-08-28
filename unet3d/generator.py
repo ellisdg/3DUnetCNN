@@ -1,4 +1,5 @@
 import os
+import copy
 from random import shuffle
 import itertools
 
@@ -51,16 +52,6 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                                           training_file=training_keys_file,
                                                           validation_file=validation_keys_file)
 
-    # Set the number of training and testing samples per epoch correctly
-    if patch_shape:
-        num_training_steps = get_number_of_steps(len(training_list)*len(compute_patch_indices(
-            data_file.root.data.shape[-3:], patch_shape, overlap=0)), batch_size)
-        num_validation_steps = get_number_of_steps(len(validation_list)*len(compute_patch_indices(
-            data_file.root.data.shape[-3:], patch_shape, overlap=validation_patch_overlap)), validation_batch_size)
-    else:
-        num_training_steps = get_number_of_steps(len(training_list), batch_size)
-        num_validation_steps = get_number_of_steps(len(validation_list), validation_batch_size)
-
     training_generator = data_generator(data_file, training_list,
                                         batch_size=batch_size,
                                         n_labels=n_labels,
@@ -79,6 +70,16 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                           patch_shape=patch_shape,
                                           patch_overlap=validation_patch_overlap,
                                           skip_blank=skip_blank)
+
+    # Set the number of training and testing samples per epoch correctly
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+                                                                   skip_blank=skip_blank,
+                                                                   patch_start_offset=training_patch_start_offset,
+                                                                   patch_overlap=0), batch_size)
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+                                                                     skip_blank=skip_blank,
+                                                                     patch_overlap=validation_patch_overlap),
+                                               batch_size)
 
     return training_generator, validation_generator, num_training_steps, num_validation_steps
 
@@ -132,8 +133,11 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
         x_list = list()
         y_list = list()
         if patch_shape:
-            index_list = create_patch_index_list(orig_index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
-                                                 patch_start_offset)
+            index_list = create_patch_index_list(orig_index_list, data_file.root.data.shape[-3:], patch_shape,
+                                                 patch_overlap, patch_start_offset)
+        else:
+            index_list = copy.copy(orig_index_list)
+
         if shuffle_index_list:
             shuffle(index_list)
         while len(index_list) > 0:
@@ -145,6 +149,21 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
                 y_list = list()
+
+
+def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
+                          skip_blank=True):
+    if patch_shape:
+        index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
+                                             patch_start_offset)
+    count = 0
+    for index in index_list:
+        x_list = list()
+        y_list = list()
+        add_data(x_list, y_list, data_file, index, skip_blank=skip_blank, patch_shape=patch_shape)
+        if len(x_list) > 0:
+            count += 1
+    return count
 
 
 def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):

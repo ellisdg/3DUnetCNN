@@ -34,7 +34,7 @@ config["initial_learning_rate"] = 0.00001
 config["learning_rate_drop"] = 0.5
 config["validation_split"] = 0.8
 config["flip"] = True
-config["distort"] = 0.9  # switch to None if you want no distortion
+config["distort"] = None  # switch to None if you want no distortion
 config["validation_patch_overlap"] = 8
 config["training_patch_start_offset"] = (16, 16, 16)
 
