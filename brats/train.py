@@ -35,7 +35,7 @@ config["learning_rate_drop"] = 0.5
 config["validation_split"] = 0.8
 config["flip"] = True
 config["distort"] = None  # switch to None if you want no distortion
-config["validation_patch_overlap"] = 8
+config["validation_patch_overlap"] = 0
 config["training_patch_start_offset"] = (16, 16, 16)
 
 config["hdf5_file"] = os.path.abspath("brats_data.hdf5")
