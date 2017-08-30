@@ -26,7 +26,7 @@ config["truth_channel"] = config["nb_channels"]
 config["deconvolution"] = True
 
 config["batch_size"] = 6
-config["validation_batch_size"] = 12
+config["validation_batch_size"] = 6
 config["n_epochs"] = 500
 config["patience"] = 10
 config["early_stop"] = 50
