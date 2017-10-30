@@ -81,7 +81,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
                                                                      skip_blank=skip_blank,
                                                                      patch_overlap=validation_patch_overlap),
-                                               batch_size)
+                                               validation_batch_size)
     print("Number of validation steps: ", num_validation_steps)
 
     return training_generator, validation_generator, num_training_steps, num_validation_steps
@@ -110,10 +110,10 @@ def get_validation_split(data_file, training_file, validation_file, data_split=0
         print("Creating validation split...")
         nb_samples = data_file.root.data.shape[0]
         sample_list = list(range(nb_samples))
-        training_list, testing_list = split_list(sample_list, split=data_split)
+        training_list, validation_list = split_list(sample_list, split=data_split)
         pickle_dump(training_list, training_file)
-        pickle_dump(testing_list, validation_file)
-        return training_list, testing_list
+        pickle_dump(validation_list, validation_file)
+        return training_list, validation_list
     else:
         print("Loading previous validation split...")
         return pickle_load(training_file), pickle_load(validation_file)
@@ -159,14 +159,16 @@ def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap
     if patch_shape:
         index_list = create_patch_index_list(index_list, data_file.root.data.shape[-3:], patch_shape, patch_overlap,
                                              patch_start_offset)
-    count = 0
-    for index in index_list:
-        x_list = list()
-        y_list = list()
-        add_data(x_list, y_list, data_file, index, skip_blank=skip_blank, patch_shape=patch_shape)
-        if len(x_list) > 0:
-            count += 1
-    return count
+        count = 0
+        for index in index_list:
+            x_list = list()
+            y_list = list()
+            add_data(x_list, y_list, data_file, index, skip_blank=skip_blank, patch_shape=patch_shape)
+            if len(x_list) > 0:
+                count += 1
+        return count
+    else:
+        return len(index_list)
 
 
 def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap, patch_start_offset=None):

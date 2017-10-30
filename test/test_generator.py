@@ -5,9 +5,19 @@ import numpy as np
 
 from unet3d.data import add_data_to_storage, create_data_file
 from unet3d.generator import get_multi_class_labels, get_training_and_validation_generators
+from unet3d.augment import generate_permutation_keys, permute_data
 
 
 class TestDataGenerator(TestCase):
+    def setUp(self):
+        self.tmp_files = list()
+        self.data_file = None
+
+    def tearDown(self):
+        if self.data_file:
+            self.data_file.close()
+        self.rm_tmp_files()
+
     def create_data_file(self, n_samples=20, len_x=5, len_y=5, len_z=10, n_channels=1):
         self.data_file_path = "./temporary_data_test_file.h5"
         self.training_keys_file = "./temporary_training_keys_file.pkl"
@@ -62,10 +72,14 @@ class TestDataGenerator(TestCase):
         batch_size = 3
         validation_batch_size = 3
 
-        generators = get_training_and_validation_generators(self.data_file, batch_size, self.n_labels,
-                                                            self.training_keys_file, self.validation_keys_file,
+        generators = get_training_and_validation_generators(data_file=self.data_file,
+                                                            batch_size=batch_size,
+                                                            n_labels=self.n_labels,
+                                                            training_keys_file=self.training_keys_file,
+                                                            validation_keys_file=self.validation_keys_file,
                                                             data_split=validation_split,
-                                                            validation_batch_size=validation_batch_size)
+                                                            validation_batch_size=validation_batch_size,
+                                                            skip_blank=False)
         training_generator, validation_generator, n_training_steps, n_validation_steps = generators
 
         self.verify_generator(training_generator, n_training_steps, batch_size,
@@ -103,7 +117,8 @@ class TestDataGenerator(TestCase):
                                                             self.training_keys_file, self.validation_keys_file,
                                                             data_split=validation_split,
                                                             validation_batch_size=validation_batch_size,
-                                                            patch_shape=patch_shape)
+                                                            patch_shape=patch_shape,
+                                                            skip_blank=False)
         training_generator, validation_generator, n_training_steps, n_validation_steps = generators
 
         expected_training_samples = int(np.round(self.n_samples * validation_split)) * 2**3
@@ -134,7 +149,9 @@ class TestDataGenerator(TestCase):
                                                             validation_batch_size=validation_batch_size,
                                                             patch_shape=patch_shape,
                                                             training_patch_start_offset=random_start,
-                                                            validation_patch_overlap=overlap)
+                                                            validation_patch_overlap=overlap,
+                                                            skip_blank=False)
+
         training_generator, validation_generator, n_training_steps, n_validation_steps = generators
 
         expected_training_samples = int(np.round(self.n_samples * validation_split)) * 2**3
@@ -149,4 +166,16 @@ class TestDataGenerator(TestCase):
         self.data_file.close()
         self.rm_tmp_files()
 
+    def test_unique_permutations(self):
+        permutations = list()
+        shape = (2, 3, 3, 3)
+        data = np.arange(54).reshape(shape)
+        for key in generate_permutation_keys():
+            permutations.append(permute_data(data, key))
+            for array in permutations[:-1]:
+                self.assertTrue(permutations[-1].shape == shape)
+                self.assertFalse(np.all(array == permutations[-1]))
+                self.assertEqual(np.sum(data), np.sum(permutations[-1]))
 
+    def test_n_permutations(self):
+        self.assertEqual(len(generate_permutation_keys()), 48)
