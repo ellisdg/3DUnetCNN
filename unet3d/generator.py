@@ -7,14 +7,14 @@ import numpy as np
 
 from .utils import pickle_dump, pickle_load
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
-from .augment import augment_data
+from .augment import augment_data, random_permutation_x_y
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
                                            augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
                                            validation_patch_overlap=0, training_patch_start_offset=None,
-                                           validation_batch_size=1, skip_blank=True):
+                                           validation_batch_size=None, skip_blank=True, permute=False):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -44,8 +44,12 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     will be used for validation. Default is 0.8 or 80%.
     :param overwrite: If set to True, previous files will be overwritten. The default mode is false, so that the
     training and validation splits won't be overwritten when rerunning model training.
+    :param permute: will randomly permute the data (data must be 3D cube)
     :return: Training data generator, validation data generator, number of training steps, number of validation steps
     """
+    if not validation_batch_size:
+        validation_batch_size = batch_size
+
     training_list, validation_list = get_validation_split(data_file,
                                                           data_split=data_split,
                                                           overwrite=overwrite,
@@ -62,7 +66,8 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         patch_shape=patch_shape,
                                         patch_overlap=0,
                                         patch_start_offset=training_patch_start_offset,
-                                        skip_blank=skip_blank)
+                                        skip_blank=skip_blank,
+                                        permute=permute)
     validation_generator = data_generator(data_file, validation_list,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
@@ -130,7 +135,7 @@ def split_list(input_list, split=0.8, shuffle_list=True):
 
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
                    augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                   shuffle_index_list=True, skip_blank=True):
+                   shuffle_index_list=True, skip_blank=True, permute=False):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -147,7 +152,7 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
             index = index_list.pop()
             add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
                      augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
-                     skip_blank=skip_blank)
+                     skip_blank=skip_blank, permute=permute)
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
                 yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
                 x_list = list()
@@ -183,8 +188,8 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
     return patch_index
 
 
-def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
-             augment_distortion_factor=0.25, patch_shape=False, skip_blank=True):
+def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False, augment_distortion_factor=0.25,
+             patch_shape=False, skip_blank=True, permute=False):
     """
     Adds data from the data file to the given lists of feature and target data
     :param skip_blank: Data will not be added if the truth vector is all zeros (default is True).
@@ -199,6 +204,7 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
     :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
     that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
     augmentation from distorting the data in this way.
+    :param permute: will randomly permute the data (data must be 3D cube)
     :return:
     """
     data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
@@ -207,23 +213,30 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=True,
             affine = data_file.root.affine[index[0]]
         else:
             affine = data_file.root.affine[index]
-        data, truth = augment_data(data, truth, affine, flip=augment_flip,
-                                   scale_deviation=augment_distortion_factor)
+        data, truth = augment_data(data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor)
+
+    if permute:
+        if data.shape[-3] != data.shape[-2] or data.shape[-2] != data.shape[-1]:
+            raise ValueError("To utilize permutations, data array must be in 3D cube shape with all dimensions having "
+                             "the same length.")
+        data, truth = random_permutation_x_y(data, truth[np.newaxis])
+    else:
+        truth = truth[np.newaxis]
 
     if not skip_blank or np.any(truth != 0):
         x_list.append(data)
-        y_list.append([truth])
+        y_list.append(truth)
 
 
 def get_data_from_file(data_file, index, patch_shape=None):
     if patch_shape:
         index, patch_index = index
         data, truth = get_data_from_file(data_file, index, patch_shape=None)
-        patch_x = get_patch_from_3d_data(data, patch_shape, patch_index)
-        patch_y = get_patch_from_3d_data(truth, patch_shape, patch_index)
-        return patch_x, patch_y
+        x = get_patch_from_3d_data(data, patch_shape, patch_index)
+        y = get_patch_from_3d_data(truth, patch_shape, patch_index)
     else:
-        return data_file.root.data[index], data_file.root.truth[index, 0]
+        x, y = data_file.root.data[index], data_file.root.truth[index, 0]
+    return x, y
 
 
 def convert_data(x_list, y_list, n_labels=1, labels=None):
@@ -242,8 +255,7 @@ def get_multi_class_labels(data, n_labels, labels=None):
     :param data: numpy array containing the label map with shape: (n_samples, 1, ...).
     :param n_labels: number of labels.
     :param labels: integer values of the labels.
-    :return: binary numpy array of shape: (n_samples, n_labels, .
-    ..)
+    :return: binary numpy array of shape: (n_samples, n_labels, ...)
     """
     new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
     y = np.zeros(new_shape, np.int8)

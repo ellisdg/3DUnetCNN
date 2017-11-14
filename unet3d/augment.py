@@ -90,8 +90,7 @@ def generate_permutation_keys():
     https://en.wikipedia.org/wiki/Octahedral_symmetry#The_isometries_of_the_cube
     """
     return set(itertools.product(
-        itertools.combinations_with_replacement(range(2), 2),
-        range(2), range(2), range(2), range(2)))
+        itertools.combinations_with_replacement(range(2), 2), range(2), range(2), range(2), range(2)))
 
 
 def random_permutation_key():
@@ -99,7 +98,7 @@ def random_permutation_key():
     Generates and randomly selects a permutation key. See the documentation for the
     "generate_permutation_keys" function.
     """
-    return random.choice(generate_permutation_keys())
+    return random.choice(list(generate_permutation_keys()))
 
 
 def permute_data(data, key):
@@ -129,3 +128,14 @@ def permute_data(data, key):
         for i in range(data.shape[0]):
             data[i] = data[i].T
     return data
+
+
+def random_permutation_x_y(x_data, y_data):
+    """
+    Performs random permutation on the data.
+    :param x_data: numpy array containing the data. Data must be of shape (n_modalities, x, y, z).
+    :param y_data: numpy array containing the data. Data must be of shape (n_modalities, x, y, z).
+    :return: the permuted data
+    """
+    key = random_permutation_key()
+    return permute_data(x_data, key), permute_data(y_data, key)

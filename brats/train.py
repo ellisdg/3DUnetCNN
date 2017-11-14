@@ -33,7 +33,8 @@ config["early_stop"] = 50
 config["initial_learning_rate"] = 0.00001
 config["learning_rate_drop"] = 0.5
 config["validation_split"] = 0.8
-config["flip"] = True
+config["flip"] = False
+config["permute"] = True  # data shape must be a cube
 config["distort"] = None  # switch to None if you want no distortion
 config["validation_patch_overlap"] = 0
 config["training_patch_start_offset"] = (16, 16, 16)
@@ -46,7 +47,7 @@ config["validation_file"] = os.path.abspath("validation_ids.pkl")
 
 def fetch_training_data_files():
     training_data_files = list()
-    for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data", "*", "*")):
+    for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data", "preprocessed", "*", "*")):
         subject_files = list()
         for modality in config["training_modalities"] + ["truth"]:
             subject_files.append(os.path.join(subject_dir, modality + ".nii.gz"))
@@ -84,7 +85,8 @@ def main(overwrite=False):
         patch_shape=config["patch_shape"],
         validation_batch_size=config["validation_batch_size"],
         validation_patch_overlap=config["validation_patch_overlap"],
-        training_patch_start_offset=config["training_patch_start_offset"])
+        training_patch_start_offset=config["training_patch_start_offset"],
+        permute=config["permute"])
 
     # run training
     train_model(model=model,
@@ -102,4 +104,4 @@ def main(overwrite=False):
 
 
 if __name__ == "__main__":
-    main(overwrite=False)
+    main(overwrite=True)
