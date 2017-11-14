@@ -15,8 +15,8 @@ config["image_shape"] = (144, 144, 144)  # This determines what shape the images
 config["patch_shape"] = (64, 64, 64)
 config["labels"] = (1, 2, 3, 4)
 config["n_labels"] = len(config["labels"])
-config["modalities"] = ["T1", "T1c", "Flair", "T2"]
-config["training_modalities"] = ["T1", "T1c", "Flair"]  # set this to the modalities that you want the model to use
+config["all_modalities"] = ["t1", "t1Gd", "flair", "t2"]
+config["training_modalities"] = config["all_modalities"]  # change this if you want to only use some of the modalities
 config["nb_channels"] = len(config["training_modalities"])
 if "patch_shape" in config and config["patch_shape"] is not None:
     config["input_shape"] = tuple([config["nb_channels"]] + list(config["patch_shape"]))
@@ -38,7 +38,7 @@ config["distort"] = None  # switch to None if you want no distortion
 config["validation_patch_overlap"] = 0
 config["training_patch_start_offset"] = (16, 16, 16)
 
-config["hdf5_file"] = os.path.abspath("brats_data.hdf5")
+config["hdf5_file"] = os.path.abspath("brats_data.h5")
 config["model_file"] = os.path.abspath("tumor_segmentation_model.h5")
 config["training_file"] = os.path.abspath("training_ids.pkl")
 config["validation_file"] = os.path.abspath("validation_ids.pkl")

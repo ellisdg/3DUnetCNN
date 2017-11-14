@@ -6,7 +6,7 @@ that are mentioned in the paper. If you figure out a way to apply these to a 3D 
 welcome!
 
 The code was written to be trained using the 
-[BRATS](https://sites.google.com/site/braintumorsegmentation/home/brats2015) data set for brain tumors, but it can
+[BRATS](http://www.med.upenn.edu/sbia/brats2017.html) data set for brain tumors, but it can
 be easily modified to be used in other 3D applications. To adapt the network, you might have to play with the input size
 to get something that works for your data.
 
@@ -15,29 +15,27 @@ I used [Bohdan Pavlyshenko](https://www.kaggle.com/bpavlyshenko)'s
 segmentation as a base for this 3D U-Net.
 
 ## How to Train Using BRATS Data
-1. Download the [BRATS 2015 data set](https://sites.google.com/site/braintumorsegmentation/home/brats2015).
+1. Download the BRATS 2017 [GBM](https://app.box.com/s/926eijrcz4qudona5vkz4z5o9qfm772d) and 
+[LGG](https://app.box.com/s/ssfkb6u8fg3dmal0v7ni0ckbqntsc8fy) data. Place the unzipped folders in the 
+```brats/data/original``` folder.
 2. Install dependencies: 
 nibabel,
 keras,
 pytables,
-nilearn
+nilearn,
+SimpleITK (for preprocessing only)
 3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add the location of the ANTs 
 binaries to the PATH environmental variable.
 4. Convert the data to nifti format and perform image wise normalization and correction:
 ```
 $ cd brats
 ```
-Import the conversion function:
+Import the conversion function and run the preprocessing:
 ```
+$ python
 >>> from preprocess import convert_brats_data
+>>> convert_brats_data("data/original", "data/preprocessed")
 ```
-Import the configuration dictionary:
-```
->>> from config import config
->>> convert_brats_data("/path/to/BRATS/BRATS2015_Training",  config["data_dir"])
-```
-Where ```config["data_dir"]``` is the location where the raw BRATS data will be converted to.
-
 4. Run the training:
 ```
 $ cd ..
