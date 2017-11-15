@@ -36,11 +36,13 @@ config["permute"] = True  # data shape must be a cube
 config["distort"] = None  # switch to None if you want no distortion
 config["validation_patch_overlap"] = 0
 config["training_patch_start_offset"] = (16, 16, 16)
+config["skip_blank"] = True  # if True, then patches without any target will be skipped
 
 config["hdf5_file"] = os.path.abspath("brats_data.h5")
 config["model_file"] = os.path.abspath("tumor_segmentation_model.h5")
 config["training_file"] = os.path.abspath("training_ids.pkl")
 config["validation_file"] = os.path.abspath("validation_ids.pkl")
+config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 
 
 def fetch_training_data_files():
@@ -72,7 +74,7 @@ def main(overwrite=False):
                               deconvolution=config["deconvolution"])
 
     # get training and testing generators
-    train_generator, validation_generator, nb_train_samples, nb_test_samples = get_training_and_validation_generators(
+    train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(
         hdf5_file_opened,
         batch_size=config["batch_size"],
         data_split=config["validation_split"],
@@ -80,19 +82,24 @@ def main(overwrite=False):
         validation_keys_file=config["validation_file"],
         training_keys_file=config["training_file"],
         n_labels=config["n_labels"],
+        labels=config["labels"],
         patch_shape=config["patch_shape"],
         validation_batch_size=config["validation_batch_size"],
         validation_patch_overlap=config["validation_patch_overlap"],
         training_patch_start_offset=config["training_patch_start_offset"],
-        permute=config["permute"])
+        permute=config["permute"],
+        augment=config["augment"],
+        skip_blank=config["skip_blank"],
+        augment_flip=config["flip"],
+        augment_distortion_factor=config["distort"])
 
     # run training
     train_model(model=model,
                 model_file=config["model_file"],
                 training_generator=train_generator,
                 validation_generator=validation_generator,
-                steps_per_epoch=nb_train_samples,
-                validation_steps=nb_test_samples,
+                steps_per_epoch=n_train_steps,
+                validation_steps=n_validation_steps,
                 initial_learning_rate=config["initial_learning_rate"],
                 learning_rate_drop=config["learning_rate_drop"],
                 learning_rate_patience=config["patience"],
@@ -102,4 +109,4 @@ def main(overwrite=False):
 
 
 if __name__ == "__main__":
-    main(overwrite=True)
+    main(overwrite=config["overwrite"])
