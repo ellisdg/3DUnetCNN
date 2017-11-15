@@ -1,9 +1,7 @@
 import os
 import glob
 
-import tables
-
-from unet3d.data import write_data_to_file
+from unet3d.data import write_data_to_file, open_data_file
 from unet3d.generator import get_training_and_validation_generators
 from unet3d.model import unet_model_3d
 from unet3d.training import load_old_model, train_model
@@ -61,7 +59,7 @@ def main(overwrite=False):
         training_files = fetch_training_data_files()
 
         write_data_to_file(training_files, config["hdf5_file"], image_shape=config["image_shape"])
-    hdf5_file_opened = tables.open_file(config["hdf5_file"], "r")
+    hdf5_file_opened = open_data_file(config["hdf5_file"])
 
     if not overwrite and os.path.exists(config["model_file"]):
         model = load_old_model(config["model_file"])

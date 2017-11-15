@@ -1,8 +1,9 @@
 import pickle
+import os
 
 import nibabel as nib
 import numpy as np
-from nilearn.image import reorder_img, resample_img
+from nilearn.image import reorder_img, resample_img, load_img
 
 from .nilearn_custom_utils.nilearn_utils import crop_img_to
 
@@ -44,7 +45,8 @@ def read_image_files(image_files, image_shape=None, crop=None, use_nearest_for_l
 
 def read_image(in_file, image_shape=None, interpolation='continuous', crop=None):
     print("Reading: {0}".format(in_file))
-    image = fix_shape(nib.load(in_file))
+    image = nib.load(os.path.abspath(in_file))
+    image = fix_shape(image)
     if crop:
         image = crop_img_to(image, crop, copy=True)
     if image_shape:
