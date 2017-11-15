@@ -34,6 +34,7 @@ config["validation_split"] = 0.8
 config["flip"] = False
 config["permute"] = True  # data shape must be a cube
 config["distort"] = None  # switch to None if you want no distortion
+config["augment"] = config["flip"] or config["distort"]
 config["validation_patch_overlap"] = 0
 config["training_patch_start_offset"] = (16, 16, 16)
 config["skip_blank"] = True  # if True, then patches without any target will be skipped
