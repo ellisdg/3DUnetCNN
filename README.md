@@ -26,7 +26,11 @@ nilearn,
 SimpleITK (for preprocessing only)
 3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add the location of the ANTs 
 binaries to the PATH environmental variable.
-4. Convert the data to nifti format and perform image wise normalization and correction:
+4. Add the repository directory to the ```PYTONPATH``` system variable:
+```
+$ export PYTHONPATH=${PWD}:$PYTHONPATH
+```
+5. Convert the data to nifti format and perform image wise normalization and correction:
 ```
 $ cd brats
 ```
@@ -36,11 +40,9 @@ $ python
 >>> from preprocess import convert_brats_data
 >>> convert_brats_data("data/original", "data/preprocessed")
 ```
-4. Run the training:
+6. Run the training:
 ```
-$ cd ..
-$ export PYTHONPATH=${PWD}:$PYTHONPATH
-$ python brats/train.py
+$ python train.py
 ```
 
 ## Configuration
