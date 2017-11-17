@@ -39,7 +39,7 @@ config["validation_patch_overlap"] = 0
 config["training_patch_start_offset"] = (16, 16, 16)
 config["skip_blank"] = True  # if True, then patches without any target will be skipped
 
-config["hdf5_file"] = os.path.abspath("brats_data.h5")
+config["data_file"] = os.path.abspath("brats_data.h5")
 config["model_file"] = os.path.abspath("tumor_segmentation_model.h5")
 config["training_file"] = os.path.abspath("training_ids.pkl")
 config["validation_file"] = os.path.abspath("validation_ids.pkl")
@@ -58,11 +58,11 @@ def fetch_training_data_files():
 
 def main(overwrite=False):
     # convert input images into an hdf5 file
-    if overwrite or not os.path.exists(config["hdf5_file"]):
+    if overwrite or not os.path.exists(config["data_file"]):
         training_files = fetch_training_data_files()
 
-        write_data_to_file(training_files, config["hdf5_file"], image_shape=config["image_shape"])
-    hdf5_file_opened = open_data_file(config["hdf5_file"])
+        write_data_to_file(training_files, config["data_file"], image_shape=config["image_shape"])
+    data_file_opened = open_data_file(config["data_file"])
 
     if not overwrite and os.path.exists(config["model_file"]):
         model = load_old_model(config["model_file"])
@@ -76,7 +76,7 @@ def main(overwrite=False):
 
     # get training and testing generators
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(
-        hdf5_file_opened,
+        data_file_opened,
         batch_size=config["batch_size"],
         data_split=config["validation_split"],
         overwrite=overwrite,
@@ -106,7 +106,7 @@ def main(overwrite=False):
                 learning_rate_patience=config["patience"],
                 early_stopping_patience=config["early_stop"],
                 n_epochs=config["n_epochs"])
-    hdf5_file_opened.close()
+    data_file_opened.close()
 
 
 if __name__ == "__main__":
