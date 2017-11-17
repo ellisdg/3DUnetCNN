@@ -8,10 +8,10 @@ from unet3d.training import load_old_model, train_model
 
 
 config = dict()
-config["pool_size"] = (2, 2, 2)
+config["pool_size"] = (2, 2, 2)  # pool size for the max pooling operations
 config["image_shape"] = (144, 144, 144)  # This determines what shape the images will be cropped/resampled to.
-config["patch_shape"] = (64, 64, 64)
-config["labels"] = (1, 2, 3, 4)
+config["patch_shape"] = (64, 64, 64)  # switch to None to train on the whole image
+config["labels"] = (1, 2, 3, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
 config["all_modalities"] = ["t1", "t1Gd", "flair", "t2"]
 config["training_modalities"] = config["all_modalities"]  # change this if you want to only use some of the modalities
@@ -24,7 +24,7 @@ config["truth_channel"] = config["nb_channels"]
 config["deconvolution"] = True  # if False, will use upsampling instead of deconvolution
 
 config["batch_size"] = 6
-config["validation_batch_size"] = 6
+config["validation_batch_size"] = 12
 config["n_epochs"] = 500  # cutoff the training after this many epochs
 config["patience"] = 10  # learning rate will be reduced after this many epochs if the validation loss is not improving
 config["early_stop"] = 50  # training will be stopped after this many epochs without the validation loss improving
