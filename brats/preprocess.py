@@ -109,12 +109,10 @@ def check_origin(in_file, in_file2):
 
 def normalize_image(in_file, out_file, bias_correction=True):
     if bias_correction:
-        corrected = correct_bias(in_file, append_basename(out_file, "_corrected"))
-        rescaled = rescale(corrected, out_file, maximum=1)
-        os.remove(corrected)
+        correct_bias(in_file, out_file)
     else:
-        rescaled = rescale(in_file, out_file, maximum=1)
-    return rescaled
+        shutil.copy(in_file, out_file)
+    return out_file
 
 
 def convert_brats_folder(in_folder, out_folder, truth_name="GlistrBoost_ManuallyCorrected",
@@ -122,7 +120,7 @@ def convert_brats_folder(in_folder, out_folder, truth_name="GlistrBoost_Manually
     for name in config["all_modalities"]:
         image_file = get_image(in_folder, name)
         out_file = os.path.abspath(os.path.join(out_folder, name + ".nii.gz"))
-        perform_bias_correction = no_bias_correction_modalities and name in no_bias_correction_modalities
+        perform_bias_correction = no_bias_correction_modalities and name not in no_bias_correction_modalities
         normalize_image(image_file, out_file, bias_correction=perform_bias_correction)
     # copy the truth file
     try:
