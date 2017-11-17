@@ -21,22 +21,22 @@ if "patch_shape" in config and config["patch_shape"] is not None:
 else:
     config["input_shape"] = tuple([config["nb_channels"]] + list(config["image_shape"]))
 config["truth_channel"] = config["nb_channels"]
-config["deconvolution"] = True
+config["deconvolution"] = True  # if False, will use upsampling instead of deconvolution
 
 config["batch_size"] = 6
 config["validation_batch_size"] = 6
-config["n_epochs"] = 500
-config["patience"] = 10
-config["early_stop"] = 50
+config["n_epochs"] = 500  # cutoff the training after this many epochs
+config["patience"] = 10  # learning rate will be reduced after this many epochs if the validation loss is not improving
+config["early_stop"] = 50  # training will be stopped after this many epochs without the validation loss improving
 config["initial_learning_rate"] = 0.00001
-config["learning_rate_drop"] = 0.5
-config["validation_split"] = 0.8
-config["flip"] = False
-config["permute"] = True  # data shape must be a cube
+config["learning_rate_drop"] = 0.5  # factor by which the learning rate will be reduced
+config["validation_split"] = 0.8  # portion of the data that will be used for training
+config["flip"] = False  # augments the data by randomly flipping an axis during
+config["permute"] = True  # data shape must be a cube. Augments the data by permuting in various directions
 config["distort"] = None  # switch to None if you want no distortion
 config["augment"] = config["flip"] or config["distort"]
-config["validation_patch_overlap"] = 0
-config["training_patch_start_offset"] = (16, 16, 16)
+config["validation_patch_overlap"] = 0  # if > 0, during training, validation patches will be overlapping
+config["training_patch_start_offset"] = (16, 16, 16)  # randomly offset the first patch index by up to this offset
 config["skip_blank"] = True  # if True, then patches without any target will be skipped
 
 config["data_file"] = os.path.abspath("brats_data.h5")
