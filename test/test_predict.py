@@ -50,3 +50,19 @@ class TestPrediction(TestCase):
         reconstruced_data = reconstruct_from_patches(patches, patch_indices, data.shape)
         # noinspection PyTypeChecker
         self.assertTrue(np.all(data == reconstruced_data))
+
+    def test_reconstruct_with_multiple_channels(self):
+        image_shape = (144, 144, 144)
+        n_channels = 4
+        data = np.arange(0, image_shape[0]*image_shape[1]*image_shape[2]*n_channels).reshape(
+            [n_channels] + list(image_shape))
+        patch_overlap = 16
+        patch_shape = (64, 64, 64)
+        patch_indices = compute_patch_indices(image_shape, patch_shape, patch_overlap)
+        patches = [get_patch_from_3d_data(data, patch_shape, index) for index in patch_indices]
+        self.assertEqual(patches[0].shape, tuple([4] + list(patch_shape)))
+
+        reconstruced_data = reconstruct_from_patches(patches, patch_indices, data.shape)
+        # noinspection PyTypeChecker
+        self.assertTrue(np.all(data == reconstruced_data))
+

@@ -65,7 +65,7 @@ def fix_out_of_bound_patch_attempt(data, patch_shape, patch_index, ndim=3):
     pad_after = np.abs(((patch_index + patch_shape) > image_shape) * ((patch_index + patch_shape) - image_shape))
     pad_args = np.stack([pad_before, pad_after], axis=1)
     if pad_args.shape[0] < len(data.shape):
-        pad_args = np.vstack([[[0, 0] * (len(data.shape) - pad_args.shape[0])], pad_args])
+        pad_args = [[0, 0]] * (len(data.shape) - pad_args.shape[0]) + pad_args.tolist()
     data = np.pad(data, pad_args, mode="edge")
     patch_index += pad_before
     return data, patch_index
@@ -83,20 +83,23 @@ def reconstruct_from_patches(patches, patch_indices, data_shape, default_value=0
     :return: numpy array containing the data reconstructed by the patches.
     """
     data = np.ones(data_shape) * default_value
+    image_shape = data_shape[-3:]
     count = np.zeros(data_shape, dtype=np.int)
     for patch, index in zip(patches, patch_indices):
+        image_patch_shape = patch.shape[-3:]
         if np.any(index < 0):
             fix_patch = np.asarray((index < 0) * np.abs(index), dtype=np.int)
-            patch = patch[fix_patch[0]:, fix_patch[1]:, fix_patch[2]:]
+            patch = patch[..., fix_patch[0]:, fix_patch[1]:, fix_patch[2]:]
             index[index < 0] = 0
-        if np.any((index + patch.shape) >= data_shape):
-            fix_patch = np.asarray(patch.shape - (((index + patch.shape) >= data_shape)
-                                                  * ((index + patch.shape) - data_shape)), dtype=np.int)
-            patch = patch[:fix_patch[0], :fix_patch[1], :fix_patch[2]]
+        if np.any((index + image_patch_shape) >= image_shape):
+            fix_patch = np.asarray(image_patch_shape - (((index + image_patch_shape) >= image_shape)
+                                                        * ((index + image_patch_shape) - image_shape)), dtype=np.int)
+            patch = patch[..., :fix_patch[0], :fix_patch[1], :fix_patch[2]]
         patch_index = np.zeros(data_shape, dtype=np.bool)
-        patch_index[index[0]:index[0]+patch.shape[0],
-                    index[1]:index[1]+patch.shape[1],
-                    index[2]:index[2]+patch.shape[2]] = True
+        patch_index[...,
+                    index[0]:index[0]+patch.shape[-3],
+                    index[1]:index[1]+patch.shape[-2],
+                    index[2]:index[2]+patch.shape[-1]] = True
         patch_data = np.zeros(data_shape)
         patch_data[patch_index] = patch.flatten()
 
