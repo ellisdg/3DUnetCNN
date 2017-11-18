@@ -1,3 +1,6 @@
+import os
+import collections
+
 import numpy as np
 from nilearn.image import new_img_like
 
@@ -11,6 +14,32 @@ def find_downsized_info(training_data_files, input_shape):
     cropped = crop_img_to(foreground, crop_slices, copy=True)
     final_image = resize(cropped, new_shape=input_shape, interpolation="nearest")
     return crop_slices, final_image.affine, final_image.header
+
+
+def get_cropping_parameters(in_files):
+    foreground = get_complete_foreground(in_files)
+    return crop_img(foreground, return_slices=True, copy=True)
+
+
+def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None):
+    if label_indices is None:
+        label_indices = []
+    elif not isinstance(label_indices, collections.Iterable) or isinstance(label_indices, str):
+        label_indices = [label_indices]
+
+    crop_slices = get_cropping_parameters([in_files])
+    images = list()
+    for index, in_file in enumerate(in_files):
+        interpolation = "continuous"
+        if index in label_indices:
+            interpolation = "nearest"
+        images.append(read_image(in_file, image_shape=image_shape, crop=crop_slices, interpolation=interpolation))
+    if out_files:
+        for image, out_file in zip(images, out_files):
+            image.to_filename(out_file)
+        return [os.path.abspath(out_file) for out_file in out_files]
+    else:
+        return images
 
 
 def get_complete_foreground(training_data_files):

@@ -6,6 +6,32 @@ import tables
 
 from .training import load_old_model
 from .utils import pickle_load
+from .utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
+
+
+def patch_wise_prediction(model, data, overlap=0, batch_size=1):
+    """
+    :param batch_size:
+    :param model:
+    :param data:
+    :param overlap:
+    :return:
+    """
+    patch_shape = tuple([int(dim) for dim in model.input.shape[-3:]])
+    predictions = list()
+    indices = compute_patch_indices(data.shape[-3:], patch_size=patch_shape, overlap=overlap)
+    batch = list()
+    i = 0
+    while i < len(indices):
+        while len(batch) < batch_size:
+            patch = get_patch_from_3d_data(data[0], patch_shape=patch_shape, patch_index=indices[i])
+            batch.append(patch)
+            i += 1
+        prediction = model.predict(np.asarray(batch))
+        batch = list()
+        for predicted_patch in prediction:
+            predictions.append(predicted_patch)
+    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=data.shape)
 
 
 def get_prediction_labels(prediction, threshold=0.5, labels=None):
@@ -72,15 +98,20 @@ def multi_class_prediction(prediction, affine):
 
 
 def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_keys_file, training_modalities,
-                        output_label_map=False, threshold=0.5, labels=None):
+                        output_label_map=False, threshold=0.5, labels=None, overlap=16):
     """
     Runs a test case and writes predicted images to file.
-    :param test_index: Index from of the list of test cases to get an image prediction from.  
+    :param test_index: Index from of the list of test cases to get an image prediction from.
     :param out_dir: Where to write prediction images.
     :param output_label_map: If True, will write out a single image with one or more labels. Otherwise outputs
     the (sigmoid) prediction values from the model.
     :param threshold: If output_label_map is set to True, this threshold defines the value above which is 
     considered a positive result and will be assigned a label.  
+    :param labels:
+    :param validation_keys_file:
+    :param training_modalities:
+    :param hdf5_file:
+    :param model_file:
     """
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
@@ -89,7 +120,7 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
 
     data_file = tables.open_file(hdf5_file, "r")
     data_index = get_test_indices(validation_keys_file)[test_index]
-    affine = data_file.root.affine
+    affine = data_file.root.affine[data_index]
     test_data = np.asarray([data_file.root.data[data_index]])
     for i, modality in enumerate(training_modalities):
         image = nib.Nifti1Image(test_data[0, i], affine)
@@ -98,7 +129,12 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
     test_truth = nib.Nifti1Image(data_file.root.truth[data_index][0], affine)
     test_truth.to_filename(os.path.join(out_dir, "truth.nii.gz"))
 
-    prediction = model.predict(test_data)
+    patch_shape = tuple([int(dim) for dim in model.input.shape[-3:]])
+    if patch_shape == test_data.shape[-3:]:
+        # the model was trained t
+        prediction = model.predict(test_data)
+    else:
+        prediction = patch_wise_prediction(model=model, data=test_data, overlap=overlap)
     prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold,
                                            labels=labels)
     if isinstance(prediction_image, list):
