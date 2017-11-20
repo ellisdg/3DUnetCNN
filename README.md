@@ -58,7 +58,7 @@ To write the predicted label maps to file:
 ```
 $ python predict.py
 ```
-A the predictions will be written in the ```prediction``` folder along with the input data and ground truth labels for 
+The predictions will be written in the ```prediction``` folder along with the input data and ground truth labels for 
 comparison.
 
 ### Configuration
