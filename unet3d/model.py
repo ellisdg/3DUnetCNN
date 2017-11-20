@@ -44,7 +44,7 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     for layer_depth in range(depth):
         layer1 = create_convolution_block(input_layer=current_layer, n_filters=n_base_filters*(2**layer_depth),
                                           batch_normalization=batch_normalization)
-        layer2 = create_convolution_block(input_layer=current_layer, n_filters=n_base_filters*(2**layer_depth)*2,
+        layer2 = create_convolution_block(input_layer=layer1, n_filters=n_base_filters*(2**layer_depth)*2,
                                           batch_normalization=batch_normalization)
         if layer_depth < depth - 1:
             current_layer = MaxPooling3D(pool_size=pool_size)(layer2)
