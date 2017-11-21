@@ -1,0 +1,11 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/3DUnetCNN
+    docker:
+      - image: circleci/python:3.6.1
+    steps:
+      - checkout
+      - run: pip install -r requirements.txt
+      - run: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git
+      - run: nosetests
