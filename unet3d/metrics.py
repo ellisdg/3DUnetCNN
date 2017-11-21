@@ -14,15 +14,19 @@ def dice_coefficient_loss(y_true, y_pred):
     return -dice_coefficient(y_true, y_pred)
 
 
-def weighted_dice_coefficient(y_true, y_pred, axis=(-3, -2, -1)):
+def weighted_dice_coefficient(y_true, y_pred, axis=(-3, -2, -1), smooth=0.00001):
     """
     Weighted dice coefficient. Default axis assumes a "channels first" data structure
+    :param smooth:
     :param y_true:
     :param y_pred:
     :param axis:
     :return:
     """
-    return K.mean(2. * (K.sum(y_true * y_pred, axis=axis))/(K.sum(y_true, axis=axis) + K.sum(y_pred, axis=axis)))
+    return K.mean(2. * (K.sum(y_true * y_pred,
+                              axis=axis) + smooth/2)/(K.sum(y_true,
+                                                            axis=axis) + K.sum(y_pred,
+                                                                               axis=axis) + smooth))
 
 
 def label_wise_dice_coefficient(y_true, y_pred, label_index):
