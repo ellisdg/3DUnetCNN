@@ -1,6 +1,6 @@
 from functools import partial
 
-from keras.layers import Input, LeakyReLU, Dropout, Add, UpSampling3D, Reshape, Activation
+from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Reshape, Activation, SpatialDropout3D
 from keras.engine import Model
 from keras.optimizers import Adam
 import numpy as np
@@ -75,7 +75,7 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
         if level_number > 0:
             output_layer = UpSampling3D(size=(2, 2, 2))(output_layer)
 
-    activation_block = Activation('sigmoid')(output_layer)
+    activation_block = Activation(activation_name)(output_layer)
 
     model = Model(inputs=inputs, outputs=activation_block)
     model.compile(optimizer=optimizer(lr=initial_learning_rate), loss=loss_function)
@@ -104,11 +104,11 @@ def create_up_sampling_module(input_layer, n_filters, size=(2, 2, 2)):
     return convolution
 
 
-def create_context_module(input_layer, n_level_filters, dropout_rate=0.3):
+def create_context_module(input_layer, n_level_filters, dropout_rate=0.3, data_format="channels_first"):
     convolution1 = create_convolution_block(input_layer=input_layer, n_filters=n_level_filters)
-    convolution2 = create_convolution_block(input_layer=convolution1, n_filters=n_level_filters)
-    dropout = Dropout(rate=dropout_rate)(convolution2)
-    return dropout
+    dropout = SpatialDropout3D(rate=dropout_rate, data_format=data_format)(convolution1)
+    convolution2 = create_convolution_block(input_layer=dropout, n_filters=n_level_filters)
+    return convolution2
 
 
 
