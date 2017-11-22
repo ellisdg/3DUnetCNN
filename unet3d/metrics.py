@@ -41,3 +41,7 @@ def get_label_dice_coefficient_function(label_index):
     f = partial(label_wise_dice_coefficient, label_index=label_index)
     f.__setattr__('__name__', 'label_{0}_dice_coef'.format(label_index))
     return f
+
+
+dice_coef = dice_coefficient
+dice_coef_loss = dice_coefficient_loss

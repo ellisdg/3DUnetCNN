@@ -1,9 +1,8 @@
 from functools import partial
 
-from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Reshape, Activation, SpatialDropout3D
+from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation, SpatialDropout3D
 from keras.engine import Model
 from keras.optimizers import Adam
-import numpy as np
 
 from .unet import create_convolution_block, concatenate
 from ..metrics import weighted_dice_coefficient_loss
@@ -80,16 +79,6 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
     model = Model(inputs=inputs, outputs=activation_block)
     model.compile(optimizer=optimizer(lr=initial_learning_rate), loss=loss_function)
     return model
-
-
-def create_activation_block(input_layer, n_labels, image_shape, feature_axis=1, activation_name="softmax"):
-    if feature_axis == 1:
-        flat_shape = (n_labels, np.product(image_shape))
-    else:
-        flat_shape = (np.prod(image_shape), n_labels)
-    flatten = Reshape(flat_shape)(input_layer)
-    activation = Activation(activation=activation_name)(flatten)
-    return Reshape(tuple([n_labels] + list(image_shape)))(activation)
 
 
 def create_localization_module(input_layer, n_filters):
