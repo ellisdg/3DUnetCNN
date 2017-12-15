@@ -11,5 +11,5 @@ class TestModel(TestCase):
         layer_names = [layer.name for layer in model.layers]
 
         for name in layer_names[:-3]:  # exclude the last convolution layer
-            if 'conv3d' in name:
+            if 'conv3d' in name and 'transpose' not in name:
                 self.assertIn(name.replace('conv3d', 'batch_normalization'), layer_names)
