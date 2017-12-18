@@ -42,8 +42,8 @@ def get_prediction_labels(prediction, threshold=0.5, labels=None):
         label_data = np.argmax(prediction[sample_number], axis=0) + 1
         label_data[np.max(prediction[sample_number], axis=0) < threshold] = 0
         if labels:
-            for index, value in enumerate(np.unique(label_data).tolist()[1:]):
-                label_data[label_data == value] = labels[index]
+            for value in np.unique(label_data).tolist()[1:]:
+                label_data[label_data == value] = labels[value - 1]
         label_arrays.append(np.array(label_data, dtype=np.uint8))
     return label_arrays
 
@@ -135,7 +135,7 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
         # the model was trained t
         prediction = model.predict(test_data)
     else:
-        prediction = patch_wise_prediction(model=model, data=test_data, overlap=overlap)
+        prediction = patch_wise_prediction(model=model, data=test_data, overlap=overlap)[np.newaxis]
     prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold,
                                            labels=labels)
     if isinstance(prediction_image, list):
