@@ -42,6 +42,7 @@ def main():
     plt.boxplot(df.values, labels=df.columns)
     plt.ylabel("Dice Coefficient")
     plt.savefig("validation_scores_boxplot.png")
+    plt.close()
 
     training_df = pd.read_csv("./training.log").set_index('epoch')
 
