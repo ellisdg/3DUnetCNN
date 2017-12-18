@@ -31,7 +31,8 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=1):
         batch = list()
         for predicted_patch in prediction:
             predictions.append(predicted_patch)
-    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=data.shape)
+    output_shape = [int(model.output.shape[1])] + list(data.shape[-3:])
+    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=output_shape)
 
 
 def get_prediction_labels(prediction, threshold=0.5, labels=None):
