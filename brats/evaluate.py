@@ -21,7 +21,7 @@ def get_enhancing_tumor_mask(data):
 
 
 def dice_coefficient(truth, prediction):
-    return 2 * np.sum(truth * prediction)/(np.sum(truth) + np.sum(prediction) + 1e-20)
+    return 2 * np.sum(truth * prediction)/(np.sum(truth) + np.sum(prediction))
 
 
 def main():
