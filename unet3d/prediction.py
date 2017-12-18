@@ -42,8 +42,8 @@ def get_prediction_labels(prediction, threshold=0.5, labels=None):
         label_data = np.argmax(prediction[sample_number], axis=0) + 1
         label_data[np.max(prediction[sample_number], axis=0) < threshold] = 0
         if labels:
-            for value in np.unique(label_data).tolist()[1:]:
-                label_data[label_data == value] = labels[value - 1]
+            for index, value in enumerate(np.unique(label_data).tolist()[1:]):
+                label_data[label_data == value] = labels[index]
         label_arrays.append(np.array(label_data, dtype=np.uint8))
     return label_arrays
 
