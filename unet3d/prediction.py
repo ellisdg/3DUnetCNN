@@ -31,7 +31,8 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=1):
         batch = list()
         for predicted_patch in prediction:
             predictions.append(predicted_patch)
-    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=data.shape)
+    output_shape = [int(model.output.shape[1])] + list(data.shape[-3:])
+    return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=output_shape)
 
 
 def get_prediction_labels(prediction, threshold=0.5, labels=None):
@@ -134,7 +135,7 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
         # the model was trained t
         prediction = model.predict(test_data)
     else:
-        prediction = patch_wise_prediction(model=model, data=test_data, overlap=overlap)
+        prediction = patch_wise_prediction(model=model, data=test_data, overlap=overlap)[np.newaxis]
     prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold,
                                            labels=labels)
     if isinstance(prediction_image, list):
