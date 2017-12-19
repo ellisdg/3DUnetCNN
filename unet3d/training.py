@@ -39,11 +39,6 @@ def load_old_model(model_file):
                       'dice_coef': dice_coef, 'dice_coef_loss': dice_coef_loss,
                       'weighted_dice_coefficient': weighted_dice_coefficient,
                       'weighted_dice_coefficient_loss': weighted_dice_coefficient_loss}
-    try:
-        from keras_contrib.layers import Deconvolution3D
-        custom_objects["Deconvolution3D"] = Deconvolution3D
-    except ImportError:
-        print("Could not import Deconvolution3D. To use Deconvolution3D install keras-contrib.")
     return load_model(model_file, custom_objects=custom_objects)
 
 
