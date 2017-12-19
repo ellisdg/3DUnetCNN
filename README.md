@@ -53,7 +53,8 @@ To run training using an improved UNet model (recommended):
 $ python train_isensee2017.py
 ```
 **If you run out of memory during training:** try setting 
-```config['patch_shape`] = (64, 64, 64)``` for starters. Also, read "Configuration" notes at the bottom of this page.
+```config['patch_shape`] = (64, 64, 64)``` for starters. 
+Also, read the "Configuration" notes at the bottom of this page.
 
 ### Write prediction images from the validation data
 In the training above, part of the data was held out for validation purposes. 
