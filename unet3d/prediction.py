@@ -149,7 +149,10 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
 
 def predict(model, data, permute=False):
     if permute:
-        return predict_with_permutations(model, data)
+        predictions = list()
+        for batch_index in range(data.shape[0]):
+            predictions.append(predict_with_permutations(model, data[batch_index]))
+        return np.asarray(predictions)
     else:
         return model.predict(data)
 
