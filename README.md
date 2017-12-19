@@ -65,7 +65,7 @@ $ python predict.py
 The predictions will be written in the ```prediction``` folder along with the input data and ground truth labels for 
 comparison.
 
-### Results from patch-wise training
+### Results from patch-wise training using original UNet
 ![Patchwise training loss graph
 ](doc/brats_64cubedpatch_loss_graph.png)
 ![Patchwise boxplot scores
