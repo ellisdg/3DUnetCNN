@@ -39,6 +39,11 @@ def load_old_model(model_file):
                       'dice_coef': dice_coef, 'dice_coef_loss': dice_coef_loss,
                       'weighted_dice_coefficient': weighted_dice_coefficient,
                       'weighted_dice_coefficient_loss': weighted_dice_coefficient_loss}
+    try:
+        from keras_contrib.layers import InstanceNormalization
+        custom_objects["InstanceNormalization"] = InstanceNormalization
+    except ImportError:
+        pass
     return load_model(model_file, custom_objects=custom_objects)
 
 
