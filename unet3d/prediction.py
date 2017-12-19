@@ -161,5 +161,5 @@ def predict_with_permutations(model, data):
     predictions = list()
     for permutation_key in generate_permutation_keys():
         temp_data = permute_data(data, permutation_key)
-        predictions.append(reverse_permute_data(model.predict(temp_data), permutation_key))
+        predictions.append(reverse_permute_data(model.predict([temp_data]), permutation_key))
     return np.mean(predictions, axis=0)
