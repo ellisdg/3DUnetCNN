@@ -61,6 +61,18 @@ $ python predict.py
 The predictions will be written in the ```prediction``` folder along with the input data and ground truth labels for 
 comparison.
 
+### Results from patch-wise training
+![Patchwise training loss graph
+](https://github.com/ellisdg/3DUnetCNN/blob/prediction_reports/doc/brats_64cubedpatch_loss_graph.png)
+![Patchwise boxplot scores
+](https://github.com/ellisdg/3DUnetCNN/blob/prediction_reports/doc/brats_64cubedpatch_validation_scores_boxplot.png)
+
+In the box plot above, the 'whole tumor' area is any labeled area. The 'tumor core' area corresponds to the combination
+of labels 1 and 4. The 'enhancing tumor' area corresponds to the 4 label. This is how the BRATS competition is scored.
+The both the loss graph and the box plot were created by running the 
+[evaluate.py](https://github.com/ellisdg/3DUnetCNN/blob/prediction_reports/brats/evaluate.py) script in the 'brats' 
+folder.
+
 ### Configuration
 By changing the configuration dictionary in the ```brats/train.py``` file, makes it easy to test out different model and
 training configurations. If you are running out of memory, try reducing the "batch_size" parameter. A smaller batch size 
