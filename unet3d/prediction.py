@@ -7,9 +7,10 @@ import tables
 from .training import load_old_model
 from .utils import pickle_load
 from .utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
+from .augment import permute_data, generate_permutation_keys
 
 
-def patch_wise_prediction(model, data, overlap=0, batch_size=1):
+def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
     """
     :param batch_size:
     :param model:
@@ -27,7 +28,7 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=1):
             patch = get_patch_from_3d_data(data[0], patch_shape=patch_shape, patch_index=indices[i])
             batch.append(patch)
             i += 1
-        prediction = model.predict(np.asarray(batch))
+        prediction = predict(model, np.asarray(batch), permute=permute)
         batch = list()
         for predicted_patch in prediction:
             predictions.append(predicted_patch)
@@ -99,7 +100,7 @@ def multi_class_prediction(prediction, affine):
 
 
 def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_keys_file, training_modalities,
-                        output_label_map=False, threshold=0.5, labels=None, overlap=16):
+                        output_label_map=False, threshold=0.5, labels=None, overlap=16, permute=False):
     """
     Runs a test case and writes predicted images to file.
     :param test_index: Index from of the list of test cases to get an image prediction from.
@@ -132,10 +133,9 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
 
     patch_shape = tuple([int(dim) for dim in model.input.shape[-3:]])
     if patch_shape == test_data.shape[-3:]:
-        # the model was trained t
-        prediction = model.predict(test_data)
+        prediction = predict(model, test_data, permute=permute)
     else:
-        prediction = patch_wise_prediction(model=model, data=test_data, overlap=overlap)[np.newaxis]
+        prediction = patch_wise_prediction(model=model, data=test_data, overlap=overlap, permute=permute)[np.newaxis]
     prediction_image = prediction_to_image(prediction, affine, label_map=output_label_map, threshold=threshold,
                                            labels=labels)
     if isinstance(prediction_image, list):
@@ -145,3 +145,18 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
         prediction_image.to_filename(os.path.join(out_dir, "prediction.nii.gz"))
 
     data_file.close()
+
+
+def predict(model, data, permute=False):
+    if permute:
+        return predict_with_permutations(model, data)
+    else:
+        return model.predict(data)
+
+
+def predict_with_permutations(model, data):
+    predictions = list()
+    for permutation_key in generate_permutation_keys():
+        temp_data = permute_data(data, permutation_key)
+        predictions.append(model.predict(temp_data))
+    return np.mean(predictions, axis=0)
