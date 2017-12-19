@@ -1,14 +1,10 @@
 # 3D U-Net Convolution Neural Network with Keras
 ## Background
-Designed after [this paper](http://lmb.informatik.uni-freiburg.de/Publications/2016/CABR16/cicek16miccai.pdf) on 
-volumetric segmentation with a 3D U-Net. Currently, the network does not have the B-Spline deformations
-that are mentioned in the paper. If you figure out a way to apply these to a 3D Keras CNN, let me know! PRs are always
-welcome!
-
+Originally, designed after [this paper](http://lmb.informatik.uni-freiburg.de/Publications/2016/CABR16/cicek16miccai.pdf) on 
+volumetric segmentation with a 3D U-Net.
 The code was written to be trained using the 
 [BRATS](http://www.med.upenn.edu/sbia/brats2017.html) data set for brain tumors, but it can
-be easily modified to be used in other 3D applications. To adapt the network, you might have to play with the input size
-to get something that works for your data.
+be easily modified to be used in other 3D applications. 
 
 ## Tutorial using BRATS Data
 ### Training
@@ -46,10 +42,19 @@ $ python
 >>> convert_brats_data("data/original", "data/preprocessed")
 ```
 6. Run the training:
+
+To run training using the original UNet model:
 ```
 $ python train.py
 ```
- 
+
+To run training using an improved UNet model (recommended): 
+```
+$ python train_isensee2017.py
+```
+**If you run out of memory during training:** try setting 
+```config['patch_shape`] = (64, 64, 64)``` for starters. Also, read "Configuration" notes at the bottom of this page.
+
 ### Write prediction images from the validation data
 In the training above, part of the data was held out for validation purposes. 
 To write the predicted label maps to file:
@@ -72,7 +77,7 @@ The both the loss graph and the box plot were created by running the
 folder after training has been completed.
 
 ### Results from Isensee et al. 2017 model
-I also trained a model with the architecture as described in the [2017 BRATS proceedings
+I also trained a [model](unet3d/model/isensee2017.py) with the architecture as described in the [2017 BRATS proceedings
 ](https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf) 
 on page 100. This [architecture](doc/isensee2017.png) employs a number of changes to the basic UNet including an 
 [equally weighted dice coefficient](unet3d/metrics.py#L17), 
