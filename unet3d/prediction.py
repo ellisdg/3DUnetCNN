@@ -7,7 +7,7 @@ import tables
 from .training import load_old_model
 from .utils import pickle_load
 from .utils.patches import reconstruct_from_patches, get_patch_from_3d_data, compute_patch_indices
-from .augment import permute_data, generate_permutation_keys
+from .augment import permute_data, generate_permutation_keys, reverse_permute_data
 
 
 def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
@@ -158,5 +158,5 @@ def predict_with_permutations(model, data):
     predictions = list()
     for permutation_key in generate_permutation_keys():
         temp_data = permute_data(data, permutation_key)
-        predictions.append(model.predict(temp_data))
+        predictions.append(reverse_permute_data(model.predict(temp_data), permutation_key))
     return np.mean(predictions, axis=0)
