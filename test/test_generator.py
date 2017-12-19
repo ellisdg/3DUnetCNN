@@ -5,7 +5,7 @@ import numpy as np
 
 from unet3d.data import add_data_to_storage, create_data_file
 from unet3d.generator import get_multi_class_labels, get_training_and_validation_generators
-from unet3d.augment import generate_permutation_keys, permute_data
+from unet3d.augment import generate_permutation_keys, permute_data, reverse_permute_data
 
 
 class TestDataGenerator(TestCase):
@@ -192,3 +192,11 @@ class TestDataGenerator(TestCase):
             break
 
         self.rm_tmp_files()
+
+    def test_reverse_permutation(self):
+        data_shape = (4, 32, 32, 32)
+        data = np.arange(np.prod(data_shape)).reshape(data_shape)
+        for permutation_key in generate_permutation_keys():
+            permuted_data = permute_data(data, permutation_key)
+            reversed_permutation = reverse_permute_data(permuted_data, permutation_key)
+            self.assertTrue(np.all(data == reversed_permutation))
