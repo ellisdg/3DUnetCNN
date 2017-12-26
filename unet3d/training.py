@@ -33,13 +33,16 @@ def get_callbacks(model_file, initial_learning_rate=0.0001, learning_rate_drop=0
     return callbacks
 
 
-def load_old_model(model_file):
+def load_old_model(model_file, custom_objects=None):
     print("Loading pre-trained model")
-    custom_objects = {'dice_coefficient_loss': dice_coefficient_loss, 'dice_coefficient': dice_coefficient,
-                      'dice_coef': dice_coef, 'dice_coef_loss': dice_coef_loss,
-                      'weighted_dice_coefficient': weighted_dice_coefficient,
-                      'weighted_dice_coefficient_loss': weighted_dice_coefficient_loss}
-    return load_model(model_file, custom_objects=custom_objects)
+    custom_objects_dict = {'dice_coefficient_loss': dice_coefficient_loss, 'dice_coefficient': dice_coefficient,
+                           'dice_coef': dice_coefficient, 'dice_coef_loss': dice_coefficient_loss,
+                           'weighted_dice_coefficient': weighted_dice_coefficient,
+                           'weighted_dice_coefficient_loss': weighted_dice_coefficient_loss}
+    if custom_objects:
+        for custom_object in custom_objects:
+            custom_objects_dict[custom_object.__name__] = custom_object
+    return load_model(model_file, custom_objects=custom_objects_dict)
 
 
 def train_model(model, model_file, training_generator, validation_generator, steps_per_epoch, validation_steps,
