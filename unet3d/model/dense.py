@@ -23,7 +23,9 @@ def dense_unet(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_ra
         modalities_axis = -1
 
     inputs = Input(input_shape)
-    input_convolution = Conv3D(n_base_filters, kernel_size=layer_kernel_size, padding='same')(inputs)
+    input_convolution = create_convolution_block(inputs, n_base_filters, normalization=normalization,
+                                                 dropout_rate=dropout_rate, data_format=data_format,
+                                                 normalization_axis=modalities_axis, kernel=layer_kernel_size)
 
     output_level = create_levels(input_convolution, n_levels=depth, n_filters=n_base_filters*2, n_layers=depth,
                                  concatenation_axis=modalities_axis, normalization=normalization,
@@ -48,7 +50,7 @@ def create_levels(input_node, n_levels, n_filters, n_layers, concatenation_axis=
                                                        data_format=data_format, dropout_rate=dropout_rate,
                                                        activation=activation, pool_size=pool_size,
                                                        normalization_axis=normalization_axis)
-        lower_level_output_node = create_levels(down_transition_block, n_levels-1, n_filters, n_layers+1,
+        lower_level_output_node = create_levels(down_transition_block, n_levels-1, n_filters*2, n_layers+1,
                                                 concatenation_axis=concatenation_axis)
         up_transition_block = create_transition_up(lower_level_output_node, n_filters, kernel_size=kernel_size)
         up_concatenation_block = concatenate([down_concatenation_block, up_transition_block], axis=concatenation_axis)
@@ -62,6 +64,17 @@ def create_levels(input_node, n_levels, n_filters, n_layers, concatenation_axis=
 def create_layer(input_node, n_filters, kernel=(3, 3, 3), strides=(1, 1, 1), padding='same',
                  normalization=BatchNormalization, dropout_rate=0.2, data_format="channels_first",
                  normalization_axis=1):
+    bottleneck = create_convolution_block(input_node=input_node, kernel=(1, 1, 1), n_filters=n_filters, strides=strides,
+                                          padding=padding, normalization=normalization, dropout_rate=dropout_rate,
+                                          data_format=data_format, normalization_axis=normalization_axis)
+    return create_convolution_block(input_node=bottleneck, kernel=kernel, n_filters=n_filters, strides=strides,
+                                    padding=padding, normalization=normalization, dropout_rate=dropout_rate,
+                                    data_format=data_format, normalization_axis=normalization_axis)
+
+
+def create_convolution_block(input_node, n_filters, kernel=(3, 3, 3), strides=(1, 1, 1), padding='same',
+                             normalization=BatchNormalization, dropout_rate=0.2, data_format="channels_first",
+                             normalization_axis=1):
     norm = normalization(axis=normalization_axis)(input_node)
     act = Activation('relu')(norm)
     conv = Conv3D(n_filters, kernel, padding=padding, strides=strides)(act)
