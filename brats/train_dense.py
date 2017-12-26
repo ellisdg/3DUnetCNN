@@ -13,7 +13,8 @@ config = dict()
 config["image_shape"] = (128, 128, 128)  # This determines what shape the images will be cropped/resampled to.
 config["patch_shape"] = None  # switch to None to train on the whole image
 config["labels"] = (1, 2, 4)  # the label numbers on the input image
-config["n_base_filters"] = 16
+config["n_base_filters"] = 4
+config["n_base_layers"] = 2
 config["n_labels"] = len(config["labels"])
 config["all_modalities"] = ["t1", "t1Gd", "flair", "t2"]
 config["training_modalities"] = config["all_modalities"]  # change this if you want to only use some of the modalities
@@ -23,7 +24,6 @@ if "patch_shape" in config and config["patch_shape"] is not None:
 else:
     config["input_shape"] = tuple([config["nb_channels"]] + list(config["image_shape"]))
 config["truth_channel"] = config["nb_channels"]
-config["deconvolution"] = True  # if False, will use upsampling instead of deconvolution
 
 config["batch_size"] = 1
 config["validation_batch_size"] = 2
@@ -72,7 +72,8 @@ def main(overwrite=False):
         # instantiate new model
         model = dense_unet(input_shape=config["input_shape"], n_labels=config["n_labels"],
                            initial_learning_rate=config["initial_learning_rate"],
-                           n_base_filters=config["n_base_filters"], normalization=InstanceNormalization)
+                           n_base_filters=config["n_base_filters"], normalization=InstanceNormalization,
+                           n_base_layers=config["n_base_layers"])
 
     # get training and testing generators
     train_generator, validation_generator, n_train_steps, n_validation_steps = get_training_and_validation_generators(

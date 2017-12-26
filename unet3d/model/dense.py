@@ -14,7 +14,7 @@ except ImportError:
 def dense_unet(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, depth=4, n_base_filters=32,
                loss=weighted_dice_coefficient_loss, activation_name="sigmoid", layer_activation='relu',
                layer_kernel_size=(3, 3, 3), data_format="channels_first", dropout_rate=0.2,
-               normalization=BatchNormalization):
+               normalization=BatchNormalization, n_base_layers=4):
 
     K.set_image_data_format(data_format=data_format)
     if data_format == "channels_first":
@@ -27,7 +27,7 @@ def dense_unet(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_ra
                                                  dropout_rate=dropout_rate, data_format=data_format,
                                                  normalization_axis=modalities_axis, kernel=layer_kernel_size)
 
-    output_level = create_levels(input_convolution, n_levels=depth, n_filters=n_base_filters*2, n_layers=depth,
+    output_level = create_levels(input_convolution, n_levels=depth, n_filters=n_base_filters*2, n_layers=n_base_layers,
                                  concatenation_axis=modalities_axis, normalization=normalization,
                                  data_format=data_format, dropout_rate=dropout_rate, activation=layer_activation,
                                  pool_size=pool_size, normalization_axis=modalities_axis, kernel_size=layer_kernel_size)
