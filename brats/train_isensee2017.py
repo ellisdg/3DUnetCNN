@@ -6,6 +6,8 @@ from unet3d.generator import get_training_and_validation_generators
 from unet3d.model import isensee2017_model
 from unet3d.training import load_old_model, train_model
 
+from keras_contrib.layers import InstanceNormalization
+
 
 config = dict()
 config["image_shape"] = (128, 128, 128)  # This determines what shape the images will be cropped/resampled to.
@@ -65,7 +67,7 @@ def main(overwrite=False):
     data_file_opened = open_data_file(config["data_file"])
 
     if not overwrite and os.path.exists(config["model_file"]):
-        model = load_old_model(config["model_file"])
+        model = load_old_model(config["model_file"], custom_objects=(InstanceNormalization,))
     else:
         # instantiate new model
         model = isensee2017_model(input_shape=config["input_shape"], n_labels=config["n_labels"],
