@@ -48,7 +48,7 @@ def create_levels(input_node, n_levels, n_filters, n_layers, concatenation_axis=
                                                        data_format=data_format, dropout_rate=dropout_rate,
                                                        activation=activation, pool_size=pool_size,
                                                        normalization_axis=normalization_axis)
-        lower_level_output_node = create_levels(down_transition_block, n_levels-1, n_filters*2, n_layers+1,
+        lower_level_output_node = create_levels(down_transition_block, n_levels-1, n_filters, n_layers+1,
                                                 concatenation_axis=concatenation_axis)
         up_transition_block = create_transition_up(lower_level_output_node, n_filters, kernel_size=kernel_size)
         up_concatenation_block = concatenate([down_concatenation_block, up_transition_block], axis=concatenation_axis)
