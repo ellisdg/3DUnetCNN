@@ -64,10 +64,7 @@ def create_levels(input_node, n_levels, n_filters, n_layers, concatenation_axis=
 def create_layer(input_node, n_filters, kernel=(3, 3, 3), strides=(1, 1, 1), padding='same',
                  normalization=BatchNormalization, dropout_rate=0.2, data_format="channels_first",
                  normalization_axis=1):
-    bottleneck = create_convolution_block(input_node=input_node, kernel=(1, 1, 1), n_filters=n_filters, strides=strides,
-                                          padding=padding, normalization=normalization, dropout_rate=dropout_rate,
-                                          data_format=data_format, normalization_axis=normalization_axis)
-    return create_convolution_block(input_node=bottleneck, kernel=kernel, n_filters=n_filters, strides=strides,
+    return create_convolution_block(input_node=input_node, kernel=kernel, n_filters=n_filters, strides=strides,
                                     padding=padding, normalization=normalization, dropout_rate=dropout_rate,
                                     data_format=data_format, normalization_axis=normalization_axis)
 
