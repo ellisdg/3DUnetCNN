@@ -43,7 +43,10 @@ def dense_unet(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_ra
 def create_levels(input_node, n_levels, n_filters, n_layers, concatenation_axis=1, normalization=BatchNormalization,
                   data_format="channels_first", dropout_rate=0.2, activation='relu', pool_size=(2, 2, 2),
                   normalization_axis=1, kernel_size=(3, 3, 3)):
-    down_dense_block = create_dense_block(input_node, n_layers, n_filters, concatenation_axis=concatenation_axis)
+    down_dense_block = create_dense_block(input_node, n_layers, n_filters, concatenation_axis=concatenation_axis,
+                                          normalization_axis=normalization_axis, activation=activation,
+                                          kernel=kernel_size, dropout_rate=dropout_rate, data_format=data_format,
+                                          normalization=normalization)
     if n_levels > 1:
         down_concatenation_block = concatenate([input_node, down_dense_block], axis=concatenation_axis)
         down_transition_block = create_transition_down(down_concatenation_block, n_filters, normalization=normalization,
@@ -55,7 +58,10 @@ def create_levels(input_node, n_levels, n_filters, n_layers, concatenation_axis=
         up_transition_block = create_transition_up(lower_level_output_node, n_filters, kernel_size=kernel_size)
         up_concatenation_block = concatenate([down_concatenation_block, up_transition_block], axis=concatenation_axis)
         up_dense_block = create_dense_block(up_concatenation_block, n_layers=n_layers, n_filters=n_filters,
-                                            concatenation_axis=concatenation_axis)
+                                            concatenation_axis=concatenation_axis,
+                                            normalization_axis=normalization_axis, activation=activation,
+                                            normalization=normalization, kernel=kernel_size, data_format=data_format,
+                                            dropout_rate=dropout_rate)
         return up_dense_block
     else:
         return down_dense_block
@@ -63,27 +69,36 @@ def create_levels(input_node, n_levels, n_filters, n_layers, concatenation_axis=
 
 def create_layer(input_node, n_filters, kernel=(3, 3, 3), strides=(1, 1, 1), padding='same',
                  normalization=BatchNormalization, dropout_rate=0.2, data_format="channels_first",
-                 normalization_axis=1):
+                 normalization_axis=1, activation='relu'):
     return create_convolution_block(input_node=input_node, kernel=kernel, n_filters=n_filters, strides=strides,
                                     padding=padding, normalization=normalization, dropout_rate=dropout_rate,
-                                    data_format=data_format, normalization_axis=normalization_axis)
+                                    data_format=data_format, normalization_axis=normalization_axis,
+                                    activation=activation)
 
 
 def create_convolution_block(input_node, n_filters, kernel=(3, 3, 3), strides=(1, 1, 1), padding='same',
                              normalization=BatchNormalization, dropout_rate=0.2, data_format="channels_first",
-                             normalization_axis=1):
-    norm = normalization(axis=normalization_axis)(input_node)
-    act = Activation('relu')(norm)
-    conv = Conv3D(n_filters, kernel, padding=padding, strides=strides)(act)
-    dropout = SpatialDropout3D(rate=dropout_rate, data_format=data_format)(conv)
-    return dropout
+                             normalization_axis=1, activation='relu'):
+    if normalization:
+        node = normalization(axis=normalization_axis)(input_node)
+    else:
+        node = input_node
+    activation_node = Activation(activation)(node)
+    convolution_node = Conv3D(n_filters, kernel, padding=padding, strides=strides)(activation_node)
+    dropout_node = SpatialDropout3D(rate=dropout_rate, data_format=data_format)(convolution_node)
+    return dropout_node
 
 
-def create_dense_block(input_node, n_layers, n_filters, concatenation_axis=1):
+def create_dense_block(input_node, n_layers, n_filters, concatenation_axis=1, activation='relu', normalization_axis=1,
+                       normalization=BatchNormalization, kernel=(3, 3, 3), strides=(1, 1, 1), padding='same',
+                       data_format='channels_first', dropout_rate=0.2):
     layers = [input_node]
     current_node = input_node
     for layer_index in range(n_layers):
-        layers.append(create_layer(current_node, n_filters))
+        layers.append(create_layer(current_node, n_filters, activation=activation,
+                                   normalization_axis=normalization_axis, normalization=normalization, kernel=kernel,
+                                   strides=strides, padding=padding, dropout_rate=dropout_rate,
+                                   data_format=data_format))
         if layer_index < (n_layers - 1):
             current_node = concatenate(layers, axis=concatenation_axis)
         else:
@@ -93,10 +108,9 @@ def create_dense_block(input_node, n_layers, n_filters, concatenation_axis=1):
 
 def create_transition_down(input_node, n_filters, normalization=BatchNormalization, activation='relu', dropout_rate=0.2,
                            pool_size=(2, 2, 2), normalization_axis=1, data_format="channels_first"):
-    norm = normalization(axis=normalization_axis)(input_node)
-    act = Activation(activation)(norm)
-    conv = Conv3D(n_filters, (1, 1, 1))(act)
-    dropout = SpatialDropout3D(rate=dropout_rate, data_format=data_format)(conv)
+    dropout = create_convolution_block(input_node=input_node, n_filters=n_filters, normalization=normalization,
+                                       activation=activation, dropout_rate=dropout_rate, data_format=data_format,
+                                       normalization_axis=normalization_axis, kernel=(1, 1, 1))
     pool = MaxPooling3D(pool_size=pool_size)(dropout)
     return pool
 

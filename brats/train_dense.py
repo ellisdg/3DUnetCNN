@@ -72,7 +72,7 @@ def main(overwrite=False):
         # instantiate new model
         model = dense_unet(input_shape=config["input_shape"], n_labels=config["n_labels"],
                            initial_learning_rate=config["initial_learning_rate"],
-                           n_base_filters=config["n_base_filters"],
+                           n_base_filters=config["n_base_filters"], normalization=InstanceNormalization,
                            n_base_layers=config["n_base_layers"])
 
     # get training and testing generators
