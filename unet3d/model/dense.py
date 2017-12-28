@@ -79,13 +79,13 @@ def create_layer(input_node, n_filters, kernel=(3, 3, 3), strides=(1, 1, 1), pad
 def create_convolution_block(input_node, n_filters, kernel=(3, 3, 3), strides=(1, 1, 1), padding='same',
                              normalization=BatchNormalization, dropout_rate=0.2, data_format="channels_first",
                              normalization_axis=1, activation='relu'):
+    convolution_node = Conv3D(n_filters, kernel, padding=padding, strides=strides)(input_node)
     if normalization:
-        node = normalization(axis=normalization_axis)(input_node)
+        node = normalization(axis=normalization_axis)(convolution_node)
     else:
-        node = input_node
+        node = convolution_node
     activation_node = Activation(activation)(node)
-    convolution_node = Conv3D(n_filters, kernel, padding=padding, strides=strides)(activation_node)
-    dropout_node = SpatialDropout3D(rate=dropout_rate, data_format=data_format)(convolution_node)
+    dropout_node = SpatialDropout3D(rate=dropout_rate, data_format=data_format)(activation_node)
     return dropout_node
 
 
