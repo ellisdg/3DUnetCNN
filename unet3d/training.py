@@ -44,7 +44,14 @@ def load_old_model(model_file):
         custom_objects["InstanceNormalization"] = InstanceNormalization
     except ImportError:
         pass
-    return load_model(model_file, custom_objects=custom_objects)
+    try:
+        return load_model(model_file, custom_objects=custom_objects)
+    except ValueError as error:
+        if 'InstanceNormalization' in str(error):
+            raise ValueError(str(error) + "\n\nPlease install keras-contrib to use InstanceNormalization:\n"
+                                          "'pip install git+https://www.github.com/keras-team/keras-contrib.git'")
+        else:
+            raise error
 
 
 def train_model(model, model_file, training_generator, validation_generator, steps_per_epoch, validation_steps,
