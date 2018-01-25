@@ -1,6 +1,6 @@
 # 3D U-Net Convolution Neural Network with Keras
 ## Background
-Originally, designed after [this paper](http://lmb.informatik.uni-freiburg.de/Publications/2016/CABR16/cicek16miccai.pdf) on 
+Originally designed after [this paper](http://lmb.informatik.uni-freiburg.de/Publications/2016/CABR16/cicek16miccai.pdf) on 
 volumetric segmentation with a 3D U-Net.
 The code was written to be trained using the 
 [BRATS](http://www.med.upenn.edu/sbia/brats2017.html) data set for brain tumors, but it can
@@ -109,3 +109,8 @@ Keep in mind, though, that a smaller patch sizes may not perform as well as larg
 If you want to train a 3D UNet on a different set of data, you can copy either the [train.py](brats/train.py) or the 
 [train_isensee2017.py](brats/train_isensee2017.py) scripts and modify them to 
 read in your data rather than the preprocessed BRATS data that they are currently setup to train on.
+
+## Pre-trained Models
+The following Keras models were trained on the BRATS 2017 data:
+* [Isensee et al. 2017 model](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EfSLuSnktwZLs2kB84S8Y6oBRCOk4WT38UxeE9KYka2Gjg)
+* [Original U-Net model](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EUKI2FjEF4FMttJ9q7bQ5IIBEYj7MCJ1O1PF-uTVIV6-YA?e=d2yrEc)
