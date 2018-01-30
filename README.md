@@ -112,5 +112,9 @@ read in your data rather than the preprocessed BRATS data that they are currentl
 
 ## Pre-trained Models
 The following Keras models were trained on the BRATS 2017 data:
-* [Isensee et al. 2017 model](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EfSLuSnktwZLs2kB84S8Y6oBRCOk4WT38UxeE9KYka2Gjg)
-* [Original U-Net model](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EUKI2FjEF4FMttJ9q7bQ5IIBEYj7MCJ1O1PF-uTVIV6-YA?e=d2yrEc)
+* Isensee et al. 2017: 
+[model](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EfSLuSnktwZLs2kB84S8Y6oBRCOk4WT38UxeE9KYka2Gjg)
+([weights only](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EV8SBkKY67xEkk-1o1wiuG8BO-mBxKmd2Pnegvf6St8-DA?e=tRcO71))
+* Original U-Net: 
+[model](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EUKI2FjEF4FMttJ9q7bQ5IIBEYj7MCJ1O1PF-uTVIV6-YA?e=d2yrEc)
+([weights only](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/ESHW544cGtNFlFBKqCY8qHkB79EMRENAyqgQXGIMVMykCQ?e=QLJl5d))
