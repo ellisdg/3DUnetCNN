@@ -86,7 +86,7 @@ def rescale(in_file, out_file, minimum=0, maximum=20000):
 
 
 def get_image(subject_folder, name):
-    file_card = os.path.join(subject_folder, "*" + name + "*.nii.gz")
+    file_card = os.path.join(subject_folder, "*" + name + ".nii.gz")
     try:
         return glob.glob(file_card)[0]
     except IndexError:
