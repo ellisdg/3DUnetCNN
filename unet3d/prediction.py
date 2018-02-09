@@ -99,37 +99,32 @@ def multi_class_prediction(prediction, affine):
     return prediction_images
 
 
-def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_keys_file, training_modalities,
+def run_validation_case(data_index, output_dir, model, data_file, training_modalities,
                         output_label_map=False, threshold=0.5, labels=None, overlap=16, permute=False):
     """
     Runs a test case and writes predicted images to file.
-    :param test_index: Index from of the list of test cases to get an image prediction from.
-    :param out_dir: Where to write prediction images.
+    :param data_index: Index from of the list of test cases to get an image prediction from.
+    :param output_dir: Where to write prediction images.
     :param output_label_map: If True, will write out a single image with one or more labels. Otherwise outputs
     the (sigmoid) prediction values from the model.
     :param threshold: If output_label_map is set to True, this threshold defines the value above which is 
     considered a positive result and will be assigned a label.  
     :param labels:
-    :param validation_keys_file:
     :param training_modalities:
-    :param hdf5_file:
-    :param model_file:
+    :param data_file:
+    :param model:
     """
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    model = load_old_model(model_file)
-
-    data_file = tables.open_file(hdf5_file, "r")
-    data_index = get_test_indices(validation_keys_file)[test_index]
     affine = data_file.root.affine[data_index]
     test_data = np.asarray([data_file.root.data[data_index]])
     for i, modality in enumerate(training_modalities):
         image = nib.Nifti1Image(test_data[0, i], affine)
-        image.to_filename(os.path.join(out_dir, "data_{0}.nii.gz".format(modality)))
+        image.to_filename(os.path.join(output_dir, "data_{0}.nii.gz".format(modality)))
 
     test_truth = nib.Nifti1Image(data_file.root.truth[data_index][0], affine)
-    test_truth.to_filename(os.path.join(out_dir, "truth.nii.gz"))
+    test_truth.to_filename(os.path.join(output_dir, "truth.nii.gz"))
 
     patch_shape = tuple([int(dim) for dim in model.input.shape[-3:]])
     if patch_shape == test_data.shape[-3:]:
@@ -140,11 +135,26 @@ def run_validation_case(test_index, out_dir, model_file, hdf5_file, validation_k
                                            labels=labels)
     if isinstance(prediction_image, list):
         for i, image in enumerate(prediction_image):
-            image.to_filename(os.path.join(out_dir, "prediction_{0}.nii.gz".format(i + 1)))
+            image.to_filename(os.path.join(output_dir, "prediction_{0}.nii.gz".format(i + 1)))
     else:
-        prediction_image.to_filename(os.path.join(out_dir, "prediction.nii.gz"))
+        prediction_image.to_filename(os.path.join(output_dir, "prediction.nii.gz"))
 
     data_file.close()
+
+
+def run_validation_cases(validation_keys_file, model_file, training_modalities, labels, hdf5_file,
+                         output_label_map=False, output_dir=".", threshold=0.5, overlap=16, permute=False):
+    validation_indices = pickle_load(validation_keys_file)
+    model = load_old_model(model_file)
+    data_file = tables.open_file(hdf5_file, "r")
+    for index in validation_indices:
+        if 'subject_ids' in data_file.root:
+            case_directory = os.path.join(output_dir, data_file.root.subject_ids[index])
+        else:
+            case_directory = os.path.join(output_dir, "validation_case_{}".format(index))
+        run_validation_case(data_index=index, output_dir=case_directory, model=model, data_file=data_file,
+                            training_modalities=training_modalities, output_label_map=output_label_map, labels=labels,
+                            threshold=threshold, overlap=overlap, permute=permute)
 
 
 def predict(model, data, permute=False):
