@@ -139,8 +139,6 @@ def run_validation_case(data_index, output_dir, model, data_file, training_modal
     else:
         prediction_image.to_filename(os.path.join(output_dir, "prediction.nii.gz"))
 
-    data_file.close()
-
 
 def run_validation_cases(validation_keys_file, model_file, training_modalities, labels, hdf5_file,
                          output_label_map=False, output_dir=".", threshold=0.5, overlap=16, permute=False):
@@ -155,6 +153,7 @@ def run_validation_cases(validation_keys_file, model_file, training_modalities, 
         run_validation_case(data_index=index, output_dir=case_directory, model=model, data_file=data_file,
                             training_modalities=training_modalities, output_label_map=output_label_map, labels=labels,
                             threshold=threshold, overlap=overlap, permute=permute)
+    data_file.close()
 
 
 def predict(model, data, permute=False):
