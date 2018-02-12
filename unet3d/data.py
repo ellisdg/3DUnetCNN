@@ -36,7 +36,7 @@ def add_data_to_storage(data_storage, truth_storage, affine_storage, subject_dat
     affine_storage.append(np.asarray(affine)[np.newaxis])
 
 
-def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=np.uint8):
+def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=np.uint8, subject_ids=None):
     """
     Takes in a set of training images and writes those images to an hdf5 file.
     :param training_data_files: List of tuples containing the training data files. The modalities should be listed in
@@ -52,7 +52,8 @@ def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=n
     n_channels = len(training_data_files[0]) - 1
 
     try:
-        hdf5_file, data_storage, truth_storage, affine_storage = create_data_file(out_file, n_channels=n_channels,
+        hdf5_file, data_storage, truth_storage, affine_storage = create_data_file(out_file,
+                                                                                  n_channels=n_channels,
                                                                                   n_samples=n_samples,
                                                                                   image_shape=image_shape)
     except Exception as e:
@@ -62,6 +63,8 @@ def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=n
 
     write_image_data_to_file(training_data_files, data_storage, truth_storage, image_shape,
                              truth_dtype=truth_dtype, n_channels=n_channels, affine_storage=affine_storage)
+    if subject_ids:
+        hdf5_file.create_array(hdf5_file.root, 'subject_ids', obj=subject_ids)
     normalize_data_storage(data_storage)
     hdf5_file.close()
     return out_file

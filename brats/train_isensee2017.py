@@ -46,22 +46,28 @@ config["validation_file"] = os.path.abspath("isensee_validation_ids.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 
 
-def fetch_training_data_files():
+def fetch_training_data_files(return_subject_ids=False):
     training_data_files = list()
+    subject_ids = list()
     for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data", "preprocessed", "*", "*")):
+        subject_ids.append(os.path.basename(subject_dir))
         subject_files = list()
         for modality in config["training_modalities"] + ["truth"]:
             subject_files.append(os.path.join(subject_dir, modality + ".nii.gz"))
         training_data_files.append(tuple(subject_files))
-    return training_data_files
+    if return_subject_ids:
+        return training_data_files, subject_ids
+    else:
+        return training_data_files
 
 
 def main(overwrite=False):
     # convert input images into an hdf5 file
     if overwrite or not os.path.exists(config["data_file"]):
-        training_files = fetch_training_data_files()
+        training_files, subject_ids = fetch_training_data_files(return_subject_ids=True)
 
-        write_data_to_file(training_files, config["data_file"], image_shape=config["image_shape"])
+        write_data_to_file(training_files, config["data_file"], image_shape=config["image_shape"],
+                           subject_ids=subject_ids)
     data_file_opened = open_data_file(config["data_file"])
 
     if not overwrite and os.path.exists(config["model_file"]):
