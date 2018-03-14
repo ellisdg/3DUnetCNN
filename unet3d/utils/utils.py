@@ -3,7 +3,8 @@ import os
 
 import nibabel as nib
 import numpy as np
-from nilearn.image import reorder_img, resample_img
+from nilearn.image import reorder_img, resample_img, new_img_like
+from scipy.ndimage.interpolation import zoom
 
 from .nilearn_custom_utils.nilearn_utils import crop_img_to
 
@@ -62,10 +63,10 @@ def fix_shape(image):
 
 
 def resize(image, new_shape, interpolation="continuous"):
-    input_shape = np.asarray(image.shape, dtype=np.float16)
-    ras_image = reorder_img(image, resample=interpolation)
-    output_shape = np.asarray(new_shape)
-    new_spacing = input_shape/output_shape
-    new_affine = np.copy(ras_image.affine)
-    new_affine[:3, :3] = ras_image.affine[:3, :3] * np.diag(new_spacing)
-    return resample_img(ras_image, target_affine=new_affine, target_shape=output_shape, interpolation=interpolation)
+    image = reorder_img(image, resample=interpolation)
+    zoom_level = np.divide(new_shape, image.shape)
+    new_diagonal = (image.affine.diagonal()[:3] / zoom_level).tolist() + [1]
+    new_affine = np.copy(image.affine)
+    np.fill_diagonal(new_affine, new_diagonal)
+    new_data = zoom(image.get_data(), zoom_level)
+    return new_img_like(image, new_data, affine=new_affine)
