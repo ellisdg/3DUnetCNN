@@ -8,8 +8,8 @@ be easily modified to be used in other 3D applications.
 
 ## Tutorial using BRATS Data
 ### Training
-1. Download the BRATS 2017 [GBM](https://app.box.com/s/926eijrcz4qudona5vkz4z5o9qfm772d) and 
-[LGG](https://app.box.com/s/ssfkb6u8fg3dmal0v7ni0ckbqntsc8fy) data. Place the unzipped folders in the 
+1. Download the BRATS 2017 [GBM](https://app.box.com/shared/static/bpqo6uqmqinke5jkyhbik9va2uq8ky01.zip) and 
+[LGG](https://app.box.com/shared/static/pqkmy3zcvud2qxlx5poe458azb1dzj54.zip) data. Place the unzipped folders in the 
 ```brats/data/original``` folder.
 2. Install dependencies: 
 ```
@@ -118,3 +118,10 @@ The following Keras models were trained on the BRATS 2017 data:
 * Original U-Net: 
 [model](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/EUKI2FjEF4FMttJ9q7bQ5IIBEYj7MCJ1O1PF-uTVIV6-YA?e=d2yrEc)
 ([weights only](https://univnebrmedcntr-my.sharepoint.com/:u:/g/personal/david_ellis_unmc_edu/ESHW544cGtNFlFBKqCY8qHkB79EMRENAyqgQXGIMVMykCQ?e=QLJl5d))
+
+## Citations
+GBM Data Citation:
+ * Spyridon Bakas, Hamed Akbari, Aristeidis Sotiras, Michel Bilello, Martin Rozycki, Justin Kirby, John Freymann, Keyvan Farahani, and Christos Davatzikos. (2017) Segmentation Labels and Radiomic Features for the Pre-operative Scans of the TCGA-GBM collection. The Cancer Imaging Archive. https://doi.org/10.7937/K9/TCIA.2017.KLXWJJ1Q
+
+LGG Data Citation:
+ * Spyridon Bakas, Hamed Akbari, Aristeidis Sotiras, Michel Bilello, Martin Rozycki, Justin Kirby, John Freymann, Keyvan Farahani, and Christos Davatzikos. (2017) Segmentation Labels and Radiomic Features for the Pre-operative Scans of the TCGA-LGG collection. The Cancer Imaging Archive. https://doi.org/10.7937/K9/TCIA.2017.GJQ7R0EF
