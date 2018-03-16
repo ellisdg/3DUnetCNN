@@ -3,10 +3,10 @@ import os
 
 import nibabel as nib
 import numpy as np
-from nilearn.image import reorder_img, resample_img, new_img_like
-from scipy.ndimage.interpolation import zoom
+from nilearn.image import reorder_img, new_img_like
 
 from .nilearn_custom_utils.nilearn_utils import crop_img_to
+from .sitk_utils import resample_to_spacing, calculate_origin_offset
 
 
 def pickle_dump(item, out_file):
@@ -62,11 +62,13 @@ def fix_shape(image):
     return image
 
 
-def resize(image, new_shape, interpolation="continuous"):
+def resize(image, new_shape, interpolation="linear"):
     image = reorder_img(image, resample=interpolation)
     zoom_level = np.divide(new_shape, image.shape)
-    new_diagonal = (image.affine.diagonal()[:3] / zoom_level).tolist() + [1]
+    new_spacing = np.divide(image.header.get_zooms(), zoom_level)
+    new_data = resample_to_spacing(image.get_data(), image.header.get_zooms(), new_spacing,
+                                   interpolation=interpolation)
     new_affine = np.copy(image.affine)
-    np.fill_diagonal(new_affine, new_diagonal)
-    new_data = zoom(image.get_data(), zoom_level)
+    np.fill_diagonal(new_affine, new_spacing.tolist() + [1])
+    new_affine[:3, 3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
     return new_img_like(image, new_data, affine=new_affine)

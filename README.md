@@ -20,7 +20,7 @@ nilearn,
 SimpleITK,
 nipype
 ```
-(the last two are for preprocessing only)
+(nipype is required for preprocessing only)
 
 3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add the location of the ANTs 
 binaries to the PATH environmental variable.
