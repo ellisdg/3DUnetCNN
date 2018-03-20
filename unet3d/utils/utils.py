@@ -38,7 +38,7 @@ def read_image_files(image_files, image_shape=None, crop=None, use_nearest_for_l
         if (i + 1) == len(image_files) and use_nearest_for_last_file:
             interpolation = "nearest"
         else:
-            interpolation = "continuous"
+            interpolation = "linear"
         image_list.append(read_image(image_file, image_shape=image_shape, crop=crop, interpolation=interpolation))
 
     return np.stack([image.get_data() for image in image_list])
