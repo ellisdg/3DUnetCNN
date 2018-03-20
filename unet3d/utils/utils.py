@@ -47,7 +47,7 @@ def read_image_files(image_files, image_shape=None, crop=None, label_indices=Non
             interpolation = "linear"
         image_list.append(read_image(image_file, image_shape=image_shape, crop=crop, interpolation=interpolation))
 
-    return np.stack([image.get_data() for image in image_list])
+    return image_list
 
 
 def read_image(in_file, image_shape=None, interpolation='linear', crop=None):
