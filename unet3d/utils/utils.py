@@ -1,5 +1,6 @@
 import pickle
 import os
+import collections
 
 import nibabel as nib
 import numpy as np
@@ -23,7 +24,7 @@ def get_affine(in_file):
     return read_image(in_file).affine
 
 
-def read_image_files(image_files, image_shape=None, crop=None, use_nearest_for_last_file=True):
+def read_image_files(image_files, image_shape=None, crop=None, label_indices=None):
     """
     
     :param image_files: 
@@ -33,9 +34,14 @@ def read_image_files(image_files, image_shape=None, crop=None, use_nearest_for_l
     because the last file may be the labels file. Using linear interpolation here would mess up the labels.
     :return: 
     """
+    if label_indices is None:
+        label_indices = []
+    elif not isinstance(label_indices, collections.Iterable) or isinstance(label_indices, str):
+        label_indices = [label_indices]
     image_list = list()
-    for i, image_file in enumerate(image_files):
-        if (i + 1) == len(image_files) and use_nearest_for_last_file:
+    for index, image_file in enumerate(image_files):
+        if (label_indices is None and (index + 1) == len(image_files)) \
+                or (label_indices is not None and index in label_indices):
             interpolation = "nearest"
         else:
             interpolation = "linear"
@@ -44,7 +50,7 @@ def read_image_files(image_files, image_shape=None, crop=None, use_nearest_for_l
     return np.stack([image.get_data() for image in image_list])
 
 
-def read_image(in_file, image_shape=None, interpolation='continuous', crop=None):
+def read_image(in_file, image_shape=None, interpolation='linear', crop=None):
     print("Reading: {0}".format(in_file))
     image = nib.load(os.path.abspath(in_file))
     image = fix_shape(image)
