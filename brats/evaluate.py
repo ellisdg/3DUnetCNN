@@ -28,7 +28,11 @@ def main():
     header = ("WholeTumor", "TumorCore", "EnhancingTumor")
     masking_functions = (get_whole_tumor_mask, get_tumor_core_mask, get_enhancing_tumor_mask)
     rows = list()
-    for case_folder in glob.glob("prediction/validation_case*"):
+    subject_ids = list()
+    for case_folder in glob.glob("prediction/*"):
+        if not os.path.isdir(case_folder):
+            continue
+        subject_ids.append(os.path.basename(case_folder))
         truth_file = os.path.join(case_folder, "truth.nii.gz")
         truth_image = nib.load(truth_file)
         truth = truth_image.get_data()
@@ -36,7 +40,8 @@ def main():
         prediction_image = nib.load(prediction_file)
         prediction = prediction_image.get_data()
         rows.append([dice_coefficient(func(truth), func(prediction))for func in masking_functions])
-    df = pd.DataFrame.from_records(rows, columns=header)
+
+    df = pd.DataFrame.from_records(rows, columns=header, index=subject_ids)
     df.to_csv("./prediction/brats_scores.csv")
 
     scores = dict()
@@ -49,15 +54,16 @@ def main():
     plt.savefig("validation_scores_boxplot.png")
     plt.close()
 
-    training_df = pd.read_csv("./training.log").set_index('epoch')
+    if os.path.exists("./training.log"):
+        training_df = pd.read_csv("./training.log").set_index('epoch')
 
-    plt.plot(training_df['loss'].values, label='training loss')
-    plt.plot(training_df['val_loss'].values, label='validation loss')
-    plt.ylabel('Loss')
-    plt.xlabel('Epoch')
-    plt.xlim((0, len(training_df.index)))
-    plt.legend(loc='upper right')
-    plt.savefig('loss_graph.png')
+        plt.plot(training_df['loss'].values, label='training loss')
+        plt.plot(training_df['val_loss'].values, label='validation loss')
+        plt.ylabel('Loss')
+        plt.xlabel('Epoch')
+        plt.xlim((0, len(training_df.index)))
+        plt.legend(loc='upper right')
+        plt.savefig('loss_graph.png')
 
 
 if __name__ == "__main__":
