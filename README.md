@@ -1,4 +1,5 @@
 # 3D U-Net Convolution Neural Network with Keras
+![Tumor Segmentation Example](doc/tumor_segmentation_illusatration.gif)
 ## Background
 Originally designed after [this paper](http://lmb.informatik.uni-freiburg.de/Publications/2016/CABR16/cicek16miccai.pdf) on 
 volumetric segmentation with a 3D U-Net.
@@ -20,7 +21,7 @@ nilearn,
 SimpleITK,
 nipype
 ```
-(the last two are for preprocessing only)
+(nipype is required for preprocessing only)
 
 3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add the location of the ANTs 
 binaries to the PATH environmental variable.
