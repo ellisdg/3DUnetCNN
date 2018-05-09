@@ -50,13 +50,11 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    training_list, validation_list = get_validation_split(data_file,
-                                                          data_split=data_split,
-                                                          overwrite=overwrite,
-                                                          training_file=training_keys_file,
-                                                          validation_file=validation_keys_file)
+    training_indices, validation_indices = get_validation_split(data_file, data_split=data_split, overwrite=overwrite,
+                                                                training_file=training_keys_file,
+                                                                validation_file=validation_keys_file)
 
-    training_generator = data_generator(data_file, training_list,
+    training_generator = data_generator(data_file, training_indices,
                                         batch_size=batch_size,
                                         n_labels=n_labels,
                                         labels=labels,
@@ -68,7 +66,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         patch_start_offset=training_patch_start_offset,
                                         skip_blank=skip_blank,
                                         permute=permute)
-    validation_generator = data_generator(data_file, validation_list,
+    validation_generator = data_generator(data_file, validation_indices,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
                                           labels=labels,
@@ -77,13 +75,13 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                           skip_blank=skip_blank)
 
     # Set the number of training and testing samples per epoch correctly
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_indices, patch_shape,
                                                                    skip_blank=skip_blank,
                                                                    patch_start_offset=training_patch_start_offset,
                                                                    patch_overlap=0), batch_size)
     print("Number of training steps: ", num_training_steps)
 
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_indices, patch_shape,
                                                                      skip_blank=skip_blank,
                                                                      patch_overlap=validation_patch_overlap),
                                                validation_batch_size)
