@@ -14,7 +14,8 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                            data_split=0.8, overwrite=False, labels=None, augment=False,
                                            augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
                                            validation_patch_overlap=0, training_patch_start_offset=None,
-                                           validation_batch_size=None, skip_blank=True, permute=False):
+                                           validation_batch_size=None, skip_blank=True, permute=False,
+                                           training_indices=None, validation_indices=None):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -50,9 +51,12 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    training_indices, validation_indices = get_validation_split(data_file, data_split=data_split, overwrite=overwrite,
-                                                                training_file=training_keys_file,
-                                                                validation_file=validation_keys_file)
+    if training_indices is None or validation_indices is None:
+        training_indices, validation_indices = get_validation_split(data_file,
+                                                                    data_split=data_split,
+                                                                    overwrite=overwrite,
+                                                                    training_file=training_keys_file,
+                                                                    validation_file=validation_keys_file)
 
     training_generator = data_generator(data_file, training_indices,
                                         batch_size=batch_size,
