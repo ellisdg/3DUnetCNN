@@ -8,12 +8,10 @@ from .unet import create_convolution_block, concatenate
 from ..metrics import weighted_dice_coefficient_loss
 
 
-create_convolution_block = partial(create_convolution_block, activation=LeakyReLU, instance_normalization=True)
-
-
 def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5, dropout_rate=0.3,
                       n_segmentation_levels=3, n_labels=4, optimizer=Adam, initial_learning_rate=5e-4,
-                      loss_function=weighted_dice_coefficient_loss, activation_name="sigmoid"):
+                      loss_function=weighted_dice_coefficient_loss, activation_name="sigmoid",
+                      instance_normalization=True, activation=LeakyReLU):
     """
     This function builds a model proposed by Isensee et al. for the BRATS 2017 competition:
     https://www.cbica.upenn.edu/sbia/Spyridon.Bakas/MICCAI_BraTS/MICCAI_BraTS_2017_proceedings_shortPapers.pdf
@@ -44,11 +42,15 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
         level_filters.append(n_level_filters)
 
         if current_layer is inputs:
-            in_conv = create_convolution_block(current_layer, n_level_filters)
+            in_conv = create_convolution_block(current_layer, n_level_filters, activation=activation,
+                                               instance_normalization=instance_normalization)
         else:
-            in_conv = create_convolution_block(current_layer, n_level_filters, strides=(2, 2, 2))
+            in_conv = create_convolution_block(current_layer, n_level_filters, strides=(2, 2, 2), activation=activation,
+                                               instance_normalization=instance_normalization)
 
-        context_output_layer = create_context_module(in_conv, n_level_filters, dropout_rate=dropout_rate)
+        context_output_layer = create_context_module(in_conv, n_level_filters, dropout_rate=dropout_rate,
+                                                     activation=activation,
+                                                     instance_normalization=instance_normalization)
 
         summation_layer = Add()([in_conv, context_output_layer])
         level_output_layers.append(summation_layer)
@@ -56,12 +58,17 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
 
     segmentation_layers = list()
     for level_number in range(depth - 2, -1, -1):
-        up_sampling = create_up_sampling_module(current_layer, level_filters[level_number])
+        up_sampling = create_up_sampling_module(current_layer, level_filters[level_number], activation=activation,
+                                                instance_normalization=instance_normalization)
         concatenation_layer = concatenate([level_output_layers[level_number], up_sampling], axis=1)
-        localization_output = create_localization_module(concatenation_layer, level_filters[level_number])
+        localization_output = create_localization_module(concatenation_layer, level_filters[level_number],
+                                                         activation=activation,
+                                                         instance_normalization=instance_normalization)
         current_layer = localization_output
         if level_number < n_segmentation_levels:
-            segmentation_layers.insert(0, create_convolution_block(current_layer, n_filters=n_labels, kernel=(1, 1, 1)))
+            segmentation_layers.insert(0, create_convolution_block(current_layer, n_filters=n_labels, kernel=(1, 1, 1),
+                                                                   activation=activation,
+                                                                   instance_normalization=instance_normalization))
 
     output_layer = None
     for level_number in reversed(range(n_segmentation_levels)):
@@ -81,22 +88,28 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
     return model
 
 
-def create_localization_module(input_layer, n_filters):
-    convolution1 = create_convolution_block(input_layer, n_filters)
-    convolution2 = create_convolution_block(convolution1, n_filters, kernel=(1, 1, 1))
+def create_localization_module(input_layer, n_filters, activation=LeakyReLU, instance_normalization=True):
+    convolution1 = create_convolution_block(input_layer, n_filters, activation=activation,
+                                            instance_normalization=instance_normalization)
+    convolution2 = create_convolution_block(convolution1, n_filters, kernel=(1, 1, 1), activation=activation,
+                                            instance_normalization=instance_normalization)
     return convolution2
 
 
-def create_up_sampling_module(input_layer, n_filters, size=(2, 2, 2)):
+def create_up_sampling_module(input_layer, n_filters, size=(2, 2, 2), activation=LeakyReLU, instance_normalization=True):
     up_sample = UpSampling3D(size=size)(input_layer)
-    convolution = create_convolution_block(up_sample, n_filters)
+    convolution = create_convolution_block(up_sample, n_filters, activation=activation,
+                                           instance_normalization=instance_normalization)
     return convolution
 
 
-def create_context_module(input_layer, n_level_filters, dropout_rate=0.3, data_format="channels_first"):
-    convolution1 = create_convolution_block(input_layer=input_layer, n_filters=n_level_filters)
+def create_context_module(input_layer, n_level_filters, dropout_rate=0.3, data_format="channels_first",
+                          activation=LeakyReLU, instance_normalization=True):
+    convolution1 = create_convolution_block(input_layer=input_layer, n_filters=n_level_filters, activation=activation,
+                                            instance_normalization=instance_normalization)
     dropout = SpatialDropout3D(rate=dropout_rate, data_format=data_format)(convolution1)
-    convolution2 = create_convolution_block(input_layer=dropout, n_filters=n_level_filters)
+    convolution2 = create_convolution_block(input_layer=dropout, n_filters=n_level_filters, activation=activation,
+                                            instance_normalization=instance_normalization)
     return convolution2
 
 
