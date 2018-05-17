@@ -52,10 +52,15 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False):
     return crop_img_to(img, slices, copy=copy)
 
 
-def run_with_background_correction(func, image, background=None, returns_array=False, reset_background=True, **kwargs):
+def run_with_background_correction(func, image, background=None, returns_array=False, reset_background=True,
+                                   axis=(-3, -2, -1), **kwargs):
     data = image.get_data()
     if background is None:
-        background = data.min()
+        background = data.min(axis=axis)
+        if isinstance(background, np.ndarray):
+            while len(background.shape) < len(data.shape):
+                background = background[..., None]
+
     # set background to zero
     data[:] -= background
     # perform function on image
