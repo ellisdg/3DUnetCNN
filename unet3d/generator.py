@@ -196,7 +196,7 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
     return patch_index
 
 
-def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False, augment_distortion_factor=0.25,
+def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False, augment_distortion_factor=None,
              patch_shape=False, skip_blank=True, permute=False):
     """
     Adds data from the data file to the given lists of feature and target data

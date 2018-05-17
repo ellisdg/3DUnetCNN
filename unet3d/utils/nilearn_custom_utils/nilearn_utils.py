@@ -50,3 +50,23 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False):
         return slices
 
     return crop_img_to(img, slices, copy=copy)
+
+
+def run_with_background_correction(func, image, background=None, returns_array=False, reset_background=True, **kwargs):
+    data = image.get_data()
+    if background is None:
+        background = data.min()
+    # set background to zero
+    data[:] -= background
+    # perform function on image
+    image = func(image, **kwargs)
+    # set the background back to what it was originally
+    if reset_background:
+        if returns_array:
+            # the function called should have returned an array
+            data = image
+        else:
+            # the function called should have returned an image
+            data = image.get_data()
+        data[:] += background
+    return image
