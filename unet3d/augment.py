@@ -3,6 +3,7 @@ import nibabel as nib
 from nilearn.image import new_img_like, resample_to_img
 import random
 import itertools
+from .utils.nilearn_custom_utils.nilearn_utils import get_background_values
 
 
 def scale_image(image, scale_factor):
@@ -47,7 +48,10 @@ def distort_image(image, flip_axis=None, scale_factor=None):
     return image
 
 
-def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise=False):
+def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_factor=None, background_correction=False):
+    if background_correction:
+        background = get_background_values(data)
+        data[:] -= background
     n_dim = len(truth.shape)
     if scale_deviation:
         scale_factor = random_scale_factor(n_dim, std=scale_deviation)
@@ -63,8 +67,10 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise=Fa
         data_list.append(resample_to_img(distort_image(image, flip_axis=flip_axis, scale_factor=scale_factor),
                                          image, interpolation="continuous").get_data())
     data = np.asarray(data_list)
-    if noise:
-        data = add_noise(data)
+    if background_correction:
+        data[:] += background
+    if noise_factor is not None:
+        data = add_noise(data, sigma_factor=noise_factor)
     truth_image = get_image(truth, affine)
     truth_data = resample_to_img(distort_image(truth_image, flip_axis=flip_axis, scale_factor=scale_factor),
                                  truth_image, interpolation="nearest").get_data()

@@ -11,11 +11,12 @@ from .augment import augment_data, random_permutation_x_y
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
-                                           data_split=0.8, overwrite=False, labels=None, augment=False,
-                                           augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
-                                           validation_patch_overlap=0, training_patch_start_offset=None,
-                                           validation_batch_size=None, skip_blank=True, permute=False,
-                                           training_indices=None, validation_indices=None, weights=None):
+                                           data_split=0.8, overwrite=False, labels=None, augment_flip=True,
+                                           augment_distortion_factor=0.25, patch_shape=None, validation_patch_overlap=0,
+                                           training_patch_start_offset=None, validation_batch_size=None,
+                                           skip_blank=True, permute=False, training_indices=None,
+                                           validation_indices=None, weights=None, noise_factor=None,
+                                           background_correction=False):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -62,7 +63,6 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         batch_size=batch_size,
                                         n_labels=n_labels,
                                         labels=labels,
-                                        augment=augment,
                                         augment_flip=augment_flip,
                                         augment_distortion_factor=augment_distortion_factor,
                                         patch_shape=patch_shape,
@@ -70,7 +70,9 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         patch_start_offset=training_patch_start_offset,
                                         skip_blank=skip_blank,
                                         permute=permute,
-                                        weights=weights)
+                                        weights=weights,
+                                        noise_factor=noise_factor,
+                                        background_correction=background_correction)
     validation_generator = data_generator(data_file, validation_indices,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
@@ -137,9 +139,10 @@ def split_list(input_list, split=0.8, shuffle_list=True):
     return training, testing
 
 
-def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
+def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment_flip=True,
                    augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                   shuffle_index_list=True, skip_blank=True, permute=False, weights=None):
+                   shuffle_index_list=True, skip_blank=True, permute=False, weights=None, noise_factor=None,
+                   background_correction=False):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -155,9 +158,10 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
             shuffle(index_list)
         while len(index_list) > 0:
             index = index_list.pop()
-            add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
+            add_data(x_list, y_list, data_file, index, augment_flip=augment_flip,
                      augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
-                     skip_blank=skip_blank, permute=permute)
+                     skip_blank=skip_blank, permute=permute, noise_factor=noise_factor,
+                     background_correction=background_correction)
             if weights is not None:
                 weight_list.append(weights[index])
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
@@ -196,8 +200,8 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
     return patch_index
 
 
-def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False, augment_distortion_factor=None,
-             patch_shape=False, skip_blank=True, permute=False):
+def add_data(x_list, y_list, data_file, index, augment_flip=False, augment_distortion_factor=None,
+             patch_shape=False, skip_blank=True, permute=False, background_correction=False, noise_factor=None):
     """
     Adds data from the data file to the given lists of feature and target data
     :param skip_blank: Data will not be added if the truth vector is all zeros (default is True).
@@ -206,8 +210,6 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False
     :param y_list: list of data to which the target data from the data_file will be appended.
     :param data_file: hdf5 data file.
     :param index: index of the data file from which to extract the data.
-    :param augment: if True, data will be augmented according to the other augmentation parameters (augment_flip and
-    augment_distortion_factor)
     :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
     :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
     that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
@@ -216,12 +218,13 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False
     :return:
     """
     data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
-    if augment:
+    if augment_distortion_factor or augment_flip or noise_factor:
         if patch_shape is not None:
             affine = data_file.root.affine[index[0]]
         else:
             affine = data_file.root.affine[index]
-        data, truth = augment_data(data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor)
+        data, truth = augment_data(data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor,
+                                   noise_factor=noise_factor, background_correction=background_correction)
 
     if permute:
         if data.shape[-3] != data.shape[-2] or data.shape[-2] != data.shape[-1]:

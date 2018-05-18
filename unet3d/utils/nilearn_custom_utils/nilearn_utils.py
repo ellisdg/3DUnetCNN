@@ -57,10 +57,7 @@ def run_with_background_correction(func, image, background=None, returns_array=F
                                    axis=(-3, -2, -1), **kwargs):
     data = image.get_data()
     if background is None:
-        background = data.min(axis=axis)
-        if isinstance(background, np.ndarray):
-            while len(background.shape) < len(data.shape):
-                background = background[..., None]
+        background = get_background_values(data, axis=axis)
 
     # set background to zero
     data[:] -= background
@@ -76,3 +73,11 @@ def run_with_background_correction(func, image, background=None, returns_array=F
             data = image.get_data()
         data[:] += background
     return image
+
+
+def get_background_values(data, axis=(-3, -2, -1)):
+    background = data.min(axis=axis)
+    if isinstance(background, np.ndarray):
+        while len(background.shape) < len(data.shape):
+            background = background[..., None]
+    return background
