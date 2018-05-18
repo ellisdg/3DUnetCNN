@@ -47,7 +47,7 @@ def distort_image(image, flip_axis=None, scale_factor=None):
     return image
 
 
-def augment_data(data, truth, affine, scale_deviation=None, flip=False):
+def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise=False):
     n_dim = len(truth.shape)
     if scale_deviation:
         scale_factor = random_scale_factor(n_dim, std=scale_deviation)
@@ -60,10 +60,11 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False):
     data_list = list()
     for data_index in range(data.shape[0]):
         image = get_image(data[data_index], affine)
-        data_list.append(resample_to_img(distort_image(image, flip_axis=flip_axis,
-                                                       scale_factor=scale_factor), image,
-                                         interpolation="continuous").get_data())
+        data_list.append(resample_to_img(distort_image(image, flip_axis=flip_axis, scale_factor=scale_factor),
+                                         image, interpolation="continuous").get_data())
     data = np.asarray(data_list)
+    if noise:
+        data = add_noise(data)
     truth_image = get_image(truth, affine)
     truth_data = resample_to_img(distort_image(truth_image, flip_axis=flip_axis, scale_factor=scale_factor),
                                  truth_image, interpolation="nearest").get_data()
@@ -166,3 +167,17 @@ def reverse_permute_data(data, key):
 def reverse_permutation_key(key):
     rotation = tuple([-rotate for rotate in key[0]])
     return rotation, key[1], key[2], key[3], key[4]
+
+
+def add_noise(data, mean=0., sigma_factor=0.1):
+    """
+    Adds Gaussian noise.
+    :param data: input numpy array
+    :param mean: mean of the additive noise
+    :param sigma_factor: standard deviation of the image will be multiplied by sigma_factor to obtain the standard
+    deviation of the additive noise. Assumes standard deviation is the same for all channels.
+    :return:
+    """
+    sigma = np.std(data) * sigma_factor
+    noise = np.random.normal(mean, sigma, data.shape)
+    return np.add(data, noise)

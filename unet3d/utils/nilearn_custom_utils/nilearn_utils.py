@@ -3,7 +3,7 @@ from nilearn.image.image import check_niimg
 from nilearn.image.image import _crop_img_to as crop_img_to
 
 
-def crop_img(img, rtol=1e-8, copy=True, return_slices=False):
+def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True):
     """Crops img as much as possible
     Will crop img, removing as many zero entries as possible
     without touching non-zero entries. Will leave one voxel of
@@ -40,9 +40,10 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False):
     start = coords.min(axis=1)
     end = coords.max(axis=1) + 1
 
-    # pad with one voxel to avoid resampling problems
-    start = np.maximum(start - 1, 0)
-    end = np.minimum(end + 1, data.shape[:3])
+    if pad:
+        # pad with one voxel to avoid resampling problems
+        start = np.maximum(start - 1, 0)
+        end = np.minimum(end + 1, data.shape[:3])
 
     slices = [slice(s, e) for s, e in zip(start, end)]
 

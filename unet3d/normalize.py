@@ -15,19 +15,21 @@ def find_downsized_info(training_data_files, input_shape):
     return crop_slices, final_image.affine, final_image.header
 
 
-def get_cropping_parameters(in_files, background_correction=False):
+def get_cropping_parameters(in_files, background_correction=False, percentile=None, pad=False):
     if len(in_files) > 1:
-        foreground = get_complete_foreground(in_files, background_correction=background_correction)
+        foreground = get_complete_foreground(in_files, background_correction=background_correction,
+                                             percentile=percentile)
     else:
-        foreground = get_foreground_from_set_of_files(in_files[0], return_image=True,
+        foreground = get_foreground_from_set_of_files(in_files[0], return_image=True, percentile=percentile,
                                                       background_correction=background_correction)
-    return crop_img(foreground, return_slices=True, copy=True)
+    return crop_img(foreground, return_slices=True, copy=True, pad=pad)
 
 
 def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None, crop=False,
-                      background_correction=False):
+                      background_correction=False, percentile=None):
     if crop:
-        crop_slices = get_cropping_parameters([in_files], background_correction=background_correction)
+        crop_slices = get_cropping_parameters([in_files], background_correction=background_correction,
+                                              percentile=percentile)
     else:
         crop_slices = None
     images = read_image_files(in_files, image_shape=image_shape, crop=crop_slices, label_indices=label_indices,
@@ -40,9 +42,10 @@ def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None,
         return images
 
 
-def get_complete_foreground(training_data_files, background_correction=False):
+def get_complete_foreground(training_data_files, background_correction=False, percentile=None):
     for i, set_of_files in enumerate(training_data_files):
-        subject_foreground = get_foreground_from_set_of_files(set_of_files, background_correction=background_correction)
+        subject_foreground = get_foreground_from_set_of_files(set_of_files, background_correction=background_correction,
+                                                              percentile=percentile)
         if i == 0:
             foreground = subject_foreground
         else:
@@ -52,26 +55,31 @@ def get_complete_foreground(training_data_files, background_correction=False):
 
 
 def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance=0.00001, return_image=False,
-                                     background_correction=False):
+                                     background_correction=False, percentile=None):
     foreground = None
     for i, image_file in enumerate(set_of_files):
         image = read_image(image_file)
         foreground = get_image_foreground(image, background_value=background_value, tolerance=tolerance,
-                                          array=foreground, background_correction=background_correction)
+                                          array=foreground, background_correction=background_correction,
+                                          percentile=percentile)
     if return_image:
         return new_img_like(image, foreground)
     else:
         return foreground
 
 
-def get_image_foreground(image, background_value=0, tolerance=1e-5, array=None, background_correction=False):
+def get_image_foreground(image, background_value=0, tolerance=1e-5, array=None, background_correction=False,
+                         percentile=None):
     if background_correction:
         return run_with_background_correction(get_image_foreground, image, background_value=background_value,
                                               tolerance=tolerance, array=array, background_correction=False,
-                                              returns_array=True, reset_background=False)
+                                              returns_array=True, reset_background=False, percentile=percentile)
     else:
-        is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
-                                      image.get_data() > (background_value + tolerance))
+        if percentile:
+            is_foreground = image.get_data() > np.percentile(image.get_data(), percentile)
+        else:
+            is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
+                                          image.get_data() > (background_value + tolerance))
         if array is None:
             array = np.zeros(is_foreground.shape, dtype=np.uint8)
 
