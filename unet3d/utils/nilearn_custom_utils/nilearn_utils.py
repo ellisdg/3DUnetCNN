@@ -3,7 +3,7 @@ from nilearn.image.image import check_niimg
 from nilearn.image.image import _crop_img_to as crop_img_to
 
 
-def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True):
+def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None):
     """Crops img as much as possible
     Will crop img, removing as many zero entries as possible
     without touching non-zero entries. Will leave one voxel of
@@ -22,6 +22,10 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True):
         Specifies whether cropped data is copied or not.
     return_slices: boolean
         If True, the slices that define the cropped image will be returned.
+    pad: boolean
+        If True, an extra slice in each direction will be added to the image
+    percentile: integer or None
+        If not None, then the image will be crop out slices below the given percentile
     Returns
     -------
     cropped_img: image
@@ -30,9 +34,12 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True):
 
     img = check_niimg(img)
     data = img.get_data()
-    infinity_norm = max(-data.min(), data.max())
-    passes_threshold = np.logical_or(data < -rtol * infinity_norm,
-                                     data > rtol * infinity_norm)
+    if percentile is not None:
+        passes_threshold = data > np.percentile(data, percentile)
+    else:
+        infinity_norm = max(-data.min(), data.max())
+        passes_threshold = np.logical_or(data < -rtol * infinity_norm,
+                                         data > rtol * infinity_norm)
 
     if data.ndim == 4:
         passes_threshold = np.any(passes_threshold, axis=-1)
