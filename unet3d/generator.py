@@ -16,7 +16,7 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                            training_patch_start_offset=None, validation_batch_size=None,
                                            skip_blank=True, permute=False, training_indices=None,
                                            validation_indices=None, weights=None, noise_factor=None,
-                                           background_correction=False):
+                                           background_correction=False, augment_translation_deviation=None):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -72,7 +72,8 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
                                         permute=permute,
                                         weights=weights,
                                         noise_factor=noise_factor,
-                                        background_correction=background_correction)
+                                        background_correction=background_correction,
+                                        augment_translation_deviation=augment_translation_deviation)
     validation_generator = data_generator(data_file, validation_indices,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
@@ -142,7 +143,7 @@ def split_list(input_list, split=0.8, shuffle_list=True):
 def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment_flip=True,
                    augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
                    shuffle_index_list=True, skip_blank=True, permute=False, weights=None, noise_factor=None,
-                   background_correction=False):
+                   background_correction=False, augment_translation_deviation=None):
     orig_index_list = index_list
     while True:
         x_list = list()
@@ -161,7 +162,7 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
             add_data(x_list, y_list, data_file, index, augment_flip=augment_flip,
                      augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
                      skip_blank=skip_blank, permute=permute, noise_factor=noise_factor,
-                     background_correction=background_correction)
+                     background_correction=background_correction, translation_deviation=augment_translation_deviation)
             if weights is not None:
                 weight_list.append(weights[index])
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
@@ -201,7 +202,8 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
 
 
 def add_data(x_list, y_list, data_file, index, augment_flip=False, augment_distortion_factor=None,
-             patch_shape=False, skip_blank=True, permute=False, background_correction=False, noise_factor=None):
+             patch_shape=False, skip_blank=True, permute=False, background_correction=False, noise_factor=None,
+             translation_deviation=None):
     """
     Adds data from the data file to the given lists of feature and target data
     :param skip_blank: Data will not be added if the truth vector is all zeros (default is True).
@@ -224,7 +226,8 @@ def add_data(x_list, y_list, data_file, index, augment_flip=False, augment_disto
         else:
             affine = data_file.root.affine[index]
         data, truth = augment_data(data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor,
-                                   noise_factor=noise_factor, background_correction=background_correction)
+                                   noise_factor=noise_factor, background_correction=background_correction,
+                                   translation_deviation=translation_deviation)
 
     if permute:
         if data.shape[-3] != data.shape[-2] or data.shape[-2] != data.shape[-1]:
