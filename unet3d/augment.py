@@ -1,6 +1,7 @@
 import numpy as np
 import nibabel as nib
 from nilearn.image import new_img_like, resample_to_img
+from nilearn.image.resampling import BoundingBoxError
 import random
 import itertools
 from .utils.nilearn_custom_utils.nilearn_utils import get_background_values
@@ -73,8 +74,11 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
         copied_image = copy_image(image)
         distorted_image = distort_image(copied_image, flip_axis=flip_axis, scale_factor=scale_factor,
                                         translation_scale=translation_scale)
-        data_list.append(resample_to_img(source_img=distorted_image, target_img=image,
-                                         interpolation=interpolation).get_data())
+        try:
+            resampled_image = resample_to_img(source_img=distorted_image, target_img=image, interpolation=interpolation)
+        except BoundingBoxError:
+            resampled_image = distorted_image
+        data_list.append(resampled_image.get_data())
     data = np.asarray(data_list)
     if background_correction:
         data[:] += background
