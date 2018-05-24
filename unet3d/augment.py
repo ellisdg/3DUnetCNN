@@ -86,9 +86,13 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
         data = add_noise(data, sigma_factor=noise_factor)
     truth_image = get_image(truth, affine)
     copied_truth_image = copy_image(truth_image)
-    truth_data = resample_to_img(distort_image(copied_truth_image, flip_axis=flip_axis, scale_factor=scale_factor,
-                                               translation_scale=translation_scale),
-                                 truth_image, interpolation="nearest").get_data()
+    distorted_truth = distort_image(copied_truth_image, flip_axis=flip_axis, scale_factor=scale_factor,
+                                    translation_scale=translation_scale)
+    try:
+        resampled_truth = resample_to_img(distorted_truth, truth_image, interpolation="nearest")
+    except BoundingBoxError:
+        resampled_truth = distorted_truth
+    truth_data = resampled_truth.get_data()
     return data, truth_data
 
 
