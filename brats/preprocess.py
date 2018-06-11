@@ -74,7 +74,8 @@ def correct_bias(in_file, out_file, image_type=sitk.sitkFloat64):
                                      "Will try using SimpleITK for bias field correction"
                                      " which will take much longer. To fix this problem, add N4BiasFieldCorrection"
                                      " to your PATH system variable. (example: EXPORT PATH=${PATH}:/path/to/ants/bin)"))
-        output_image = sitk.N4BiasFieldCorrection(sitk.ReadImage(in_file, image_type))
+        input_image = sitk.ReadImage(in_file, image_type)
+        output_image = sitk.N4BiasFieldCorrection(input_image, input_image > 0)
         sitk.WriteImage(output_image, out_file)
         return os.path.abspath(out_file)
 
