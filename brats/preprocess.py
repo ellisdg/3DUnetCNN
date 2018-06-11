@@ -56,7 +56,7 @@ def window_intensities(in_file, out_file, min_percent=1, max_percent=99):
     return os.path.abspath(out_file)
 
 
-def correct_bias(in_file, out_file):
+def correct_bias(in_file, out_file, image_type=sitk.sitkFloat64):
     """
     Corrects the bias using ANTs N4BiasFieldCorrection. If this fails, will then attempt to correct bias using SimpleITK
     :param in_file: input file path
@@ -73,8 +73,8 @@ def correct_bias(in_file, out_file):
         warnings.warn(RuntimeWarning("ANTs N4BIasFieldCorrection could not be found."
                                      "Will try using SimpleITK for bias field correction"
                                      " which will take much longer. To fix this problem, add N4BiasFieldCorrection"
-                                     " to your PATH system variable. (example: EXPORT ${PATH}:/path/to/ants/bin)"))
-        output_image = sitk.N4BiasFieldCorrection(sitk.ReadImage(in_file))
+                                     " to your PATH system variable. (example: EXPORT PATH=${PATH}:/path/to/ants/bin)"))
+        output_image = sitk.N4BiasFieldCorrection(sitk.ReadImage(in_file, image_type))
         sitk.WriteImage(output_image, out_file)
         return os.path.abspath(out_file)
 
