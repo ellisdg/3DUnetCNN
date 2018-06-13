@@ -4,6 +4,7 @@ import nibabel as nib
 import numpy as np
 
 from unet3d.utils.utils import resize
+from unet3d.utils.nilearn_custom_utils.nilearn_utils import crop_img
 from unet3d.utils.sitk_utils import resample_to_spacing
 
 
@@ -67,3 +68,14 @@ class TestUtils(TestCase):
                                                                    [0., 1., 0., -0.5],
                                                                    [0., 0., 1., -0.5],
                                                                    [0., 0., 0., 1.]])))
+
+    def test_affine_crop(self):
+        shape = (9, 9, 9)
+        data = np.zeros(shape)
+        data[3:6, 3:6, 3:6] = 1
+        affine = np.diag(np.ones(len(shape) + 1))
+        image = nib.Nifti1Image(data, affine)
+        cropped_affine = crop_img(image, return_affine=True, pad=False)
+        expected_affine = np.copy(affine)
+        expected_affine[:3, 3] = 3
+        self.assertTrue(np.all(cropped_affine == expected_affine))

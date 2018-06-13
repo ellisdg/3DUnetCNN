@@ -3,7 +3,7 @@ from nilearn.image.image import check_niimg
 from nilearn.image.image import _crop_img_to as crop_img_to
 
 
-def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None):
+def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None, return_affine=False):
     """Crops img as much as possible
     Will crop img, removing as many zero entries as possible
     without touching non-zero entries. Will leave one voxel of
@@ -57,7 +57,24 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
     if return_slices:
         return slices
 
+    if return_affine:
+        return image_slices_to_affine(img, slices)
+
     return crop_img_to(img, slices, copy=copy)
+
+
+def image_slices_to_affine(image, slices):
+    affine = image.affine
+
+    linear_part = affine[:3, :3]
+    old_origin = affine[:3, 3]
+    new_origin_voxel = np.array([s.start for s in slices])
+    new_origin = old_origin + linear_part.dot(new_origin_voxel)
+
+    new_affine = np.eye(4)
+    new_affine[:3, :3] = linear_part
+    new_affine[:3, 3] = new_origin
+    return new_affine
 
 
 def run_with_background_correction(func, image, background=None, returns_array=False, reset_background=True,
