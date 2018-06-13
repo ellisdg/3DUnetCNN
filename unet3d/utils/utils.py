@@ -4,7 +4,7 @@ import collections
 
 import nibabel as nib
 import numpy as np
-from nilearn.image import reorder_img, new_img_like
+from nilearn.image import reorder_img, new_img_like, resample_to_img
 
 from .nilearn_custom_utils.nilearn_utils import crop_img_to, run_with_background_correction
 from .sitk_utils import resample_to_spacing, calculate_origin_offset
@@ -70,7 +70,7 @@ def fix_shape(image):
     return image
 
 
-def resize(image, new_shape, interpolation="linear", background_correction=False):
+def resize(image, new_shape, interpolation="linear", background_correction=False, pad_mode='edge'):
     if background_correction:
         return run_with_background_correction(resize, image, new_shape=new_shape, interpolation=interpolation,
                                               background_correction=False)
@@ -78,9 +78,19 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
         image = reorder_img(image, resample=interpolation)
         zoom_level = np.divide(new_shape, image.shape)
         new_spacing = np.divide(image.header.get_zooms(), zoom_level)
-        new_data = resample_to_spacing(image.get_data(), image.header.get_zooms(), new_spacing,
-                                       interpolation=interpolation)
+        new_data = np.zeros(new_shape)
         new_affine = np.copy(image.affine)
         np.fill_diagonal(new_affine, new_spacing.tolist() + [1])
         new_affine[:3, 3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
-        return new_img_like(image, new_data, affine=new_affine)
+        new_img = new_img_like(image, new_data, affine=new_affine)
+        if np.any(np.greater(new_shape, image.shape)):
+            image = pad_image(image, mode=pad_mode)
+        return resample_to_img(image, new_img, interpolation=interpolation)
+
+
+def pad_image(image, mode='edge', pad_width=1):
+    data = np.pad(image.get_data(), pad_width=pad_width, mode=mode)
+    affine = np.copy(image.affine)
+    spacing = np.copy(image.header.get_zooms())
+    affine[:3, 3] -= spacing * pad_width
+    return image.__class__(data, affine)
