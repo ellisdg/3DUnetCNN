@@ -68,6 +68,9 @@ class TestUtils(TestCase):
                                                                    [0., 1., 0., -0.5],
                                                                    [0., 0., 1., -0.5],
                                                                    [0., 0., 0., 1.]])))
+        origanl_image = resize(new_image_nib, (2, 2, 2), interpolation="nearest")
+        self.assertTrue(np.all(image_nib.get_data() == origanl_image.get_data()))
+        self.assertTrue(np.all(image_nib.affine == origanl_image.affine))
 
     def test_affine_crop(self):
         shape = (9, 9, 9)
