@@ -3,7 +3,7 @@ from unittest import TestCase
 import nibabel as nib
 import numpy as np
 
-from unet3d.utils.utils import resize
+from unet3d.utils.utils import resize, resize_affine
 from unet3d.utils.nilearn_custom_utils.nilearn_utils import crop_img
 from unet3d.utils.sitk_utils import resample_to_spacing
 
@@ -68,9 +68,9 @@ class TestUtils(TestCase):
                                                                    [0., 1., 0., -0.5],
                                                                    [0., 0., 1., -0.5],
                                                                    [0., 0., 0., 1.]])))
-        origanl_image = resize(new_image_nib, (2, 2, 2), interpolation="nearest")
-        self.assertTrue(np.all(image_nib.get_data() == origanl_image.get_data()))
-        self.assertTrue(np.all(image_nib.affine == origanl_image.affine))
+        original_image = resize(new_image_nib, (2, 2, 2), interpolation="nearest")
+        self.assertTrue(np.all(image_nib.get_data() == original_image.get_data()))
+        self.assertTrue(np.all(image_nib.affine == original_image.affine))
 
     def test_affine_crop(self):
         shape = (9, 9, 9)
@@ -82,3 +82,14 @@ class TestUtils(TestCase):
         expected_affine = np.copy(affine)
         expected_affine[:3, 3] = 3
         self.assertTrue(np.all(cropped_affine == expected_affine))
+
+    def test_adjust_affine_spacing(self):
+        old_shape = (128, 128, 128)
+        new_shape = (64, 64, 64)
+        old_affine = np.diag(np.ones(4))
+        new_affine = resize_affine(old_affine, old_shape, new_shape)
+        expected_affine = np.diag(np.ones(4) * 2)
+        expected_affine[3, 3] = 1
+        expected_affine[:3, 3] = 0.5
+        np.testing.assert_array_equal(new_affine, expected_affine)
+

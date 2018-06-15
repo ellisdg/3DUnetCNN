@@ -7,7 +7,6 @@ import numpy as np
 from nilearn.image import reorder_img, new_img_like, resample_to_img
 
 from .nilearn_custom_utils.nilearn_utils import crop_img_to, run_with_background_correction
-from .sitk_utils import resample_to_spacing, calculate_origin_offset
 
 
 def pickle_dump(item, out_file):
@@ -75,7 +74,6 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
         return run_with_background_correction(resize, image, new_shape=new_shape, interpolation=interpolation,
                                               background_correction=False)
     else:
-        image = reorder_img(image, resample=interpolation)
         zoom_level = np.divide(new_shape, image.shape)
         new_spacing = np.divide(image.header.get_zooms(), zoom_level)
         new_data = np.zeros(new_shape)
@@ -83,9 +81,13 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
         np.fill_diagonal(new_affine, new_spacing.tolist() + [1])
         new_affine[:3, 3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
         new_img = new_img_like(image, new_data, affine=new_affine)
-        if np.any(np.greater(new_shape, image.shape)):
-            image = pad_image(image, mode=pad_mode)
-        return resample_to_img(image, new_img, interpolation=interpolation)
+        return resample_image(image, new_img, interpolation=interpolation, pad_mode=pad_mode)
+
+
+def resample_image(source_image, target_image, interpolation="linear", pad_mode='edge'):
+    if np.any(np.greater(target_image.shape, source_image.shape)):
+        source_image = pad_image(source_image, mode=pad_mode)
+    return resample_to_img(source_image, target_image, interpolation=interpolation)
 
 
 def pad_image(image, mode='edge', pad_width=1):
@@ -94,3 +96,24 @@ def pad_image(image, mode='edge', pad_width=1):
     spacing = np.copy(image.header.get_zooms())
     affine[:3, 3] -= spacing * pad_width
     return image.__class__(data, affine)
+
+
+def calculate_origin_offset(new_spacing, old_spacing):
+    return np.subtract(new_spacing, old_spacing)/2
+
+
+def resize_affine(affine, shape, target_shape, copy=True):
+    if copy:
+        affine = affine.copy()
+    scale = np.divide(shape, target_shape)
+    spacing = get_spacing_from_affine(affine)
+    target_spacing = np.multiply(spacing, scale)
+    offset = calculate_origin_offset(target_spacing, spacing)
+    affine[:3, :3] *= scale
+    affine[:3, 3] += offset
+    return affine
+
+
+def get_spacing_from_affine(affine):
+    RZS = affine[:3, :3]
+    return np.sqrt(np.sum(RZS * RZS, axis=0))
