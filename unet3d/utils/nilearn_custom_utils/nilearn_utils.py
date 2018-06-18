@@ -58,7 +58,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         return slices
 
     if return_affine:
-        return image_slices_to_affine(img, slices)
+        return image_slices_to_affine(img, slices), end - start
 
     return crop_img_to(img, slices, copy=copy)
 

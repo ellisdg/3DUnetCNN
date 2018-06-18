@@ -3,7 +3,7 @@ from unittest import TestCase
 import nibabel as nib
 import numpy as np
 
-from unet3d.utils.utils import resize, resize_affine
+from unet3d.utils.utils import resize, resize_affine, resample
 from unet3d.utils.nilearn_custom_utils.nilearn_utils import crop_img
 from unet3d.utils.sitk_utils import resample_to_spacing
 
@@ -78,7 +78,7 @@ class TestUtils(TestCase):
         data[3:6, 3:6, 3:6] = 1
         affine = np.diag(np.ones(len(shape) + 1))
         image = nib.Nifti1Image(data, affine)
-        cropped_affine = crop_img(image, return_affine=True, pad=False)
+        cropped_affine, cropped_shape = crop_img(image, return_affine=True, pad=False)
         expected_affine = np.copy(affine)
         expected_affine[:3, 3] = 3
         self.assertTrue(np.all(cropped_affine == expected_affine))
@@ -93,3 +93,18 @@ class TestUtils(TestCase):
         expected_affine[:3, 3] = 0.5
         np.testing.assert_array_equal(new_affine, expected_affine)
 
+    def test_edge_resample(self):
+        shape = (9, 9, 9)
+        target_shape = shape
+        data = np.ones(shape)
+        data[-3:, -3:, -3:] = 2
+        affine = np.diag(np.ones(4))
+        image = nib.Nifti1Image(data, affine)
+        cropped_affine, cropped_shape = crop_img(image, return_affine=True, percentile=50, pad=False)
+        np.testing.assert_array_equal(cropped_shape, (3, 3, 3))
+        np.testing.assert_array_almost_equal(np.ones(3)*6, cropped_affine[:3, 3])
+        resized_affine = resize_affine(cropped_affine, cropped_shape, target_shape=target_shape)
+        final_image = resample(image, resized_affine, target_shape, pad=True)
+        np.testing.assert_array_equal(final_image.shape, target_shape)
+        self.assertGreater(final_image.get_data().min(), 1)
+        np.testing.assert_array_almost_equal(final_image.header.get_zooms(), np.ones(3)/(np.ones(3)*3))
