@@ -2,24 +2,42 @@ import os
 
 import numpy as np
 import tables
+import nibabel as nib
 
 from .normalize import normalize_data_storage, compute_region_of_interest_affine
 from .utils.utils import read_image_files
 
 
-def create_data_file(out_file, n_channels, n_samples, image_shape):
-    hdf5_file = tables.open_file(out_file, mode='w')
-    filters = tables.Filters(complevel=5, complib='blosc')
-    data_shape = tuple([0, n_channels] + list(image_shape))
-    truth_shape = tuple([0, 1] + list(image_shape))
-    data_storage = hdf5_file.create_earray(hdf5_file.root, 'data', tables.Float32Atom(), shape=data_shape,
-                                           filters=filters, expectedrows=n_samples)
-    truth_storage = hdf5_file.create_earray(hdf5_file.root, 'truth', tables.UInt8Atom(), shape=truth_shape,
-                                            filters=filters, expectedrows=n_samples)
-    affine_storage = hdf5_file.create_earray(hdf5_file.root, 'affine', tables.Float32Atom(), shape=(0, 4, 4),
-                                             filters=filters, expectedrows=n_samples)
-    roi_storage = hdf5_file.create_earray(hdf5_file.root, 'roi', tables.Float32Atom(), shape=(0, 4, 4))
-    return hdf5_file, data_storage, truth_storage, affine_storage, roi_storage
+class DataFile(object):
+    def __init__(self, filename, image_class=nib.Nifti1Image):
+        self._data_file = tables.open_file(filename, mode='w')
+        self._data_group = self._data_file.create_group(self._data_file.root, 'data')
+        self._image_class = image_class
+
+    def add_data(self, features, targets, name, **kwargs):
+        group = self._data_file.create_group(self._data_group, name)
+        self._data_file.create_array(group, 'features', features)
+        self._data_file.create_array(group, 'targets', targets)
+        for key in kwargs:
+            self._data_file.create_array(group, key, kwargs[key])
+
+    def get_data(self, name):
+        return self[name].features, self[name].targets
+
+    def get_images(self, name):
+        features, targets = self.get_data(name)
+        affine = self[name].affine
+        return self._image_class(features, affine), self._image_class(targets, affine)
+
+    def close(self):
+        self._data_file.close()
+
+    def __getitem__(self, key, group="data"):
+        return self._data_file.root._v_children[group]._v_children[key]
+
+    def __del__(self):
+        if self._data_file.isopen:
+            self.close()
 
 
 def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, affine_storage,
