@@ -3,7 +3,7 @@ import os
 import numpy as np
 from nilearn.image import new_img_like
 
-from .utils.utils import resize, read_image_files, crop_img_to, read_image
+from .utils.utils import resize, read_image_files, crop_img_to, read_image, resize_affine
 from .utils.nilearn_custom_utils.nilearn_utils import run_with_background_correction, crop_img
 
 
@@ -15,14 +15,15 @@ def find_downsized_info(training_data_files, input_shape):
     return crop_slices, final_image.affine, final_image.header
 
 
-def get_cropping_parameters(in_files, background_correction=False, percentile=None, pad=False):
+def get_cropping_parameters(in_files, background_correction=False, percentile=None, pad=False, return_slices=True,
+                            return_affine=False):
     if len(in_files) > 1:
         foreground = get_complete_foreground(in_files, background_correction=background_correction,
                                              percentile=percentile)
     else:
         foreground = get_foreground_from_set_of_files(in_files[0], return_image=True, percentile=percentile,
                                                       background_correction=background_correction)
-    return crop_img(foreground, return_slices=True, copy=True, pad=pad)
+    return crop_img(foreground, return_slices=return_slices, copy=True, pad=pad, return_affine=return_affine)
 
 
 def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None, crop=False,
@@ -66,6 +67,28 @@ def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance
         return new_img_like(image, foreground)
     else:
         return foreground
+
+
+def compute_foreground_from_image_set(images, background_value=0, tolerance=1e-4, return_image=False,
+                                      background_correction=False, percentile=None):
+    foreground = None
+    for i, image in enumerate(images):
+        foreground = get_image_foreground(image, background_value=background_value, tolerance=tolerance,
+                                          array=foreground, background_correction=background_correction,
+                                          percentile=percentile)
+    if return_image:
+        return new_img_like(image, foreground)
+    else:
+        return foreground
+
+
+def compute_region_of_interest_affine(images, target_shape, background_value=0, tolerance=1e-4,
+                                      background_correction=False, percentile=None):
+    foreground = compute_foreground_from_image_set(images, background_value=background_value, tolerance=tolerance,
+                                                   background_correction=background_correction, percentile=percentile,
+                                                   return_image=True)
+    cropped_affine, cropped_shape = crop_img(foreground, return_affine=True)
+    return resize_affine(cropped_affine, cropped_shape, target_shape)
 
 
 def get_image_foreground(image, background_value=0, tolerance=1e-5, array=None, background_correction=False,
