@@ -57,6 +57,10 @@ class TestDataFile(TestCase):
         self.assertEqual(roi_targets.max(), 1)
         np.testing.assert_array_equal(roi_features.shape, target_shape)
 
+    def test_set_parameters(self):
+        training_subject_ids = ["train1", "train2", "train3"]
+        self.data_file.set_training_groups(training_subject_ids)
+        np.testing.assert_array_equal(self.data_file.get_training_groups(), training_subject_ids)
 
     def tearDown(self):
         self.data_file.close()

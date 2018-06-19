@@ -54,6 +54,12 @@ class DataFile(object):
                                      interpolation=targets_interpolation)
         return roi_features_image.get_data(), roi_targets_image.get_data()
 
+    def set_training_groups(self, training_groups):
+        self._data_file.create_array(self._data_file.root, "training", training_groups)
+
+    def get_training_groups(self):
+        return [training_group.decode('utf-8') for training_group in self._data_file.root.training]
+
     def close(self):
         self._data_file.close()
 
