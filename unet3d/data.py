@@ -5,7 +5,7 @@ import tables
 import nibabel as nib
 
 from .normalize import normalize_data_storage, compute_region_of_interest_affine
-from .utils.utils import read_image_files
+from .utils.utils import read_image_files, resample
 
 
 class DataFile(object):
@@ -34,6 +34,15 @@ class DataFile(object):
 
     def get_roi(self, name):
         return self[name].roi_affine, self[name].roi_shape
+
+    def get_roi_data(self, name, features_interpolation='linear', targets_interpolation='nearest'):
+        features_image, targets_image = self.get_images(name)
+        affine, shape = self.get_roi(name)
+        roi_features_image = resample(image=features_image, target_affine=affine, target_shape=shape,
+                                      interpolation=features_interpolation)
+        roi_targets_image = resample(image=targets_image, target_affine=affine, target_shape=shape,
+                                     interpolation=targets_interpolation)
+        return roi_features_image.get_data(), roi_targets_image.get_data()
 
     def close(self):
         self._data_file.close()

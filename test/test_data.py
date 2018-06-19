@@ -41,6 +41,14 @@ class TestDataFile(TestCase):
         np.testing.assert_array_equal(_affine, roi_affine)
         np.testing.assert_array_equal(_shape, roi_shape)
 
+        roi_features, roi_targets = self.data_file.get_roi_data(subject_id)
+        self.assertEqual(roi_features.min(), 5)
+        self.assertEqual(roi_features.max(), 5)
+        np.testing.assert_array_equal(roi_features.shape, roi_shape)
+        np.testing.assert_array_equal(roi_targets.shape, roi_features.shape)
+        self.assertEqual(roi_targets.min(), 1)
+        self.assertEqual(roi_targets.max(), 1)
+
     def tearDown(self):
         self.data_file.close()
         os.remove(self.filename)
