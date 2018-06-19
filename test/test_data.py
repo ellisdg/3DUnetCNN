@@ -32,6 +32,11 @@ class TestDataFile(TestCase):
         x_image, y_image = self.data_file.get_images(subject_id)
         np.testing.assert_array_equal(x_image.get_data(), features)
 
+        roi_affine = affine.copy()
+        roi_affine[:3, 3] = 3
+        roi_shape = (3, 3, 3)
+        self.data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
+
     def tearDown(self):
         self.data_file.close()
         os.remove(self.filename)

@@ -18,8 +18,11 @@ class DataFile(object):
         group = self._data_file.create_group(self._data_group, name)
         self._data_file.create_array(group, 'features', features)
         self._data_file.create_array(group, 'targets', targets)
+        self.add_supplemental_data(name, **kwargs)
+
+    def add_supplemental_data(self, name, **kwargs):
         for key in kwargs:
-            self._data_file.create_array(group, key, kwargs[key])
+            self._data_file.create_array(self[name], key, kwargs[key])
 
     def get_data(self, name):
         return self[name].features, self[name].targets
