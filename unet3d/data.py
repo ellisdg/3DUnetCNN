@@ -33,17 +33,21 @@ class DataFile(object):
         return self._image_class(features, affine), self._image_class(targets, affine)
 
     def get_roi(self, name):
-        return self[name].roi_affine, self[name].roi_shape
+        return self.get_roi_affine(name), self.get_roi_shape(name)
+
+    def get_roi_affine(self, name):
+        return self[name].roi_affine
+
+    def get_roi_shape(self, name):
+        return self[name].roi_shape
 
     def get_roi_data(self, name, features_interpolation='linear', targets_interpolation='nearest', roi_affine=None,
                      roi_shape=None):
         features_image, targets_image = self.get_images(name)
-        if roi_affine is None or roi_shape is None:
-            affine, shape = self.get_roi(name)
-            if roi_affine is None:
-                roi_affine = affine
-            if roi_shape is None:
-                roi_shape = shape
+        if roi_affine is None:
+            roi_affine = self.get_roi_affine(name)
+        if roi_shape is None:
+            roi_shape = self.get_roi_shape(name)
         roi_features_image = resample(image=features_image, target_affine=roi_affine, target_shape=roi_shape,
                                       interpolation=features_interpolation)
         roi_targets_image = resample(image=targets_image, target_affine=roi_affine, target_shape=roi_shape,
