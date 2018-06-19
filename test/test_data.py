@@ -61,6 +61,16 @@ class TestDataFile(TestCase):
         training_subject_ids = ["train1", "train2", "train3"]
         self.data_file.set_training_groups(training_subject_ids)
         np.testing.assert_array_equal(self.data_file.get_training_groups(), training_subject_ids)
+        shape = (3, 3, 3)
+        for index, subject_id in enumerate(training_subject_ids):
+            x = np.ones(shape) * index * 2
+            y = x + 1
+            self.data_file.add_data(x, y, subject_id)
+
+        for index, subject_id in enumerate(self.data_file.get_training_groups()):
+            x, y = self.data_file.get_data(subject_id)
+            np.testing.assert_array_equal(x, np.ones(shape) * index * 2)
+            np.testing.assert_array_equal(y, np.ones(shape) * index * 2 + 1)
 
     def tearDown(self):
         self.data_file.close()

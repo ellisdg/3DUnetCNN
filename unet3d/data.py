@@ -8,17 +8,25 @@ from .normalize import normalize_data_storage, compute_region_of_interest_affine
 from .utils.utils import read_image_files, resample
 
 
+def byte_to_string(array):
+    return [item.decode('utf-8') for item in array]
+
+
 class DataFile(object):
     def __init__(self, filename, image_class=nib.Nifti1Image):
         self._data_file = tables.open_file(filename, mode='w')
         self._data_group = self._data_file.create_group(self._data_file.root, 'data')
+        self._parameters_group = self._data_file.create_group(self._data_file.root, 'parameters')
         self._image_class = image_class
 
     def add_data(self, features, targets, name, **kwargs):
         group = self._data_file.create_group(self._data_group, name)
-        self._data_file.create_array(group, 'features', features)
-        self._data_file.create_array(group, 'targets', targets)
+        self.add_array(features, 'features', group)
+        self.add_array(targets, 'targets', group)
         self.add_supplemental_data(name, **kwargs)
+
+    def add_array(self, array, array_name, group):
+        return self._data_file.create_array(group, array_name, array)
 
     def add_supplemental_data(self, name, **kwargs):
         for key in kwargs:
@@ -55,10 +63,10 @@ class DataFile(object):
         return roi_features_image.get_data(), roi_targets_image.get_data()
 
     def set_training_groups(self, training_groups):
-        self._data_file.create_array(self._data_file.root, "training", training_groups)
+        self.add_array(training_groups, 'training', self._parameters_group)
 
     def get_training_groups(self):
-        return [training_group.decode('utf-8') for training_group in self._data_file.root.training]
+        return byte_to_string(self.__getitem__('training', 'parameters'))
 
     def close(self):
         self._data_file.close()
