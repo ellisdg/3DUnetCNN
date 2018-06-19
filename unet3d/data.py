@@ -32,6 +32,9 @@ class DataFile(object):
         affine = self[name].affine
         return self._image_class(features, affine), self._image_class(targets, affine)
 
+    def get_roi(self, name):
+        return self[name].roi_affine, self[name].roi_shape
+
     def close(self):
         self._data_file.close()
 

@@ -37,6 +37,10 @@ class TestDataFile(TestCase):
         roi_shape = (3, 3, 3)
         self.data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
 
+        _affine, _shape = self.data_file.get_roi(subject_id)
+        np.testing.assert_array_equal(_affine, roi_affine)
+        np.testing.assert_array_equal(_shape, roi_shape)
+
     def tearDown(self):
         self.data_file.close()
         os.remove(self.filename)
