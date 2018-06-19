@@ -2,6 +2,7 @@ from unittest import TestCase
 import os
 
 from unet3d.data import DataFile
+from unet3d.utils.utils import resize_affine
 import numpy as np
 
 
@@ -48,6 +49,14 @@ class TestDataFile(TestCase):
         np.testing.assert_array_equal(roi_targets.shape, roi_features.shape)
         self.assertEqual(roi_targets.min(), 1)
         self.assertEqual(roi_targets.max(), 1)
+
+        target_shape = (4, 4, 4)
+        _affine = resize_affine(roi_affine, shape=roi_shape, target_shape=target_shape)
+        roi_features, roi_targets = self.data_file.get_roi_data(subject_id, roi_affine=_affine, roi_shape=target_shape)
+        self.assertEqual(roi_targets.min(), 1)
+        self.assertEqual(roi_targets.max(), 1)
+        np.testing.assert_array_equal(roi_features.shape, target_shape)
+
 
     def tearDown(self):
         self.data_file.close()
