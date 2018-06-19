@@ -65,8 +65,14 @@ class DataFile(object):
     def set_training_groups(self, training_groups):
         self.add_array(training_groups, 'training', self._parameters_group)
 
+    def set_validation_groups(self, validation_groups):
+        self.add_array(validation_groups, 'validation', self._parameters_group)
+
     def get_training_groups(self):
         return byte_to_string(self.__getitem__('training', 'parameters'))
+
+    def get_validation_groups(self):
+        return byte_to_string(self.__getitem__('validation', 'parameters'))
 
     def close(self):
         self._data_file.close()

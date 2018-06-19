@@ -72,6 +72,10 @@ class TestDataFile(TestCase):
             np.testing.assert_array_equal(x, np.ones(shape) * index * 2)
             np.testing.assert_array_equal(y, np.ones(shape) * index * 2 + 1)
 
+        validation_subject_ids = ["val1", "val2"]
+        self.data_file.set_validation_groups(validation_subject_ids)
+        np.testing.assert_array_equal(validation_subject_ids, self.data_file.get_validation_groups())
+
     def tearDown(self):
         self.data_file.close()
         os.remove(self.filename)
