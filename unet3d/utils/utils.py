@@ -85,16 +85,19 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
 
 
 def resample_image(source_image, target_image, interpolation="linear", pad_mode='edge', pad=False):
-    if pad or np.any(np.greater(target_image.shape, source_image.shape)):
+    if pad or np.any(np.greater(target_image.shape[-3:], source_image.shape[-3:])):
         source_image = pad_image(source_image, mode=pad_mode)
     return resample_to_img(source_image, target_image, interpolation=interpolation)
 
 
 def pad_image(image, mode='edge', pad_width=1):
-    data = np.pad(image.get_data(), pad_width=pad_width, mode=mode)
     affine = np.copy(image.affine)
-    spacing = np.copy(image.header.get_zooms())
+    spacing = np.copy(image.header.get_zooms()[:3])
     affine[:3, 3] -= spacing * pad_width
+    if len(image.shape) > 3:
+        # just pad the first three dimensions
+        pad_width = [[pad_width]*2]*3 + [[0, 0]]*(len(image.shape) - 3)
+    data = np.pad(image.get_data(), pad_width=pad_width, mode=mode)
     return image.__class__(data, affine)
 
 

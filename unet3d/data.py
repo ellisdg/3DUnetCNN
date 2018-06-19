@@ -35,8 +35,11 @@ class DataFile(object):
     def get_data(self, name):
         return self[name].features, self[name].targets
 
-    def get_images(self, name):
+    def get_images(self, name, channels_last=False):
         features, targets = self.get_data(name)
+        if channels_last:
+            features = move_4d_channels_last(features)
+            targets = move_4d_channels_last(targets)
         affine = self[name].affine
         return self._image_class(features, affine), self._image_class(targets, affine)
 
@@ -51,7 +54,7 @@ class DataFile(object):
 
     def get_roi_data(self, name, features_interpolation='linear', targets_interpolation='nearest', roi_affine=None,
                      roi_shape=None):
-        features_image, targets_image = self.get_images(name)
+        features_image, targets_image = self.get_images(name, channels_last=True)
         if roi_affine is None:
             roi_affine = self.get_roi_affine(name)
         if roi_shape is None:
@@ -60,7 +63,7 @@ class DataFile(object):
                                       interpolation=features_interpolation)
         roi_targets_image = resample(image=targets_image, target_affine=roi_affine, target_shape=roi_shape,
                                      interpolation=targets_interpolation)
-        return roi_features_image.get_data(), roi_targets_image.get_data()
+        return move_4d_channels_first(roi_features_image.get_data()), move_4d_channels_first(roi_targets_image.get_data())
 
     def set_training_groups(self, training_groups):
         self.add_array(training_groups, 'training', self._parameters_group)
@@ -83,6 +86,26 @@ class DataFile(object):
     def __del__(self):
         if self._data_file.isopen:
             self.close()
+
+
+def move_4d_channels_last(data):
+    if len(data.shape) > 3:
+        return move_channels_last(data)
+    return data
+
+
+def move_4d_channels_first(data):
+    if len(data.shape) > 3:
+        return move_channels_first(data)
+    return data
+
+
+def move_channels_last(data):
+    return np.moveaxis(data, 0, -1)
+
+
+def move_channels_first(data):
+    return np.moveaxis(data, -1, 0)
 
 
 def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, affine_storage,

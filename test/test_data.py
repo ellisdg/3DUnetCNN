@@ -76,6 +76,21 @@ class TestDataFile(TestCase):
         self.data_file.set_validation_groups(validation_subject_ids)
         np.testing.assert_array_equal(validation_subject_ids, self.data_file.get_validation_groups())
 
+    def test_multi_channel_data(self):
+        shape = (4, 5, 6)
+        affine = np.diag(np.ones(4) * 0.5)
+        affine[3, 3] = 1
+        subject_id = 'subject1'
+        data_list = list()
+        for i in range(3):
+            data = np.ones(shape) * i
+            data_list.append(data)
+        self.data_file.add_data(data_list, data_list, subject_id, affine=affine, roi_shape=(2, 3, 4), roi_affine=affine)
+        roi_features, roi_targets = self.data_file.get_roi_data(subject_id)
+        np.testing.assert_array_equal(roi_features.shape, (3, 2, 3, 4))
+        for i in range(3):
+            self.assertTrue(np.all(roi_features[i] == i))
+
     def tearDown(self):
         self.data_file.close()
         os.remove(self.filename)
