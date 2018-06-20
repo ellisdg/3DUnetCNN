@@ -5,7 +5,7 @@ import tables
 import nibabel as nib
 
 from .normalize import normalize_data_storage, compute_region_of_interest_affine
-from .utils.utils import read_image_files, resample
+from .utils.utils import read_image_files, resample, is_iterable
 
 
 def byte_to_string(array):
@@ -29,6 +29,10 @@ class DataFile(object):
         return self._data_file.create_array(group, array_name, array)
 
     def add_images(self, features_image, targets_image, name, **kwargs):
+        if is_iterable(features_image):
+            features_image = combine_images(features_image)
+        if is_iterable(targets_image):
+            targets_image = combine_images(targets_image)
         features = features_image.get_data()
         targets = targets_image.get_data()
         self.add_data(features, targets, name, affine=features_image.affine, **kwargs)
@@ -91,6 +95,14 @@ class DataFile(object):
     def __del__(self):
         if self._data_file.isopen:
             self.close()
+
+
+def combine_images(images):
+    base_image = images[0]
+    data = list()
+    for image in images:
+        data.append(image.get_data())
+    return base_image.__class__(np.asarray(data), base_image.affine)
 
 
 def move_4d_channels_last(data):

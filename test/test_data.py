@@ -81,6 +81,7 @@ class TestDataFile(TestCase):
         shape = (4, 5, 6)
         affine = np.diag(np.ones(4) * 0.5)
         affine[3, 3] = 1
+
         subject_id = 'subject1'
         data_list = list()
         for i in range(3):
@@ -91,6 +92,23 @@ class TestDataFile(TestCase):
         np.testing.assert_array_equal(roi_features.shape, (3, 2, 3, 4))
         for i in range(3):
             self.assertTrue(np.all(roi_features[i] == i))
+
+        subject_id = 'subject2'
+        self.data_file.add_images([nib.Nifti1Image(data, affine) for data in data_list], nib.Nifti1Image(data, affine),
+                                  subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
+        roi_features, roi_targets = self.data_file.get_roi_data(subject_id)
+        np.testing.assert_array_equal(roi_features.shape, (3, 2, 3, 4))
+        for i in range(3):
+            self.assertTrue(np.all(roi_features[i] == i))
+
+        subject_id = 'subject3'
+        self.data_file.add_images([nib.Nifti1Image(data, affine) for data in data_list],
+                                  [nib.Nifti1Image(data, affine) for data in data_list],
+                                  subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
+        roi_features, roi_targets = self.data_file.get_roi_data(subject_id)
+        np.testing.assert_array_equal(roi_targets.shape, (3, 2, 3, 4))
+        for i in range(3):
+            self.assertTrue(np.all(roi_targets[i] == i))
 
     def test_add_images(self):
         shape = (4, 5, 6)

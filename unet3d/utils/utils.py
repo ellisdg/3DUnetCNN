@@ -4,9 +4,13 @@ import collections
 
 import nibabel as nib
 import numpy as np
-from nilearn.image import reorder_img, new_img_like, resample_to_img
+from nilearn.image import new_img_like, resample_to_img
 
 from .nilearn_custom_utils.nilearn_utils import crop_img_to, run_with_background_correction
+
+
+def is_iterable(arg):
+    return isinstance(arg, collections.Iterable) and not isinstance(arg, str)
 
 
 def pickle_dump(item, out_file):
