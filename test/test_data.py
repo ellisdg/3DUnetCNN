@@ -110,6 +110,27 @@ class TestDataFile(TestCase):
         for i in range(3):
             self.assertTrue(np.all(roi_targets[i] == i))
 
+        subject_id = 'subject4'
+        targets_affine = affine.copy()
+        targets_affine[1, 2] = 1
+        with self.assertRaises(AssertionError):
+            self.data_file.add_images([nib.Nifti1Image(data, affine) for data in data_list],
+                                      [nib.Nifti1Image(data, targets_affine) for data in data_list],
+                                      subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
+
+        subject_id = 'subject5'
+        images = list()
+        for index, data in enumerate(data_list):
+            _affine = affine.copy()
+            _affine[index, index] = 2
+            images.append(nib.Nifti1Image(data, _affine))
+
+        with self.assertRaises(AssertionError):
+            self.data_file.add_images(images[0], images, subject_id)
+
+        with self.assertRaises(AssertionError):
+            self.data_file.add_images(images[0], images, subject_id)
+
     def test_add_images(self):
         shape = (4, 5, 6)
         affine = np.diag(np.ones(4) * 0.5)

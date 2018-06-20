@@ -28,12 +28,14 @@ class DataFile(object):
     def add_array(self, array, array_name, group):
         return self._data_file.create_array(group, array_name, array)
 
-    def add_images(self, features_image, targets_image, name, **kwargs):
+    def add_images(self, features_image, targets_image, name, check_affine=True, **kwargs):
         if is_iterable(features_image):
             features_image = combine_images(features_image)
         if is_iterable(targets_image):
             targets_image = combine_images(targets_image)
         features = features_image.get_data()
+        if check_affine:
+            np.testing.assert_array_equal(features_image.affine, targets_image.affine)
         targets = targets_image.get_data()
         self.add_data(features, targets, name, affine=features_image.affine, **kwargs)
 
@@ -101,6 +103,7 @@ def combine_images(images):
     base_image = images[0]
     data = list()
     for image in images:
+        np.testing.assert_array_equal(image.affine, base_image.affine)
         data.append(image.get_data())
     return base_image.__class__(np.asarray(data), base_image.affine)
 
