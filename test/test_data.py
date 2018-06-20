@@ -16,23 +16,23 @@ class TestDataFile(TestCase):
         self.assertTrue(os.path.exists(self.filename))
 
     def test_add_data(self):
-        features = np.zeros((9, 9, 9))
-        targets = np.ones(features.shape)
+        my_features = np.zeros((9, 9, 9))
+        my_targets = np.ones(my_features.shape)
         affine = np.diag(np.ones(4))
         subject_id = 'mydata'
-        self.data_file.add_data(features, targets, subject_id)
+        self.data_file.add_data(my_features, my_targets, subject_id)
         x, y = self.data_file.get_data(subject_id)
-        np.testing.assert_array_equal(features, x)
-        np.testing.assert_array_equal(targets, y)
+        np.testing.assert_array_equal(my_features, x)
+        np.testing.assert_array_equal(my_targets, y)
 
         subject_id = 'yourdata'
-        features = features.copy()
-        features[3:6, 3:6, 3:6] = 5
-        targets = np.zeros(features.shape)
-        targets[3:6, 3:6, 3:6] = 1
-        self.data_file.add_data(features, targets, subject_id, affine=affine)
+        your_features = my_features.copy()
+        your_features[3:6, 3:6, 3:6] = 5
+        your_targets = np.zeros(your_features.shape)
+        your_targets[3:6, 3:6, 3:6] = 1
+        self.data_file.add_data(your_features, your_targets, subject_id, affine=affine)
         x_image, y_image = self.data_file.get_nibabel_images(subject_id)
-        np.testing.assert_array_equal(x_image.get_data(), features)
+        np.testing.assert_array_equal(x_image.get_data(), your_features)
 
         roi_affine = affine.copy()
         roi_affine[:3, 3] = 3
@@ -151,3 +151,22 @@ class TestDataFile(TestCase):
     def tearDown(self):
         self.data_file.close()
         os.remove(self.filename)
+
+    def test_combine_4d_images(self):
+        shape1 = (2, 4, 4, 4)
+        shape2 = (2, 4, 4, 4)
+        data1 = np.zeros(shape1)
+        data2 = np.zeros(shape2)
+        affine = np.diag(np.ones(4))
+
+        image1 = nib.Nifti1Image(data1, affine)
+        image2 = nib.Nifti1Image(data2, affine)
+
+        from unet3d.data import combine_images
+
+        image = combine_images([image1, image2])
+        np.testing.assert_array_equal(image.shape, (4, 4, 4, 4))
+        np.testing.assert_array_equal(image.affine, affine)
+
+        image4 = combine_images([image1, image2], axis=-1)
+        np.testing.assert_array_equal(image4.shape, (2, 4, 4, 8))

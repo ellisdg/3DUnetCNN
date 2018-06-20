@@ -102,13 +102,17 @@ class DataFile(object):
             self.close()
 
 
-def combine_images(images):
+def combine_images(images, axis=0):
     base_image = images[0]
     data = list()
     for image in images:
         np.testing.assert_array_equal(image.affine, base_image.affine)
         data.append(image.get_data())
-    return base_image.__class__(np.asarray(data), base_image.affine)
+    if len(base_image.shape) > 3:
+        array = np.concatenate(data, axis=axis)
+    else:
+        array = np.stack(data, axis=axis)
+    return base_image.__class__(array, base_image.affine)
 
 
 def move_4d_channels_last(data):
