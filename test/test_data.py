@@ -31,7 +31,7 @@ class TestDataFile(TestCase):
         targets = np.zeros(features.shape)
         targets[3:6, 3:6, 3:6] = 1
         self.data_file.add_data(features, targets, subject_id, affine=affine)
-        x_image, y_image = self.data_file.get_images(subject_id)
+        x_image, y_image = self.data_file.get_nibabel_images(subject_id)
         np.testing.assert_array_equal(x_image.get_data(), features)
 
         roi_affine = affine.copy()
@@ -94,17 +94,17 @@ class TestDataFile(TestCase):
             self.assertTrue(np.all(roi_features[i] == i))
 
         subject_id = 'subject2'
-        self.data_file.add_images([nib.Nifti1Image(data, affine) for data in data_list], nib.Nifti1Image(data, affine),
-                                  subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
+        self.data_file.add_nibabel_images([nib.Nifti1Image(data, affine) for data in data_list], nib.Nifti1Image(data, affine),
+                                          subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
         roi_features, roi_targets = self.data_file.get_roi_data(subject_id)
         np.testing.assert_array_equal(roi_features.shape, (3, 2, 3, 4))
         for i in range(3):
             self.assertTrue(np.all(roi_features[i] == i))
 
         subject_id = 'subject3'
-        self.data_file.add_images([nib.Nifti1Image(data, affine) for data in data_list],
-                                  [nib.Nifti1Image(data, affine) for data in data_list],
-                                  subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
+        self.data_file.add_nibabel_images([nib.Nifti1Image(data, affine) for data in data_list],
+                                          [nib.Nifti1Image(data, affine) for data in data_list],
+                                          subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
         roi_features, roi_targets = self.data_file.get_roi_data(subject_id)
         np.testing.assert_array_equal(roi_targets.shape, (3, 2, 3, 4))
         for i in range(3):
@@ -114,9 +114,9 @@ class TestDataFile(TestCase):
         targets_affine = affine.copy()
         targets_affine[1, 2] = 1
         with self.assertRaises(AssertionError):
-            self.data_file.add_images([nib.Nifti1Image(data, affine) for data in data_list],
-                                      [nib.Nifti1Image(data, targets_affine) for data in data_list],
-                                      subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
+            self.data_file.add_nibabel_images([nib.Nifti1Image(data, affine) for data in data_list],
+                                              [nib.Nifti1Image(data, targets_affine) for data in data_list],
+                                              subject_id, roi_shape=(2, 3, 4), roi_affine=affine)
 
         subject_id = 'subject5'
         images = list()
@@ -126,10 +126,10 @@ class TestDataFile(TestCase):
             images.append(nib.Nifti1Image(data, _affine))
 
         with self.assertRaises(AssertionError):
-            self.data_file.add_images(images[0], images, subject_id)
+            self.data_file.add_nibabel_images(images[0], images, subject_id)
 
         with self.assertRaises(AssertionError):
-            self.data_file.add_images(images[0], images, subject_id)
+            self.data_file.add_nibabel_images(images[0], images, subject_id)
 
     def test_add_images(self):
         shape = (4, 5, 6)
@@ -141,7 +141,7 @@ class TestDataFile(TestCase):
         targets = data.copy()
         targets[-3:] = 0
         targets_image = nib.Nifti1Image(targets, affine)
-        self.data_file.add_images(image, targets_image, subject_id)
+        self.data_file.add_nibabel_images(image, targets_image, subject_id)
         _features, _targets = self.data_file.get_data(subject_id)
         np.testing.assert_array_equal(_features, data)
         np.testing.assert_array_equal(_targets, targets)

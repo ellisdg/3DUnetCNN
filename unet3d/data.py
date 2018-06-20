@@ -28,7 +28,7 @@ class DataFile(object):
     def add_array(self, array, array_name, group):
         return self._data_file.create_array(group, array_name, array)
 
-    def add_images(self, features_image, targets_image, name, check_affine=True, **kwargs):
+    def add_nibabel_images(self, features_image, targets_image, name, check_affine=True, **kwargs):
         if is_iterable(features_image):
             features_image = combine_images(features_image)
         if is_iterable(targets_image):
@@ -46,7 +46,7 @@ class DataFile(object):
     def get_data(self, name):
         return self[name].features, self[name].targets
 
-    def get_images(self, name, channels_last=False):
+    def get_nibabel_images(self, name, channels_last=False):
         features, targets = self.get_data(name)
         if channels_last:
             features = move_4d_channels_last(features)
@@ -65,7 +65,7 @@ class DataFile(object):
 
     def get_roi_data(self, name, features_interpolation='linear', targets_interpolation='nearest', roi_affine=None,
                      roi_shape=None):
-        features_image, targets_image = self.get_images(name, channels_last=True)
+        features_image, targets_image = self.get_nibabel_images(name, channels_last=True)
         if roi_affine is None:
             roi_affine = self.get_roi_affine(name)
         if roi_shape is None:
