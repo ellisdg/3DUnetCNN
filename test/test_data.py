@@ -189,3 +189,13 @@ class TestDataFile(TestCase):
         new_image = move_image_channels(image, axis0=0, axis1=-1)
         self.assertTupleEqual(new_image.shape, (3, 4, 5, 6))
         np.testing.assert_array_equal(new_image.affine, affine)
+
+    def test_overwrite_array(self):
+        shape = (3, 3, 3)
+        data = np.zeros(shape)
+        subject_id = 'oops'
+        self.data_file.add_data(data, data, subject_id)
+        new_data = np.ones(shape)
+        self.data_file.overwrite_array(subject_id, new_data, 'targets')
+        features, targets = self.data_file.get_data(subject_id)
+        np.testing.assert_array_equal(targets, new_data)

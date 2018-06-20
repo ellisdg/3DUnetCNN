@@ -100,6 +100,20 @@ class DataFile(object):
     def get_validation_groups(self):
         return byte_to_string(self.__getitem__('validation', 'parameters'))
 
+    def overwrite_array(self, name, array, key):
+        self.delete_array(name, key)
+        return self.add_array(array, key, self.get_data_node(name))
+
+    def delete_array(self, name, key):
+        array_node = self.get_node(self.get_data_node(name), key)
+        self._data_file.remove_node(array_node)
+
+    def get_node(self, where, name):
+        return self._data_file.get_node(where, name)
+
+    def get_data_node(self, name):
+        return self.get_node(self._data_group, name)
+
     def close(self):
         self._data_file.close()
 
