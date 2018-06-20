@@ -135,6 +135,12 @@ def move_channels_first(data):
     return np.moveaxis(data, -1, 0)
 
 
+def move_image_channels(image, axis0, axis1):
+    data = image.get_data()
+    new_data = np.moveaxis(data, axis0, axis1)
+    return image.__class__(new_data, image.affine)
+
+
 def write_image_data_to_file(image_files, data_storage, truth_storage, image_shape, n_channels, affine_storage,
                              roi_storage, truth_dtype=np.uint8, crop=True, background_correction=False,
                              background_percentile=None):

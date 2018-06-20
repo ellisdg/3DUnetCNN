@@ -1,7 +1,7 @@
 from unittest import TestCase
 import os
 
-from unet3d.data import DataFile
+from unet3d.data import DataFile, move_image_channels
 from unet3d.utils.utils import resize_affine
 import numpy as np
 import nibabel as nib
@@ -170,3 +170,12 @@ class TestDataFile(TestCase):
 
         image4 = combine_images([image1, image2], axis=-1)
         np.testing.assert_array_equal(image4.shape, (2, 4, 4, 8))
+
+    def test_move_image_channels(self):
+        shape = (6, 3, 4, 5)
+        affine = np.diag(np.ones(4))
+        data = np.zeros(shape)
+        image = nib.Nifti1Image(data, affine)
+        new_image = move_image_channels(image, axis0=0, axis1=-1)
+        self.assertTupleEqual(new_image.shape, (3, 4, 5, 6))
+        np.testing.assert_array_equal(new_image.affine, affine)
