@@ -74,7 +74,11 @@ class DataFile(object):
                                       interpolation=features_interpolation)
         roi_targets_image = resample(image=targets_image, target_affine=roi_affine, target_shape=roi_shape,
                                      interpolation=targets_interpolation)
-        return move_4d_channels_first(roi_features_image.get_data()), move_4d_channels_first(roi_targets_image.get_data())
+        return (move_4d_channels_first(roi_features_image.get_data()),
+                move_4d_channels_first(roi_targets_image.get_data()))
+
+    def get_supplemental_data(self, name, key):
+        return self.__getitem__(name)._v_children[key]
 
     def set_training_groups(self, training_groups):
         self.add_array(training_groups, 'training', self._parameters_group)
