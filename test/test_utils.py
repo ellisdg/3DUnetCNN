@@ -108,3 +108,17 @@ class TestUtils(TestCase):
         np.testing.assert_array_equal(final_image.shape, target_shape)
         self.assertGreater(final_image.get_data().min(), 1)
         np.testing.assert_array_almost_equal(final_image.header.get_zooms(), np.ones(3)/(np.ones(3)*3))
+
+    def test_crop_4d(self):
+        shape = (9, 9, 9, 4)
+        data = np.zeros(shape)
+        data[3:6, 3:6, 3:6] = 1
+        affine = np.diag(np.ones(4))
+        image = nib.Nifti1Image(data, affine)
+        cropped_image = crop_img(image, pad=False)
+        expected_affine = np.copy(affine)
+        expected_affine[:3, 3] = 3
+        np.testing.assert_array_equal(cropped_image.affine, expected_affine)
+        self.assertTrue(np.all(cropped_image.get_data() == 1))
+        cropped_affine, cropped_shape = crop_img(image, pad=False, return_affine=True)
+        np.testing.assert_array_equal(cropped_affine, expected_affine)
