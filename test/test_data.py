@@ -4,6 +4,7 @@ import os
 from unet3d.data import DataFile
 from unet3d.utils.utils import resize_affine
 import numpy as np
+import nibabel as nib
 
 
 class TestDataFile(TestCase):
@@ -90,6 +91,21 @@ class TestDataFile(TestCase):
         np.testing.assert_array_equal(roi_features.shape, (3, 2, 3, 4))
         for i in range(3):
             self.assertTrue(np.all(roi_features[i] == i))
+
+    def test_add_images(self):
+        shape = (4, 5, 6)
+        affine = np.diag(np.ones(4) * 0.5)
+        affine[3, 3] = 1
+        subject_id = "subject1"
+        data = np.ones(shape)
+        image = nib.Nifti1Image(data, affine)
+        targets = data.copy()
+        targets[-3:] = 0
+        targets_image = nib.Nifti1Image(targets, affine)
+        self.data_file.add_images(image, targets_image, subject_id)
+        _features, _targets = self.data_file.get_data(subject_id)
+        np.testing.assert_array_equal(_features, data)
+        np.testing.assert_array_equal(_targets, targets)
 
     def tearDown(self):
         self.data_file.close()

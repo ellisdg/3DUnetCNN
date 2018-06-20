@@ -28,6 +28,11 @@ class DataFile(object):
     def add_array(self, array, array_name, group):
         return self._data_file.create_array(group, array_name, array)
 
+    def add_images(self, features_image, targets_image, name, **kwargs):
+        features = features_image.get_data()
+        targets = targets_image.get_data()
+        self.add_data(features, targets, name, affine=features_image.affine, **kwargs)
+
     def add_supplemental_data(self, name, **kwargs):
         for key in kwargs:
             self._data_file.create_array(self[name], key, kwargs[key])
