@@ -82,6 +82,9 @@ class DataFile(object):
     def set_validation_groups(self, validation_groups):
         self.add_array(validation_groups, 'validation', self._parameters_group)
 
+    def get_data_groups(self):
+        return list(self._data_group._v_children.keys())
+
     def get_training_groups(self):
         return byte_to_string(self.__getitem__('training', 'parameters'))
 

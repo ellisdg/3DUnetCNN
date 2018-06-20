@@ -77,6 +77,8 @@ class TestDataFile(TestCase):
         self.data_file.set_validation_groups(validation_subject_ids)
         np.testing.assert_array_equal(validation_subject_ids, self.data_file.get_validation_groups())
 
+        self.assertListEqual(training_subject_ids, self.data_file.get_data_groups())
+
     def test_multi_channel_data(self):
         shape = (4, 5, 6)
         affine = np.diag(np.ones(4) * 0.5)
