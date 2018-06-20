@@ -80,6 +80,11 @@ class DataFile(object):
     def get_supplemental_data(self, name, key):
         return self.__getitem__(name)._v_children[key]
 
+    def get_supplemental_image(self, name, key):
+        data = self.get_supplemental_data(name, key)
+        affine = self.get_supplemental_data(name, 'affine')
+        return self._image_class(data, affine)
+
     def set_training_groups(self, training_groups):
         self.add_array(training_groups, 'training', self._parameters_group)
 

@@ -153,6 +153,11 @@ class TestDataFile(TestCase):
         np.testing.assert_array_equal(_features, data)
         np.testing.assert_array_equal(_targets, targets)
 
+        self.data_file.add_supplemental_data(subject_id, image2=image.get_data())
+        new_image = self.data_file.get_supplemental_image(subject_id, 'image2')
+        np.testing.assert_array_equal(new_image.get_data(), image.get_data())
+        np.testing.assert_array_equal(new_image.affine, affine)
+
     def tearDown(self):
         self.data_file.close()
         os.remove(self.filename)
