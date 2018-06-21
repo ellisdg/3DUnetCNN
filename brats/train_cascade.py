@@ -138,7 +138,8 @@ def main(config):
                           initial_learning_rate=config["training_parameters"]["initial_learning_rate"])
         # get training and testing generators
 
-        train_generator, validation_generator = get_generators_from_data_file(data_file, **config["generator_parameters"])
+        train_generator, validation_generator = get_generators_from_data_file(data_file,
+                                                                              **config["generator_parameters"])
 
         # run training
         train_model(model=model,

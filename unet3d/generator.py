@@ -8,20 +8,21 @@ import numpy as np
 from .utils import pickle_dump, pickle_load
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
+from .normalize import normalize_data
 
 
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
-                                  skip_blank=False, permute=False):
+                                  skip_blank=False, permute=False, normalize=True):
     training_generator = data_generator_from_data_file(data_file, data_file.get_training_groups(),
                                                        batch_size=batch_size, skip_blank=skip_blank, permute=permute,
-                                                       translation_deviation=translation_deviation)
+                                                       translation_deviation=translation_deviation, normalize=normalize)
     validation_generator = data_generator_from_data_file(data_file, data_file.get_validation_groups(),
-                                                         batch_size=validation_batch_size)
+                                                         batch_size=validation_batch_size, normalize=normalize)
     return training_generator, validation_generator
 
 
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
-                                  permute=False):
+                                  permute=False, normalize=True):
     all_subject_ids = np.copy(subject_ids)
     while True:
         x = list()
@@ -36,6 +37,8 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
             features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
             if permute:
                 features, targets = random_permutation_x_y(features, targets)
+            if normalize:
+                features = normalize_data(features)
             if not (skip_blank and np.all(np.asarray(y) == 0)):
                 x.append(features)
                 y.append(targets)
