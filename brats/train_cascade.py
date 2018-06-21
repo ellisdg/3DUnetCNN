@@ -122,13 +122,17 @@ def predict_validation_data(model, data_file, name, normalize_features=True, thr
 
 def main(config):
     data_file = create_data_file(os.path.join(os.path.dirname(__file__), "data", 'BRATS2018'), config['data_file'])
+    print("Splitting training/validation data")
     randomly_set_training_subjects(data_file, split=config['validation_split'])
     for level, (labels, image_shape, model_file, n_filters) in enumerate(zip(config["labels"], config["image_shape"],
                                                                              config["model_file"],
                                                                              config["n_base_filters"])):
         # set targets
+        print("Setting the targets")
         set_targets(data_file, labels)
+        print("Setting regions of interest")
         set_roi(data_file, level, image_shape, crop=config['crop'])
+        print("Creating model")
         model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape,
                           n_channels=config["n_channels"], n_filters=config["n_filters"],
                           initial_learning_rate=config["training_parameters"]["initial_learning_rate"])
@@ -146,6 +150,7 @@ def main(config):
                     **config["training_parameters"])
 
         # make predictions on validation data
+        print("Making predictions on validation data")
         predict_validation_data(model, data_file, 'level{}_prediction'.format(level),
                                 normalize_features=config['training_parameters']['normalize'])
 
