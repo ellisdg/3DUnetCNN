@@ -1,0 +1,24 @@
+{
+  "image_shape": [[128,128, 128], [96, 96, 96], [64, 64, 64]],
+  "labels": [[1, 2, 4], [1, 4], [4]],
+  "n_base_filters": [16, 24, 32],
+  "n_channels": 4,
+  "generator_parameters": {
+    "batch_size": 1,
+    "validation_batch_size": 1,
+    "permute": true,
+    "translation_deviation": 0.1,
+    "skip_blank": false},
+  "training_parameters": {
+    "n_epochs": 500,
+    "patience": 15,
+    "early_stop": 100,
+    "initial_learning_rate": 1e-4,
+    "learning_rate_drop": 0.1,
+    "normalize": true},
+  "validation_split": 0.8,
+  "data_file": "brats2018_training_data.h5",
+  "model_file": ["whole_tumor_model.h5", "tumor_core_model.h5", "enhanced_tumor_model.h5"],
+  "overwrite": false,
+  "crop": true
+}
