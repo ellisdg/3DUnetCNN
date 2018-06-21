@@ -121,8 +121,8 @@ def normalize_data(data, mean=None, std=None, copy=True, axis=(-3, -2, -1)):
         mean = np.mean(data, axis=axis)
     if std is None:
         std = np.std(data, axis=axis)
-    data -= mean[..., np.newaxis, np.newaxis, np.newaxis]
-    data /= std[..., np.newaxis, np.newaxis, np.newaxis]
+    data = np.subtract(data, mean[..., np.newaxis, np.newaxis, np.newaxis])
+    data = np.divide(data, std[..., np.newaxis, np.newaxis, np.newaxis])
     return data
 
 
