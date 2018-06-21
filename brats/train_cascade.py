@@ -141,8 +141,8 @@ def main(config):
                     model_file=config["model_file"],
                     training_generator=train_generator,
                     validation_generator=validation_generator,
-                    steps_per_epoch=n_train_steps,
-                    validation_steps=n_validation_steps,
+                    steps_per_epoch=len(data_file.get_training_groups()),
+                    validation_steps=len(data_file.get_validation_groups()),
                     **config["training_parameters"])
 
         # make predictions on validation data
