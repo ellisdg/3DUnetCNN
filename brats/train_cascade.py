@@ -134,7 +134,7 @@ def main(config):
         set_roi(data_file, level, image_shape, crop=config['crop'])
         print("Creating model")
         model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape,
-                          n_channels=config["n_channels"], n_filters=config["n_filters"],
+                          n_channels=config["n_channels"], n_filters=n_filters,
                           initial_learning_rate=config["training_parameters"]["initial_learning_rate"])
         # get training and testing generators
 
