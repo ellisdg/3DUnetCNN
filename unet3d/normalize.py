@@ -114,15 +114,15 @@ def get_image_foreground(image, background_value=0, tolerance=1e-5, array=None, 
         return array
 
 
-def normalize_data(data, mean=None, std=None, copy=True, axis=(1, 2, 3)):
+def normalize_data(data, mean=None, std=None, copy=True, axis=(-3, -2, -1)):
     if copy:
         data = data.copy()
     if mean is None:
-        mean = data.mean(axis=axis)
+        mean = np.mean(data, axis=axis)
     if std is None:
-        std = data.std(axis=axis)
-    data -= mean[:, np.newaxis, np.newaxis, np.newaxis]
-    data /= std[:, np.newaxis, np.newaxis, np.newaxis]
+        std = np.std(data, axis=axis)
+    data -= mean[..., np.newaxis, np.newaxis, np.newaxis]
+    data /= std[..., np.newaxis, np.newaxis, np.newaxis]
     return data
 
 

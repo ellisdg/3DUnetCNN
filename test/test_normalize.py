@@ -18,3 +18,4 @@ class TestNormalize(TestCase):
         normalized = normalize_data(data, mean, std)
         self.assertTrue(np.all(np.abs(normalized[1:]) == 1))
         np.testing.assert_array_equal(normalized, normalize_data(data))
+        np.testing.assert_array_equal(normalized, normalize_data([data])[0])
