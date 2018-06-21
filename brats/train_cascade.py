@@ -68,8 +68,11 @@ def set_roi(data_file, level, image_shape, crop=True):
 
 def create_data_file(folder_path, filename):
     data_file = DataFile(filename)
-    for subject_folder in glob.glob(os.path.join(folder_path, "*")):
+    for subject_folder in glob.glob(os.path.join(folder_path, "*", "*")):
+        if not os.path.isdir(subject_folder):
+            continue
         subject_id = os.path.basename(subject_folder)
+        print("Subject: {}".format(subject_id))
         features = list()
         targets = None
         for modality in ["t1", "t1ce", "flair", "t2", "seg"]:
@@ -79,8 +82,8 @@ def create_data_file(folder_path, filename):
                 targets = nib.load(image_file)
             else:
                 features.append(nib.load(image_file))
-            data_file.add_nibabel_images(features, targets, subject_id)
-            data_file.add_supplemental_data(subject_id, label_map=targets.get_data())
+        data_file.add_nibabel_images(features, targets, subject_id)
+        data_file.add_supplemental_data(subject_id, label_map=targets.get_data())
     return data_file
 
 
