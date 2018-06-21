@@ -73,7 +73,8 @@ def create_data_file(folder_path, filename):
         features = list()
         targets = None
         for modality in ["t1", "t1ce", "flair", "t2", "seg"]:
-            image_file = glob.glob(os.path.join(subject_folder, "*" + modality + ".nii.gz"))
+            image_file = glob.glob(os.path.join(subject_folder, "*" + modality + ".nii.gz"))[0]
+            print("Reading: {}".format(image_file))
             if modality is "seg":
                 targets = nib.load(image_file)
             else:
