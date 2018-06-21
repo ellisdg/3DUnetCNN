@@ -7,7 +7,40 @@ import numpy as np
 
 from .utils import pickle_dump, pickle_load
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
-from .augment import augment_data, random_permutation_x_y
+from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
+
+
+def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
+                                  skip_blank=False, permute=False):
+    training_generator = data_generator_from_data_file(data_file, data_file.get_training_groups(),
+                                                       batch_size=batch_size, skip_blank=skip_blank, permute=permute,
+                                                       translation_deviation=translation_deviation)
+    validation_generator = data_generator_from_data_file(data_file, data_file.get_validation_groups(),
+                                                         batch_size=validation_batch_size)
+    return training_generator, validation_generator
+
+
+def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
+                                  permute=False):
+    all_subject_ids = np.copy(subject_ids)
+    while True:
+        x = list()
+        y = list()
+        subject_ids = all_subject_ids.tolist()
+        while len(subject_ids) > 0:
+            subject_id = subject_ids.pop()
+            roi_affine, roi_shape = data_file.get_roi(subject_id)
+            if translation_deviation:
+                roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
+                                              translation_scales=random_scale_factor(std=translation_deviation))
+            features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
+            if permute:
+                features, targets = random_permutation_x_y(features, targets)
+            if not (skip_blank and np.all(np.asarray(y) == 0)):
+                x.append(features)
+                y.append(targets)
+            if len(x) == batch_size:
+                yield np.asarray(x), np.asarray(y)
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,

@@ -5,6 +5,7 @@ from nilearn.image.resampling import BoundingBoxError
 import random
 import itertools
 from .utils.nilearn_custom_utils.nilearn_utils import get_background_values
+from .utils.utils import get_spacing_from_affine
 
 
 def scale_image(image, scale_factor):
@@ -212,7 +213,7 @@ def copy_image(image):
     return image.__class__(np.copy(image.get_data()), image.affine)
 
 
-def get_image_extent(image):
+def get_extent_from_image(image):
     return np.multiply(image.shape, image.header.get_zooms())
 
 
@@ -228,6 +229,15 @@ def translate_image(image, translation_scales, copy=False):
     """
     if copy:
         image = copy_image(image)
-    translation = np.multiply(translation_scales, get_image_extent(image))
+    translation = np.multiply(translation_scales, get_extent_from_image(image))
     image.affine[:3, 3] += translation
     return image
+
+
+def translate_affine(affine, shape, translation_scales, copy=True):
+    if copy:
+        affine = np.copy(affine)
+    spacing = get_spacing_from_affine(affine)
+    extent = np.multiply(shape, spacing)
+    translation = np.multiply(translation_scales, extent)
+    affine[:3, 3] += translation
