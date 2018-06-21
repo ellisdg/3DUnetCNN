@@ -87,6 +87,10 @@ def compute_region_of_interest_affine(images, target_shape, background_value=0, 
     foreground = compute_foreground_from_image_set(images, background_value=background_value, tolerance=tolerance,
                                                    background_correction=background_correction, percentile=percentile,
                                                    return_image=True)
+    return compute_region_of_interest_affine_from_foreground(foreground, target_shape)
+
+
+def compute_region_of_interest_affine_from_foreground(foreground, target_shape):
     cropped_affine, cropped_shape = crop_img(foreground, return_affine=True)
     return resize_affine(cropped_affine, cropped_shape, target_shape)
 
@@ -110,7 +114,13 @@ def get_image_foreground(image, background_value=0, tolerance=1e-5, array=None, 
         return array
 
 
-def normalize_data(data, mean, std):
+def normalize_data(data, mean=None, std=None, copy=True, axis=(1, 2, 3)):
+    if copy:
+        data = data.copy()
+    if mean is None:
+        mean = data.mean(axis=axis)
+    if std is None:
+        std = data.std(axis=axis)
     data -= mean[:, np.newaxis, np.newaxis, np.newaxis]
     data /= std[:, np.newaxis, np.newaxis, np.newaxis]
     return data
