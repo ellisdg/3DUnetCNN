@@ -35,8 +35,9 @@ def get_model(model_file, overwrite=False, **kwargs):
 
 def set_roi(data_file, level, image_shape, crop=True):
     if level == 0 and crop:
-        # set ROI for each image in the data file to be the cropped brainp
+        # set ROI for each image in the data file to be the cropped brain
         for subject_id in data_file.get_data_groups():
+            print("Subject: {}".format(subject_id))
             images = data_file.get_nibabel_images(subject_id)
             image = combine_images(images, axis=0)
             image = move_image_channels(image, axis0=0, axis1=-1)
@@ -46,7 +47,9 @@ def set_roi(data_file, level, image_shape, crop=True):
             data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape, **kwargs)
     elif level > 0:
         # set ROI for each image to be the crop from the previous levels prediction/target(validation/training)
+        print("Setting ROI for training subjects")
         for subject_id in data_file.get_training_groups():
+            print("Subject: {}".format(subject_id))
             # roi is based on ground truth from the previous level
             _, truth_image = data_file.get_nibabel_images(subject_id)
             roi_affine = compute_region_of_interest_affine_from_foreground(truth_image, image_shape)
@@ -55,7 +58,9 @@ def set_roi(data_file, level, image_shape, crop=True):
             data_file.add_supplemental_data(subject_id, **kwargs)
             data_file.overwrite_array(subject_id, roi_affine, 'roi_affine')
             data_file.overwrite_array(subject_id, image_shape, 'roi_shape')
+        print("Setting ROI for validation subjects")
         for subject_id in data_file.get_validation_groups():
+            print("Subject: {}".format(subject_id))
             # roi is based on previous prediction
             image = data_file.get_supplemental_image(subject_id, 'level{}_prediction'.format(level - 1))
             roi_affine = compute_region_of_interest_affine([image], image_shape)
@@ -69,10 +74,10 @@ def set_roi(data_file, level, image_shape, crop=True):
 def create_data_file(folder_path, filename):
     data_file = DataFile(filename)
     for subject_folder in glob.glob(os.path.join(folder_path, "*", "*")):
-        if not os.path.isdir(subject_folder):
-            continue
         subject_id = os.path.basename(subject_folder)
-        print("Subject: {}".format(subject_id))
+        if not os.path.isdir(subject_folder) or subject_id in data_file.get_data_groups():
+            continue
+        print("Loading subject: {}".format(subject_id))
         features = list()
         targets = None
         for modality in ["t1", "t1ce", "flair", "t2", "seg"]:
@@ -96,6 +101,7 @@ def randomly_set_training_subjects(data_file, split=0.8):
 
 def set_targets(data_file, labels):
     for subject_id in data_file.get_data_groups():
+        print("Subject: {}".format(subject_id))
         target_data = data_file.get_supplemental_data(subject_id, 'label_map')
         new_data = np.zeros(target_data.shape, target_data.dtype)
         for label in labels:
@@ -128,7 +134,7 @@ def main(config):
                                                                              config["model_file"],
                                                                              config["n_base_filters"])):
         # set targets
-        print("Setting the targets")
+        print("Setting the targets to labels {}".format(labels))
         set_targets(data_file, labels)
         print("Setting regions of interest")
         set_roi(data_file, level, image_shape, crop=config['crop'])
