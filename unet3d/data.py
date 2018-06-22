@@ -14,9 +14,13 @@ def byte_to_string(array):
 
 class DataFile(object):
     def __init__(self, filename, image_class=nib.Nifti1Image):
-        self._data_file = tables.open_file(filename, mode='w')
-        self._data_group = self._data_file.create_group(self._data_file.root, 'data')
-        self._parameters_group = self._data_file.create_group(self._data_file.root, 'parameters')
+        self._data_file = tables.open_file(filename, mode='a')
+        try:
+            self._data_group = self._data_file.root.data
+            self._parameters_group = self._data_file.root.parameters
+        except AttributeError:
+            self._data_group = self._data_file.create_group(self._data_file.root, 'data')
+            self._parameters_group = self._data_file.create_group(self._data_file.root, 'parameters')
         self._image_class = image_class
 
     def add_data(self, features, targets, name, **kwargs):

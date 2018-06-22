@@ -199,3 +199,13 @@ class TestDataFile(TestCase):
         self.data_file.overwrite_array(subject_id, new_data, 'targets')
         features, targets = self.data_file.get_data(subject_id)
         np.testing.assert_array_equal(targets, new_data)
+
+    def test_load_data_file(self):
+        shape = (1, 1, 1)
+        data = np.zeros(shape)
+        subject_id = 'sub1'
+        self.data_file.add_data(data, data, subject_id)
+        self.data_file.close()
+        self.data_file = DataFile(self.filename)
+        features, targets = self.data_file.get_data(subject_id)
+        np.testing.assert_array_equal(features, data)
