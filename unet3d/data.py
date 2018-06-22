@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import tables
+from tables.exceptions import NoSuchNodeError
 import nibabel as nib
 
 from .normalize import normalize_data_storage, compute_region_of_interest_affine
@@ -89,11 +90,19 @@ class DataFile(object):
         affine = self.get_supplemental_data(name, 'affine')
         return self._image_class(data, affine)
 
+    def set_array(self, array, name, group):
+        try:
+            node = self.get_node(group, name)
+            self._data_file.remove_node(node)
+        except NoSuchNodeError:
+            pass
+        return self.add_array(array, name, group)
+
     def set_training_groups(self, training_groups):
-        self.add_array(training_groups, 'training', self._parameters_group)
+        return self.set_array(training_groups, 'training', self._parameters_group)
 
     def set_validation_groups(self, validation_groups):
-        self.add_array(validation_groups, 'validation', self._parameters_group)
+        return self.set_array(validation_groups, 'validation', self._parameters_group)
 
     def get_data_groups(self):
         return list(self._data_group._v_children.keys())
