@@ -63,6 +63,12 @@ class TestDataFile(TestCase):
         self.assertEqual(roi_targets.max(), 1)
         np.testing.assert_array_equal(roi_features.shape, target_shape)
 
+        self.data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
+
+        _affine, _shape = self.data_file.get_roi(subject_id)
+        np.testing.assert_array_equal(_affine, roi_affine)
+        np.testing.assert_array_equal(_shape, roi_shape)
+
     def test_set_parameters(self):
         training_subject_ids = ["train1", "train2", "train3"]
         self.data_file.set_training_groups(training_subject_ids)
