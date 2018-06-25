@@ -133,7 +133,7 @@ def resample(image, target_affine, target_shape, interpolation='linear', pad_mod
     return resample_image(image, target_image, interpolation=interpolation, pad_mode=pad_mode, pad=pad)
 
 
-def update_progress(progress, bar_length=30):
+def update_progress(progress, bar_length=30, message=""):
     status = ""
     if isinstance(progress, int):
         progress = float(progress)
@@ -147,6 +147,6 @@ def update_progress(progress, bar_length=30):
         progress = 1
         status = "Done...\r\n"
     block = int(round(bar_length * progress))
-    text = "\rPercent: [{0}] {1:.2f}% {2}".format("#" * block + "-" * (bar_length - block), progress*100, status)
+    text = "\r{0}[{1}] {2:.2f}% {3}".format(message, "#" * block + "-" * (bar_length - block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
