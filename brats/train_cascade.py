@@ -103,14 +103,15 @@ def randomly_set_training_subjects(data_file, split=0.8):
 
 
 def set_targets(data_file, labels):
-    for subject_id in data_file.get_data_groups():
-        print("Subject: {}".format(subject_id))
+    n_subjects = len(data_file.get_data_groups())
+    for index, subject_id in enumerate(data_file.get_data_groups()):
         target_data = data_file.get_supplemental_data(subject_id, 'label_map')
         new_data = np.zeros(target_data.shape, target_data.dtype)
         for label in labels:
             index = target_data == label
             new_data[index] = 1
         data_file.overwrite_array(subject_id, np.asarray([new_data]), 'targets')
+        update_progress(float(index + 1)/n_subjects)
 
 
 def predict_validation_data(model, data_file, name, normalize_features=True, threshold=0.5):
