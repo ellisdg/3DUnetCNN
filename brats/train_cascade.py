@@ -9,6 +9,7 @@ from unet3d.normalize import (compute_region_of_interest_affine, compute_region_
 from unet3d.generator import get_generators_from_data_file, split_list
 from unet3d.model import isensee2017_model
 from unet3d.training import load_old_model, train_model
+from unet3d.utils.utils import update_progress
 from nilearn.image import resample_to_img
 
 import json
@@ -36,8 +37,9 @@ def get_model(model_file, overwrite=False, **kwargs):
 def set_roi(data_file, level, image_shape, crop=True):
     if level == 0 and crop:
         # set ROI for each image in the data file to be the cropped brain
-        for subject_id in data_file.get_data_groups():
-            print("Subject: {}".format(subject_id))
+        subject_ids = data_file.get_data_groups()
+        n_subjects = len(subject_ids)
+        for index, subject_id in enumerate(subject_ids):
             images = data_file.get_nibabel_images(subject_id)
             image = combine_images(images, axis=0)
             image = move_image_channels(image, axis0=0, axis1=-1)
@@ -45,6 +47,7 @@ def set_roi(data_file, level, image_shape, crop=True):
             kwargs = {'level{}_affine'.format(level): roi_affine,
                       'level{}_shape'.format(level): image_shape}
             data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape, **kwargs)
+            update_progress(float(index + 1)/n_subjects)
     elif level > 0:
         # set ROI for each image to be the crop from the previous levels prediction/target(validation/training)
         print("Setting ROI for training subjects")
