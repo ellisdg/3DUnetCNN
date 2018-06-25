@@ -108,9 +108,9 @@ def set_targets(data_file, labels):
         target_data = data_file.get_supplemental_data(subject_id, 'label_map')
         new_data = np.zeros(target_data.shape, target_data.dtype)
         for label in labels:
-            index = new_data == label
+            index = target_data == label
             new_data[index] = 1
-        data_file.overwrite_array(subject_id, [new_data], 'targets')
+        data_file.overwrite_array(subject_id, np.asarray([new_data]), 'targets')
 
 
 def predict_validation_data(model, data_file, name, normalize_features=True, threshold=0.5):
