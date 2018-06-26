@@ -3,6 +3,8 @@ import glob
 import nibabel as nib
 import numpy as np
 
+from tables.exceptions import NoSuchNodeError
+
 from unet3d.data import DataFile, combine_images, move_image_channels
 from unet3d.normalize import (compute_region_of_interest_affine, compute_region_of_interest_affine_from_foreground,
                               normalize_data)
@@ -128,8 +130,11 @@ def predict_validation_data(model, data_file, name, normalize_features=True, thr
 
 def main(config):
     data_file = create_data_file(os.path.join(os.path.dirname(__file__), "data", 'BRATS2018'), config['data_file'])
-    print("Splitting training/validation data")
-    randomly_set_training_subjects(data_file, split=config['validation_split'])
+    try:
+        _ = data_file.get_training_groups(), data_file.get_validation_groups()
+    except NoSuchNodeError:
+        print("Splitting training/validation data")
+        randomly_set_training_subjects(data_file, split=config['validation_split'])
     for level, (labels, image_shape, model_file, n_filters) in enumerate(zip(config["labels"], config["image_shape"],
                                                                              config["model_file"],
                                                                              config["n_base_filters"])):
