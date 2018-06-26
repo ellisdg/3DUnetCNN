@@ -1,5 +1,6 @@
 import pickle
 import os
+import sys
 import collections
 
 import nibabel as nib
@@ -130,3 +131,22 @@ def resample(image, target_affine, target_shape, interpolation='linear', pad_mod
     target_data = np.zeros(target_shape)
     target_image = new_img_like(image, target_data, affine=target_affine)
     return resample_image(image, target_image, interpolation=interpolation, pad_mode=pad_mode, pad=pad)
+
+
+def update_progress(progress, bar_length=30, message=""):
+    status = ""
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0
+        status = "error: progress var must be float\r\n"
+    if progress < 0:
+        progress = 0
+        status = "Halt...\r\n"
+    if progress >= 1:
+        progress = 1
+        status = "Done...\r\n"
+    block = int(round(bar_length * progress))
+    text = "\r{0}[{1}] {2:.2f}% {3}".format(message, "#" * block + "-" * (bar_length - block), progress*100, status)
+    sys.stdout.write(text)
+    sys.stdout.flush()

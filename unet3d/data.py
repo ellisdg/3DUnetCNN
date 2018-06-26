@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import tables
-from tables.exceptions import NoSuchNodeError
+from tables.exceptions import NoSuchNodeError, NodeError
 import nibabel as nib
 
 from .normalize import normalize_data_storage, compute_region_of_interest_affine
@@ -46,7 +46,10 @@ class DataFile(object):
 
     def add_supplemental_data(self, name, **kwargs):
         for key in kwargs:
-            self._data_file.create_array(self[name], key, kwargs[key])
+            try:
+                self._data_file.create_array(self[name], key, kwargs[key])
+            except NodeError:
+                self.overwrite_array(name, kwargs[key], key)
 
     def get_data(self, name):
         return self[name].features, self[name].targets
