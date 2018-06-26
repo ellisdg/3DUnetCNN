@@ -36,6 +36,16 @@ def get_model(model_file, overwrite=False, **kwargs):
     return model
 
 
+def set_level0_roi(data_file, image_shape, subject_id, level=0):
+    images = data_file.get_nibabel_images(subject_id)
+    image = combine_images(images, axis=0)
+    image = move_image_channels(image, axis0=0, axis1=-1)
+    roi_affine = compute_region_of_interest_affine([image], image_shape)
+    kwargs = {'level{}_affine'.format(level): roi_affine,
+              'level{}_shape'.format(level): image_shape}
+    data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape, **kwargs)
+
+
 def set_roi(data_file, level, image_shape, crop=True):
     if level == 0 and crop:
         # set ROI for each image in the data file to be the cropped brain
@@ -136,7 +146,7 @@ def main(config):
     data_file = create_data_file(os.path.join(os.path.dirname(__file__), "data", 'BRATS2018'), config['data_file'])
     try:
         _ = data_file.get_training_groups(), data_file.get_validation_groups()
-    except NoSuchNodeError:
+    except KeyError:
         print("Splitting training/validation data")
         randomly_set_training_subjects(data_file, split=config['validation_split'])
     for level, (labels, image_shape, model_file, n_filters) in enumerate(zip(config["labels"], config["image_shape"],
@@ -158,7 +168,7 @@ def main(config):
 
         # run training
         train_model(model=model,
-                    model_file=config["model_file"],
+                    model_file=model_file,
                     training_generator=train_generator,
                     validation_generator=validation_generator,
                     steps_per_epoch=len(data_file.get_training_groups()),
