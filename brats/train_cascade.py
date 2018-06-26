@@ -36,16 +36,6 @@ def get_model(model_file, overwrite=False, **kwargs):
     return model
 
 
-def set_level0_roi(data_file, image_shape, subject_id, level=0):
-    images = data_file.get_nibabel_images(subject_id)
-    image = combine_images(images, axis=0)
-    image = move_image_channels(image, axis0=0, axis1=-1)
-    roi_affine = compute_region_of_interest_affine([image], image_shape)
-    kwargs = {'level{}_affine'.format(level): roi_affine,
-              'level{}_shape'.format(level): image_shape}
-    data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape, **kwargs)
-
-
 def set_roi(data_file, level, image_shape, crop=True):
     if level == 0 and crop:
         # set ROI for each image in the data file to be the cropped brain

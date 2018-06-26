@@ -44,6 +44,8 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
                 y.append(targets)
             if len(x) == batch_size:
                 yield np.asarray(x), np.asarray(y)
+                x = list()
+                y = list()
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
