@@ -6,6 +6,7 @@ import itertools
 import numpy as np
 
 from .utils import pickle_dump, pickle_load
+from .utils.utils import scale_affine
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
 from .normalize import normalize_data
@@ -23,7 +24,7 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
 
 
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
-                                  permute=False, normalize=True, use_preloaded=False):
+                                  permute=False, normalize=True, use_preloaded=False, scale_deviation=None):
     all_subject_ids = np.copy(subject_ids)
     while True:
         x = list()
@@ -39,6 +40,9 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
                 if translation_deviation:
                     roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
                                                   translation_scales=random_scale_factor(std=translation_deviation))
+                if scale_deviation:
+                    roi_affine = scale_affine(affine=roi_affine, shape=roi_shape,
+                                              scale=random_scale_factor(std=scale_deviation))
                 features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
                 if permute:
                     features, targets = random_permutation_x_y(features, targets)

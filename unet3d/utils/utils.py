@@ -122,6 +122,26 @@ def resize_affine(affine, shape, target_shape, copy=True):
     return affine
 
 
+def scale_affine(affine, shape, scale, copy=True):
+    """
+    Scales the affine (while keeping the shape the same) and then adjusts the origin so that the center of the image
+     remains the same. This will change the spacing of the affine. This function might not work with non-RAS images.
+    :param affine: Affine matrix to scale
+    :param shape: Shape of the image/region
+    :param scale: How to scale the affine
+    :param copy: copies the affine matrix before modifying it
+    :return: Modified affine matrix
+    """
+    if copy:
+        affine = np.copy(affine)
+    spacing = get_spacing_from_affine(affine)
+    extent = np.multiply(spacing, shape)
+    new_spacing = np.multiply(scale, spacing)
+    new_extent = np.multiply(new_spacing, shape)
+    affine[3, :3] += np.subtract(extent, new_extent)/2
+    return affine
+
+
 def get_spacing_from_affine(affine):
     RZS = affine[:3, :3]
     return np.sqrt(np.sum(RZS * RZS, axis=0))
