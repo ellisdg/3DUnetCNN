@@ -62,7 +62,7 @@ def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=Fa
         data_file.overwrite_array(subject_id, roi_affine, 'roi_affine')
         data_file.overwrite_array(subject_id, image_shape, 'roi_shape')
         update_progress(float(index + 1) / n_subjects)
-        if preload_validation_data:
+        if preload_validation_data and subject_id in validation_ids:
             roi_features, roi_targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape)
             data_file.add_supplemental_data(subject_id, roi_features=roi_features, roi_targets=roi_targets)
 
