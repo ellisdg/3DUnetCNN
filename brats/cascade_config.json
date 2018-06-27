@@ -9,7 +9,8 @@
     "permute": true,
     "translation_deviation": 0.1,
     "skip_blank": false,
-    "normalize": true},
+    "normalize": true,
+    "preload_validation_data": true},
   "training_parameters": {
     "n_epochs": 500,
     "learning_rate_patience": 15,

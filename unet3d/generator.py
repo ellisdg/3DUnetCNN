@@ -12,17 +12,18 @@ from .normalize import normalize_data
 
 
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
-                                  skip_blank=False, permute=False, normalize=True):
+                                  skip_blank=False, permute=False, normalize=True, preload_validation_data=False):
     training_generator = data_generator_from_data_file(data_file, data_file.get_training_groups(),
                                                        batch_size=batch_size, skip_blank=skip_blank, permute=permute,
                                                        translation_deviation=translation_deviation, normalize=normalize)
     validation_generator = data_generator_from_data_file(data_file, data_file.get_validation_groups(),
-                                                         batch_size=validation_batch_size, normalize=normalize)
+                                                         batch_size=validation_batch_size, normalize=normalize,
+                                                         use_preloaded=preload_validation_data)
     return training_generator, validation_generator
 
 
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
-                                  permute=False, normalize=True):
+                                  permute=False, normalize=True, use_preloaded=False):
     all_subject_ids = np.copy(subject_ids)
     while True:
         x = list()
@@ -30,13 +31,17 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
         subject_ids = all_subject_ids.tolist()
         while len(subject_ids) > 0:
             subject_id = subject_ids.pop()
-            roi_affine, roi_shape = data_file.get_roi(subject_id)
-            if translation_deviation:
-                roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
-                                              translation_scales=random_scale_factor(std=translation_deviation))
-            features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
-            if permute:
-                features, targets = random_permutation_x_y(features, targets)
+            if use_preloaded:
+                features = data_file.get_supplemental_data(subject_id, "roi_features")
+                targets = data_file.get_supplemental_data(subject_id, "roi_targets")
+            else:
+                roi_affine, roi_shape = data_file.get_roi(subject_id)
+                if translation_deviation:
+                    roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
+                                                  translation_scales=random_scale_factor(std=translation_deviation))
+                features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
+                if permute:
+                    features, targets = random_permutation_x_y(features, targets)
             if normalize:
                 features = normalize_data(features)
             if not (skip_blank and np.all(np.asarray(y) == 0)):

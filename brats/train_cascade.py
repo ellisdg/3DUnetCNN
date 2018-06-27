@@ -34,44 +34,37 @@ def get_model(model_file, overwrite=False, **kwargs):
     return model
 
 
-def set_roi(data_file, level, image_shape, crop=True):
-    if level == 0 and crop:
-        # set ROI for each image in the data file to be the cropped brain
-        subject_ids = data_file.get_data_groups()
-        n_subjects = len(subject_ids)
-        for index, subject_id in enumerate(subject_ids):
+def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=False):
+    subject_ids = data_file.get_data_groups()
+    validation_ids = data_file.get_validation_groups()
+    training_ids = data_file.get_training_groups()
+    n_subjects = len(subject_ids)
+    for index, subject_id in enumerate(subject_ids):
+        if level == 0 and crop:
+            # set ROI for each image in the data file to be the cropped brain
             images = data_file.get_nibabel_images(subject_id)
             image = combine_images(images, axis=0)
             image = move_image_channels(image, axis0=0, axis1=-1)
             roi_affine = compute_region_of_interest_affine([image], image_shape)
-            kwargs = {'level{}_affine'.format(level): roi_affine,
-                      'level{}_shape'.format(level): image_shape}
-            data_file.add_supplemental_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape, **kwargs)
-            update_progress(float(index + 1)/n_subjects)
-    elif level > 0:
-        # set ROI for each image to be the crop from the previous levels prediction/target(validation/training)
-        print("Setting ROI for training subjects")
-        for subject_id in data_file.get_training_groups():
-            print("Subject: {}".format(subject_id))
-            # roi is based on ground truth from the previous level
-            _, truth_image = data_file.get_nibabel_images(subject_id)
-            roi_affine = compute_region_of_interest_affine_from_foreground(truth_image, image_shape)
-            kwargs = {'level{}_affine'.format(level): roi_affine,
-                      'level{}_shape'.format(level): image_shape}
-            data_file.add_supplemental_data(subject_id, **kwargs)
-            data_file.overwrite_array(subject_id, roi_affine, 'roi_affine')
-            data_file.overwrite_array(subject_id, image_shape, 'roi_shape')
-        print("Setting ROI for validation subjects")
-        for subject_id in data_file.get_validation_groups():
-            print("Subject: {}".format(subject_id))
-            # roi is based on previous prediction
-            image = data_file.get_supplemental_image(subject_id, 'level{}_prediction'.format(level - 1))
-            roi_affine = compute_region_of_interest_affine([image], image_shape)
-            kwargs = {'level{}_affine'.format(level): roi_affine,
-                      'level{}_shape'.format(level): image_shape}
-            data_file.add_supplemental_data(subject_id, **kwargs)
-            data_file.overwrite_array(subject_id, roi_affine, 'roi_affine')
-            data_file.overwrite_array(subject_id, image_shape, 'roi_shape')
+        elif level > 0:
+            # set ROI for each image to be the crop from the previous levels prediction/target(validation/training)
+            if subject_id in training_ids:
+                # roi is based on ground truth from the previous level
+                _, truth_image = data_file.get_nibabel_images(subject_id)
+                roi_affine = compute_region_of_interest_affine_from_foreground(truth_image, image_shape)
+            elif subject_id in validation_ids:
+                # roi is based on previous prediction
+                image = data_file.get_supplemental_image(subject_id, 'level{}_prediction'.format(level - 1))
+                roi_affine = compute_region_of_interest_affine([image], image_shape)
+        kwargs = {'level{}_affine'.format(level): roi_affine,
+                  'level{}_shape'.format(level): image_shape}
+        data_file.add_supplemental_data(subject_id, **kwargs)
+        data_file.overwrite_array(subject_id, roi_affine, 'roi_affine')
+        data_file.overwrite_array(subject_id, image_shape, 'roi_shape')
+        update_progress(float(index + 1) / n_subjects)
+        if preload_validation_data:
+            roi_features, roi_targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape)
+            data_file.add_supplemental_data(subject_id, roi_features=roi_features, roi_targets=roi_targets)
 
 
 def create_data_file(folder_path, filename):
@@ -144,7 +137,8 @@ def main(config):
         print("Setting the targets to labels {}".format(labels))
         set_targets(data_file, labels)
         print("Setting regions of interest")
-        set_roi(data_file, level, image_shape, crop=config['crop'])
+        set_roi(data_file, level, image_shape, crop=config['crop'],
+                preload_validation_data=config['generator_parameters']['preload_validation_data'])
         print("Creating model")
         model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape,
                           n_channels=config["n_channels"], n_filters=n_filters,
