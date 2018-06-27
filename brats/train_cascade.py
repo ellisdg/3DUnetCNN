@@ -40,31 +40,34 @@ def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=Fa
     training_ids = data_file.get_training_groups()
     n_subjects = len(subject_ids)
     for index, subject_id in enumerate(subject_ids):
-        if level == 0 and crop:
-            # set ROI for each image in the data file to be the cropped brain
-            images = data_file.get_nibabel_images(subject_id)
-            image = combine_images(images, axis=0)
-            image = move_image_channels(image, axis0=0, axis1=-1)
-            roi_affine = compute_region_of_interest_affine([image], image_shape)
-        elif level > 0:
-            # set ROI for each image to be the crop from the previous levels prediction/target(validation/training)
-            if subject_id in training_ids:
-                # roi is based on ground truth from the previous level
-                _, truth_image = data_file.get_nibabel_images(subject_id)
-                roi_affine = compute_region_of_interest_affine_from_foreground(truth_image, image_shape)
-            elif subject_id in validation_ids:
-                # roi is based on previous prediction
-                image = data_file.get_supplemental_image(subject_id, 'level{}_prediction'.format(level - 1))
+        if crop:
+            if level == 0:
+                # set ROI for each image in the data file to be the cropped brain
+                images = data_file.get_nibabel_images(subject_id)
+                image = combine_images(images, axis=0)
+                image = move_image_channels(image, axis0=0, axis1=-1)
                 roi_affine = compute_region_of_interest_affine([image], image_shape)
-        kwargs = {'level{}_affine'.format(level): roi_affine,
-                  'level{}_shape'.format(level): image_shape}
-        data_file.add_supplemental_data(subject_id, **kwargs)
+            else:
+                # set ROI for each image to be the crop from the previous levels prediction/target(validation/training)
+                if subject_id in training_ids:
+                    # roi is based on ground truth from the previous level
+                    _, truth_image = data_file.get_nibabel_images(subject_id)
+                    roi_affine = compute_region_of_interest_affine_from_foreground(truth_image, image_shape)
+                else:
+                    # roi is based on previous prediction
+                    image = data_file.get_supplemental_image(subject_id, 'level{}_prediction'.format(level - 1))
+                    roi_affine = compute_region_of_interest_affine([image], image_shape)
+            kwargs = {'level{}_affine'.format(level): roi_affine,
+                      'level{}_shape'.format(level): image_shape}
+            data_file.add_supplemental_data(subject_id, **kwargs)
+        else:
+            roi_affine = data_file.get_roi_affine(subject_id)
         data_file.overwrite_array(subject_id, roi_affine, 'roi_affine')
         data_file.overwrite_array(subject_id, image_shape, 'roi_shape')
-        update_progress(float(index + 1) / n_subjects)
         if preload_validation_data and subject_id in validation_ids:
             roi_features, roi_targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=image_shape)
             data_file.add_supplemental_data(subject_id, roi_features=roi_features, roi_targets=roi_targets)
+        update_progress(float(index + 1) / n_subjects)
 
 
 def create_data_file(folder_path, filename):
