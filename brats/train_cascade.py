@@ -3,8 +3,6 @@ import glob
 import nibabel as nib
 import numpy as np
 
-from tables.exceptions import NoSuchNodeError
-
 from unet3d.data import DataFile, combine_images, move_image_channels
 from unet3d.normalize import (compute_region_of_interest_affine, compute_region_of_interest_affine_from_foreground,
                               normalize_data)
