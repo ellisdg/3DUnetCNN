@@ -116,7 +116,7 @@ def get_image_foreground(image, background_value=0, tolerance=1e-5, array=None, 
 
 def normalize_data(data, mean=None, std=None, copy=True, axis=(-3, -2, -1)):
     if copy:
-        data = data.copy()
+        data = np.copy(data)
     if mean is None:
         mean = np.mean(data, axis=axis)
     if std is None:
