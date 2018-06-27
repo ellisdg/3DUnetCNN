@@ -8,6 +8,7 @@
     "validation_batch_size": 1,
     "permute": true,
     "translation_deviation": 0.1,
+    "scale_deviation": 0.1,
     "skip_blank": false,
     "normalize": true,
     "preload_validation_data": true},
