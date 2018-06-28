@@ -13,10 +13,12 @@ from .normalize import normalize_data
 
 
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
-                                  skip_blank=False, permute=False, normalize=True, preload_validation_data=False):
+                                  skip_blank=False, permute=False, normalize=True, preload_validation_data=False,
+                                  scale_deviation=None):
     training_generator = data_generator_from_data_file(data_file, data_file.get_training_groups(),
                                                        batch_size=batch_size, skip_blank=skip_blank, permute=permute,
-                                                       translation_deviation=translation_deviation, normalize=normalize)
+                                                       translation_deviation=translation_deviation, normalize=normalize,
+                                                       scale_deviation=scale_deviation)
     validation_generator = data_generator_from_data_file(data_file, data_file.get_validation_groups(),
                                                          batch_size=validation_batch_size, normalize=normalize,
                                                          use_preloaded=preload_validation_data)
