@@ -138,10 +138,10 @@ def main(config):
                                                                              config["n_base_filters"])):
         # set targets
         print("Setting the targets to labels {}".format(labels))
-        set_targets(data_file, labels)
+        #set_targets(data_file, labels)
         print("Setting regions of interest")
-        set_roi(data_file, level, image_shape, crop=config['crop'],
-                preload_validation_data=config['generator_parameters']['preload_validation_data'])
+        #set_roi(data_file, level, image_shape, crop=config['crop'],
+        #        preload_validation_data=config['generator_parameters']['preload_validation_data'])
         print("Creating model")
         model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape,
                           n_channels=config["n_channels"], n_filters=n_filters,
@@ -150,6 +150,9 @@ def main(config):
 
         train_generator, validation_generator = get_generators_from_data_file(data_file,
                                                                               **config["generator_parameters"])
+
+        if config['test_generators']:
+            test_generators(train_generator, validation_generator)
 
         # run training
         train_model(model=model,
@@ -164,6 +167,22 @@ def main(config):
         print("Making predictions on validation data")
         predict_validation_data(model, data_file, 'level{}_prediction'.format(level),
                                 normalize_features=config['generator_parameters']['normalize'])
+
+
+def test_generators(train_generator, validation_generator):
+    affine = np.diag(np.ones(4))
+    for i in range(10):
+        features, targets = next(train_generator)
+        features_image = nib.Nifti1Image(features[0][0], affine)
+        features_image.to_filename("{}_features.nii".format(i))
+        targets_image = nib.Nifti1Image(targets[0][0], affine)
+        targets_image.to_filename("{}_targets.nii".format(i))
+
+        features, targets = next(validation_generator)
+        features_image = nib.Nifti1Image(features[0][0], affine)
+        features_image.to_filename("{}_features_validation.nii".format(i))
+        targets_image = nib.Nifti1Image(targets[0][0], affine)
+        targets_image.to_filename("{}_targets_validation.nii".format(i))
 
 
 if __name__ == "__main__":

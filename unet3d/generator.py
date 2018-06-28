@@ -41,7 +41,8 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
                 roi_affine, roi_shape = data_file.get_roi(subject_id)
                 if translation_deviation:
                     roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
-                                                  translation_scales=random_scale_factor(std=translation_deviation))
+                                                  translation_scales=random_scale_factor(mean=0,
+                                                                                         std=translation_deviation))
                 if scale_deviation:
                     roi_affine = scale_affine(affine=roi_affine, shape=roi_shape,
                                               scale=random_scale_factor(std=scale_deviation))

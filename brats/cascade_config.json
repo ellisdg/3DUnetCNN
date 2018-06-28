@@ -8,7 +8,7 @@
     "validation_batch_size": 1,
     "permute": true,
     "translation_deviation": 0.1,
-    "scale_deviation": 0.1,
+    "scale_deviation": null,
     "skip_blank": false,
     "normalize": true,
     "preload_validation_data": true},
@@ -24,5 +24,6 @@
   "data_file": "brats2018_training_data.h5",
   "model_file": ["whole_tumor_model.h5", "tumor_core_model.h5", "enhanced_tumor_model.h5"],
   "overwrite": false,
-  "crop": true
+  "crop": true,
+  "test_generators": false
 }

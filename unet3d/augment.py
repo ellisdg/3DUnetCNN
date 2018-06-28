@@ -241,3 +241,4 @@ def translate_affine(affine, shape, translation_scales, copy=True):
     extent = np.multiply(shape, spacing)
     translation = np.multiply(translation_scales, extent)
     affine[:3, 3] += translation
+    return affine
