@@ -5,9 +5,8 @@ from nilearn.image.resampling import BoundingBoxError
 import random
 import itertools
 
-from unet3d.utils.utils import get_spacing_from_affine
+from .utils.utils import get_spacing_from_affine, set_affine_spacing
 from .utils.nilearn_custom_utils.nilearn_utils import get_background_values
-from .utils.utils import get_spacing_from_affine
 
 
 def scale_image(image, scale_factor):
@@ -262,5 +261,6 @@ def scale_affine(affine, shape, scale, copy=True):
     extent = np.multiply(spacing, shape)
     new_spacing = np.multiply(scale, spacing)
     new_extent = np.multiply(new_spacing, shape)
-    affine[3, :3] += np.subtract(extent, new_extent)/2
+    affine[:3, 3] += np.subtract(extent, new_extent)/2
+    affine = set_affine_spacing(affine, new_spacing)
     return affine

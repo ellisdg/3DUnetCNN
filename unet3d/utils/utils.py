@@ -127,6 +127,12 @@ def get_spacing_from_affine(affine):
     return np.sqrt(np.sum(RZS * RZS, axis=0))
 
 
+def set_affine_spacing(affine, spacing):
+    scale = np.divide(spacing, get_spacing_from_affine(affine))
+    affine[:3, :3] *= scale
+    return affine
+
+
 def resample(image, target_affine, target_shape, interpolation='linear', pad_mode='edge', pad=False):
     target_data = np.zeros(target_shape)
     target_image = new_img_like(image, target_data, affine=target_affine)
