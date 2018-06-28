@@ -261,6 +261,19 @@ def scale_affine(affine, shape, scale, copy=True):
     extent = np.multiply(spacing, shape)
     new_spacing = np.multiply(scale, spacing)
     new_extent = np.multiply(new_spacing, shape)
-    affine[:3, 3] += np.subtract(extent, new_extent)/2
+    direction = np.sign(np.diagonal(affine)[:3])
+    affine[:3, 3] += np.subtract(extent, new_extent)/2 * direction
     affine = set_affine_spacing(affine, new_spacing)
     return affine
+
+
+def rotate_affine(affine, rotation):
+    rotation_affine = np.diag(np.ones(4))
+    theta_x, theta_y, theta_z = rotation
+    affine_x = np.copy(rotation_affine)
+    affine_x[1, 1] = np.cos(theta_x)
+    affine_x[1, 2] = -np.sin(theta_x)
+    affine_x[2, 1] = np.sin(theta_x)
+    affine_x[2, 2] = np.sin(theta_x)
+
+    return affine * affine_x
