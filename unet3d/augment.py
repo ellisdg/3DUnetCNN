@@ -4,6 +4,8 @@ from nilearn.image import new_img_like, resample_to_img
 from nilearn.image.resampling import BoundingBoxError
 import random
 import itertools
+
+from unet3d.utils.utils import get_spacing_from_affine
 from .utils.nilearn_custom_utils.nilearn_utils import get_background_values
 from .utils.utils import get_spacing_from_affine
 
@@ -241,4 +243,24 @@ def translate_affine(affine, shape, translation_scales, copy=True):
     extent = np.multiply(shape, spacing)
     translation = np.multiply(translation_scales, extent)
     affine[:3, 3] += translation
+    return affine
+
+
+def scale_affine(affine, shape, scale, copy=True):
+    """
+    Scales the affine (while keeping the shape the same) and then adjusts the origin so that the center of the image
+     remains the same. This will change the spacing of the affine. This function might not work with non-RAS images.
+    :param affine: Affine matrix to scale
+    :param shape: Shape of the image/region
+    :param scale: How to scale the affine
+    :param copy: copies the affine matrix before modifying it
+    :return: Modified affine matrix
+    """
+    if copy:
+        affine = np.copy(affine)
+    spacing = get_spacing_from_affine(affine)
+    extent = np.multiply(spacing, shape)
+    new_spacing = np.multiply(scale, spacing)
+    new_extent = np.multiply(new_spacing, shape)
+    affine[3, :3] += np.subtract(extent, new_extent)/2
     return affine

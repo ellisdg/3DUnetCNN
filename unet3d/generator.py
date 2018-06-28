@@ -6,7 +6,7 @@ import itertools
 import numpy as np
 
 from .utils import pickle_dump, pickle_load
-from .utils.utils import scale_affine
+from unet3d.augment import scale_affine
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
 from .normalize import normalize_data

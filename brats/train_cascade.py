@@ -138,10 +138,10 @@ def main(config):
                                                                              config["n_base_filters"])):
         # set targets
         print("Setting the targets to labels {}".format(labels))
-        #set_targets(data_file, labels)
+        set_targets(data_file, labels)
         print("Setting regions of interest")
-        #set_roi(data_file, level, image_shape, crop=config['crop'],
-        #        preload_validation_data=config['generator_parameters']['preload_validation_data'])
+        set_roi(data_file, level, image_shape, crop=config['crop'],
+                preload_validation_data=config['generator_parameters']['preload_validation_data'])
         print("Creating model")
         model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape,
                           n_channels=config["n_channels"], n_filters=n_filters,
