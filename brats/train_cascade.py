@@ -163,7 +163,7 @@ def main(config):
         # make predictions on validation data
         print("Making predictions on validation data")
         predict_validation_data(model, data_file, 'level{}_prediction'.format(level),
-                                normalize_features=config['training_parameters']['normalize'])
+                                normalize_features=config['generator_parameters']['normalize'])
 
 
 if __name__ == "__main__":
