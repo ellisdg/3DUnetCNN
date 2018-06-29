@@ -10,6 +10,7 @@ from unet3d.generator import get_generators_from_data_file, split_list
 from unet3d.model import isensee2017_model
 from unet3d.training import load_old_model, train_model
 from unet3d.utils.utils import update_progress
+from unet3d.utils.nilearn_custom_utils.nilearn_utils import reorder_affine
 from nilearn.image import resample_to_img
 
 import json
@@ -57,11 +58,12 @@ def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=Fa
                     # roi is based on previous prediction
                     image = data_file.get_supplemental_image(subject_id, 'level{}_prediction'.format(level - 1))
                     roi_affine = compute_region_of_interest_affine([image], image_shape)
-            kwargs = {'level{}_affine'.format(level): roi_affine,
-                      'level{}_shape'.format(level): image_shape}
-            data_file.add_supplemental_data(subject_id, **kwargs)
         else:
             roi_affine = data_file.get_roi_affine(subject_id)
+        roi_affine = reorder_affine(roi_affine, image_shape)
+        kwargs = {'level{}_affine'.format(level): roi_affine,
+                  'level{}_shape'.format(level): image_shape}
+        data_file.add_supplemental_data(subject_id, **kwargs)
         data_file.overwrite_array(subject_id, roi_affine, 'roi_affine')
         data_file.overwrite_array(subject_id, image_shape, 'roi_shape')
         if preload_validation_data and subject_id in validation_ids:

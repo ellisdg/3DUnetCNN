@@ -6,8 +6,8 @@
   "generator_parameters": {
     "batch_size": 1,
     "validation_batch_size": 1,
-    "permute": true,
-    "translation_deviation": 0.1,
+    "permute": false,
+    "translation_deviation": null,
     "scale_deviation": null,
     "skip_blank": false,
     "normalize": true,
@@ -25,5 +25,5 @@
   "model_file": ["whole_tumor_model.h5", "tumor_core_model.h5", "enhanced_tumor_model.h5"],
   "overwrite": false,
   "crop": true,
-  "test_generators": false
+  "test_generators": true
 }
