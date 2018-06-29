@@ -4,7 +4,7 @@ import nibabel as nib
 import numpy as np
 
 from unet3d.utils.utils import resize, resize_affine, resample
-from unet3d.utils.nilearn_custom_utils.nilearn_utils import crop_img
+from unet3d.utils.nilearn_custom_utils.nilearn_utils import crop_img, reorder_affine
 from unet3d.utils.sitk_utils import resample_to_spacing
 
 
@@ -122,3 +122,17 @@ class TestUtils(TestCase):
         self.assertTrue(np.all(cropped_image.get_data() == 1))
         cropped_affine, cropped_shape = crop_img(image, pad=False, return_affine=True)
         np.testing.assert_array_equal(cropped_affine, expected_affine)
+
+    def test_reorder_affine(self):
+        affine = np.diag([-1, -3, 2, 1])
+        affine[:3, 3] = [4, 6, 2]
+        shape = (4, 4, 4)
+        data = np.ones(shape)
+        image = nib.Nifti1Image(data, affine)
+        cropped_image = crop_img(image, pad=False)
+        np.testing.assert_array_equal(cropped_image.affine, affine)
+        np.testing.assert_array_equal(cropped_image.get_data(), data)
+        new_affine = reorder_affine(affine, shape)
+        np.testing.assert_array_equal(np.diagonal(new_affine), np.abs(np.diagonal(new_affine)))
+        new_image = resample(image, new_affine, shape)
+        np.testing.assert_array_equal(new_image.get_data(), image.get_data())

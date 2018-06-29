@@ -1,5 +1,6 @@
 import numpy as np
 from nilearn.image.image import check_niimg
+from nilearn.image.resampling import get_bounds
 from nilearn.image.image import _crop_img_to as crop_img_to
 
 
@@ -105,3 +106,21 @@ def get_background_values(data, axis=(-3, -2, -1)):
         while len(background.shape) < len(data.shape):
             background = background[..., None]
     return background
+
+
+def reorder_affine(affine, shape):
+    """
+    Modified from nilearn.image.resampling.reorder_img and nilearn.image.resampling.resample_img
+    :param affine:
+    :param shape:
+    :return:
+    """
+    Q, R = np.linalg.qr(affine[:3, :3])
+    _affine = np.diag(np.abs(np.diag(R))[np.abs(Q).argmax(axis=1)])
+    target_affine = np.eye(4)
+    target_affine[:3, :3] = _affine
+    transform_affine = np.linalg.inv(target_affine).dot(affine)
+    (xmin, xmax), (ymin, ymax), (zmin, zmax) = get_bounds(shape[:3], transform_affine)
+    offset = target_affine[:3, :3].dot([xmin, ymin, zmin])
+    target_affine[:3, 3] = offset
+    return target_affine
