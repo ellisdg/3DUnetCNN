@@ -1,5 +1,7 @@
 import os
 import copy
+from time import sleep
+import multiprocessing
 from random import shuffle
 import itertools
 
@@ -14,51 +16,106 @@ from .normalize import normalize_data
 
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
                                   skip_blank=False, permute=False, normalize=True, preload_validation_data=False,
-                                  scale_deviation=None):
+                                  scale_deviation=None, use_multiprocessing=False):
     training_generator = data_generator_from_data_file(data_file, data_file.get_training_groups(),
                                                        batch_size=batch_size, skip_blank=skip_blank, permute=permute,
                                                        translation_deviation=translation_deviation, normalize=normalize,
-                                                       scale_deviation=scale_deviation)
+                                                       scale_deviation=scale_deviation,
+                                                       use_multiprocessing=use_multiprocessing)
     validation_generator = data_generator_from_data_file(data_file, data_file.get_validation_groups(),
                                                          batch_size=validation_batch_size, normalize=normalize,
-                                                         use_preloaded=preload_validation_data)
+                                                         use_preloaded=preload_validation_data,
+                                                         use_multiprocessing=use_multiprocessing)
     return training_generator, validation_generator
 
 
-def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
-                                  permute=False, normalize=True, use_preloaded=False, scale_deviation=None):
-    all_subject_ids = np.copy(subject_ids)
+def data_loader(data_file, subject_ids, features_bucket, targets_bucket, batch_size, skip_blank, sleep_time=1,
+                buffer_factor=3, **load_data_kwargs):
     while True:
-        x = list()
-        y = list()
-        subject_ids = all_subject_ids.tolist()
-        shuffle(subject_ids)
-        while len(subject_ids) > 0:
-            subject_id = subject_ids.pop()
-            if use_preloaded:
-                features = data_file.get_supplemental_data(subject_id, "roi_features")
-                targets = data_file.get_supplemental_data(subject_id, "roi_targets")
+        _subject_ids = subject_ids.tolist()
+        shuffle(_subject_ids)
+        while len(_subject_ids) > 0:
+            if len(features_bucket) < batch_size * buffer_factor:
+                subject_id = _subject_ids.pop()
+                features, targets = load_data(data_file=data_file, subject_id=subject_id, **load_data_kwargs)
+                if not (skip_blank and np.all(np.equal(targets, 0))):
+                    features_bucket.append(features)
+                    targets_bucket.append(targets)
             else:
-                roi_affine, roi_shape = data_file.get_roi(subject_id)
-                if translation_deviation:
-                    roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
-                                                  translation_scales=random_scale_factor(mean=0,
-                                                                                         std=translation_deviation))
-                if scale_deviation:
-                    roi_affine = scale_affine(affine=roi_affine, shape=roi_shape,
-                                              scale=random_scale_factor(std=scale_deviation))
-                features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
-                if permute:
-                    features, targets = random_permutation_x_y(features, targets)
-            if normalize:
-                features = normalize_data(features)
-            if not (skip_blank and np.all(np.equal(targets, 0))):
-                x.append(features)
-                y.append(targets)
-            if len(x) >= batch_size:
-                yield np.asarray(x), np.asarray(y)
-                x = list()
-                y = list()
+                sleep(sleep_time)
+
+
+def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=None, scale_deviation=None,
+              permute=False, normalize=True):
+    if use_preloaded:
+        features = data_file.get_supplemental_data(subject_id, "roi_features")
+        targets = data_file.get_supplemental_data(subject_id, "roi_targets")
+    else:
+        roi_affine, roi_shape = data_file.get_roi(subject_id)
+        if translation_deviation:
+            roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
+                                          translation_scales=random_scale_factor(mean=0,
+                                                                                 std=translation_deviation))
+        if scale_deviation:
+            roi_affine = scale_affine(affine=roi_affine, shape=roi_shape,
+                                      scale=random_scale_factor(std=scale_deviation))
+        features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
+        if permute:
+            features, targets = random_permutation_x_y(features, targets)
+    if normalize:
+        features = normalize_data(features)
+    return features, targets
+
+
+def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
+                                  permute=False, normalize=True, use_preloaded=False, scale_deviation=None,
+                                  use_multiprocessing=False, sleep_time=1):
+    all_subject_ids = np.copy(subject_ids)
+    if use_multiprocessing:
+        features_bucket = list()
+        targets_bucket = list()
+        # start filling the buckets
+        process = multiprocessing.Process(target=data_loader, kwargs=dict(data_file=data_file,
+                                                                          subject_ids=all_subject_ids,
+                                                                          features_bucket=features_bucket,
+                                                                          targets_bucket=targets_bucket,
+                                                                          batch_size=batch_size,
+                                                                          sleep_time=sleep_time,
+                                                                          skip_blank=skip_blank,
+                                                                          use_preloaded=use_preloaded,
+                                                                          normalize=normalize,
+                                                                          permute=permute,
+                                                                          translation_deviation=translation_deviation,
+                                                                          scale_deviation=scale_deviation))
+        process.start()
+        while True:
+            x = list()
+            y = list()
+            while len(x) < batch_size:
+                if len(features_bucket) > 0:
+                    x.append(features_bucket.pop(0))
+                    y.append(targets_bucket.pop(0))
+                else:
+                    sleep(sleep_time)
+            yield np.asarray(x), np.asarray(y)
+    else:
+        while True:
+            x = list()
+            y = list()
+            subject_ids = all_subject_ids.tolist()
+            shuffle(subject_ids)
+            while len(subject_ids) > 0:
+                subject_id = subject_ids.pop()
+                features, targets = load_data(data_file=data_file, subject_id=subject_id, use_preloaded=use_preloaded,
+                                              translation_deviation=translation_deviation,
+                                              scale_deviation=scale_deviation, permute=permute, normalize=normalize)
+                if not (skip_blank and np.all(np.equal(targets, 0))):
+                    x.append(features)
+                    y.append(targets)
+                if len(x) >= batch_size:
+                    yield np.asarray(x), np.asarray(y)
+                    x = list()
+                    y = list()
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
