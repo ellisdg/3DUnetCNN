@@ -2,6 +2,7 @@ import os
 import copy
 from time import sleep
 import multiprocessing
+from multiprocessing import Manager
 from random import shuffle
 import itertools
 
@@ -35,7 +36,7 @@ def data_loader(data_file, subject_ids, features_bucket, targets_bucket, batch_s
         _subject_ids = subject_ids.tolist()
         shuffle(_subject_ids)
         while len(_subject_ids) > 0:
-            if len(features_bucket) < batch_size * buffer_factor:
+            if len(features_bucket) < (batch_size * buffer_factor):
                 subject_id = _subject_ids.pop()
                 features, targets = load_data(data_file=data_file, subject_id=subject_id, **load_data_kwargs)
                 if not (skip_blank and np.all(np.equal(targets, 0))):
@@ -72,8 +73,9 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
                                   use_multiprocessing=False, sleep_time=1):
     all_subject_ids = np.copy(subject_ids)
     if use_multiprocessing:
-        features_bucket = list()
-        targets_bucket = list()
+        manager = Manager()
+        features_bucket = manager.list()
+        targets_bucket = manager.list()
         # start filling the buckets
         process = multiprocessing.Process(target=data_loader, kwargs=dict(data_file=data_file,
                                                                           subject_ids=all_subject_ids,
