@@ -27,7 +27,7 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
     validation_generator = data_generator_from_data_file(data_file, data_file.get_validation_groups(),
                                                          batch_size=validation_batch_size, normalize=normalize,
                                                          use_preloaded=preload_validation_data,
-                                                         use_multiprocessing=use_multiprocessing)
+                                                         use_multiprocessing=False)
     return training_generator, validation_generator
 
 

@@ -27,5 +27,5 @@
   "model_file": ["whole_tumor_model.h5", "tumor_core_model.h5", "enhanced_tumor_model.h5"],
   "overwrite": false,
   "crop": true,
-  "test_generators": true
+  "test_generators": false
 }
