@@ -35,7 +35,7 @@ def get_model(model_file, overwrite=False, **kwargs):
     return model
 
 
-def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=False):
+def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=False, threshold=0.5):
     subject_ids = data_file.get_data_groups()
     validation_ids = data_file.get_validation_groups()
     training_ids = data_file.get_training_groups()
@@ -53,11 +53,21 @@ def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=Fa
                 if subject_id in training_ids:
                     # roi is based on ground truth from the previous level
                     _, truth_image = data_file.get_nibabel_images(subject_id)
-                    roi_affine = compute_region_of_interest_affine_from_foreground(truth_image, image_shape)
+                    if len(truth_image.shape) > 3:
+                        truth_image = truth_image.__class__(truth_image.get_data()[0], truth_image.affine)
+                    assert len(truth_image.shape) == 3
+                    mask_image = truth_image
                 else:
                     # roi is based on previous prediction
                     image = data_file.get_supplemental_image(subject_id, 'level{}_prediction'.format(level - 1))
-                    roi_affine = compute_region_of_interest_affine([image], image_shape)
+                    assert len(image.shape) == 3
+                    mask_data = np.zeros(image.shape)
+                    mask_data[image.get_data() > threshold] = 1
+                    mask_image = image.__class__(mask_data, image.affine)
+                if np.any(mask_image.get_data() > 0):
+                    roi_affine = compute_region_of_interest_affine_from_foreground(mask_image, image_shape)
+                else:
+                    continue
         else:
             roi_affine = data_file.get_roi_affine(subject_id)
         roi_affine = reorder_affine(roi_affine, image_shape)
@@ -112,20 +122,19 @@ def set_targets(data_file, labels):
         update_progress(float(i + 1)/n_subjects)
 
 
-def predict_validation_data(model, data_file, name, normalize_features=True, threshold=0.5):
+def predict_validation_data(model, data_file, name, normalize_features=True):
     for subject_id in data_file.get_validation_groups():
         features_image, targets_image = data_file.get_nibabel_images(subject_id)
-        assert len(targets_image.shape) == 3
+        targets_image = move_image_channels(targets_image, axis0=0, axis1=-1)
+        assert np.all(np.greater(targets_image.shape[:3], 1))
         features, targets = data_file.get_roi_data(subject_id)
         if normalize_features:
             features = normalize_data(features)
-        prediction = model.predict([features])[0][0]
+        prediction = model.predict(np.asarray([features]))[0][0]
         p_image = nib.Nifti1Image(prediction, data_file.get_roi_affine(subject_id))
         p_image = resample_to_img(p_image, targets_image, interpolation='linear')
-        prediction = np.zeros(targets_image.shape)
-        index = p_image.get_data() >= threshold
-        prediction[index] = 1
-        data_file.add_supplemental_data(subject_id, {name: prediction})
+        prediction = p_image.get_data()
+        data_file.add_supplemental_data(subject_id, **{name: prediction})
 
 
 def main(config):
@@ -135,35 +144,40 @@ def main(config):
     except KeyError:
         print("Splitting training/validation data")
         randomly_set_training_subjects(data_file, split=config['validation_split'])
-    for level, (labels, image_shape, model_file, n_filters) in enumerate(zip(config["labels"], config["image_shape"],
-                                                                             config["model_file"],
-                                                                             config["n_base_filters"])):
+    for level, (labels, image_shape, model_file, n_filters, batch_size) in enumerate(zip(config["labels"],
+                                                                                         config["image_shape"],
+                                                                                         config["model_file"],
+                                                                                         config["n_base_filters"],
+                                                                                         config["batch_sizes"])):
+        skip = config["skip_levels"] and level in config["skip_levels"]
         # set targets
         print("Setting the targets to labels {}".format(labels))
         set_targets(data_file, labels)
         print("Setting regions of interest")
         set_roi(data_file, level, image_shape, crop=config['crop'],
-                preload_validation_data=config['generator_parameters']['preload_validation_data'])
+                    preload_validation_data=config['generator_parameters']['preload_validation_data'])
         print("Creating model")
         model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape,
                           n_channels=config["n_channels"], n_filters=n_filters,
                           initial_learning_rate=config["training_parameters"]["initial_learning_rate"])
         # get training and testing generators
 
-        train_generator, validation_generator = get_generators_from_data_file(data_file,
+        train_generator, validation_generator = get_generators_from_data_file(data_file, batch_size=batch_size,
                                                                               **config["generator_parameters"])
 
         if config['test_generators']:
             test_generators(train_generator, validation_generator)
 
-        # run training
-        train_model(model=model,
-                    model_file=model_file,
-                    training_generator=train_generator,
-                    validation_generator=validation_generator,
-                    steps_per_epoch=len(data_file.get_training_groups()),
-                    validation_steps=len(data_file.get_validation_groups()),
-                    **config["training_parameters"])
+        if not skip:
+            # run training
+            validation_batch_size = config["generator_parameters"]["validation_batch_size"]
+            train_model(model=model,
+                        model_file=model_file,
+                        training_generator=train_generator,
+                        validation_generator=validation_generator,
+                        steps_per_epoch=len(data_file.get_training_groups())/batch_size,
+                        validation_steps=len(data_file.get_validation_groups())/validation_batch_size,
+                        **config["training_parameters"])
 
         # make predictions on validation data
         print("Making predictions on validation data")
