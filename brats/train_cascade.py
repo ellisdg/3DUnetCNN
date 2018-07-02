@@ -161,10 +161,10 @@ def main(config):
                           n_channels=config["n_channels"], n_filters=n_filters,
                           initial_learning_rate=config["training_parameters"]["initial_learning_rate"])
         # get training and testing generators
-
+        data_file.close()
+        data_file = DataFile(data_file.filename, mode='r')
         train_generator, validation_generator = get_generators_from_data_file(data_file, batch_size=batch_size,
                                                                               **config["generator_parameters"])
-
         if config['test_generators']:
             test_generators(train_generator, validation_generator)
 
@@ -179,6 +179,8 @@ def main(config):
                         validation_steps=len(data_file.get_validation_groups())/validation_batch_size,
                         **config["training_parameters"])
 
+        data_file.close()
+        data_file = DataFile(data_file.filename, mode='a')
         # make predictions on validation data
         print("Making predictions on validation data")
         predict_validation_data(model, data_file, 'level{}_prediction'.format(level),

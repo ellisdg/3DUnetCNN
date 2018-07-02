@@ -9,10 +9,11 @@ import itertools
 import numpy as np
 
 from .utils import pickle_dump, pickle_load
-from unet3d.augment import scale_affine
+from .augment import scale_affine
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
 from .normalize import normalize_data
+from .data import DataFile
 
 
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
@@ -30,8 +31,9 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
     return training_generator, validation_generator
 
 
-def data_loader(data_file, subject_ids, features_bucket, targets_bucket, batch_size, skip_blank, sleep_time=1,
-                buffer_factor=3, **load_data_kwargs):
+def data_loader(data_filename, subject_ids, features_bucket, targets_bucket, batch_size, skip_blank, sleep_time=1,
+                buffer_factor=6, **load_data_kwargs):
+    data_file = DataFile(data_filename, mode='r')
     while True:
         _subject_ids = subject_ids.tolist()
         shuffle(_subject_ids)
@@ -40,8 +42,8 @@ def data_loader(data_file, subject_ids, features_bucket, targets_bucket, batch_s
                 subject_id = _subject_ids.pop()
                 features, targets = load_data(data_file=data_file, subject_id=subject_id, **load_data_kwargs)
                 if not (skip_blank and np.all(np.equal(targets, 0))):
-                    features_bucket.append(features)
-                    targets_bucket.append(targets)
+                    features_bucket.append(np.asarray(features))
+                    targets_bucket.append(np.asarray(targets))
             else:
                 sleep(sleep_time)
 
@@ -77,7 +79,7 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
         features_bucket = manager.list()
         targets_bucket = manager.list()
         # start filling the buckets
-        process = multiprocessing.Process(target=data_loader, kwargs=dict(data_file=data_file,
+        process = multiprocessing.Process(target=data_loader, kwargs=dict(data_filename=data_file.filename,
                                                                           subject_ids=all_subject_ids,
                                                                           features_bucket=features_bucket,
                                                                           targets_bucket=targets_bucket,
