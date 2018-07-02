@@ -32,6 +32,7 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
         x = list()
         y = list()
         subject_ids = all_subject_ids.tolist()
+        shuffle(subject_ids)
         while len(subject_ids) > 0:
             subject_id = subject_ids.pop()
             if use_preloaded:
@@ -51,10 +52,10 @@ def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translat
                     features, targets = random_permutation_x_y(features, targets)
             if normalize:
                 features = normalize_data(features)
-            if not (skip_blank and np.all(np.asarray(y) == 0)):
+            if not (skip_blank and np.all(np.equal(targets, 0))):
                 x.append(features)
                 y.append(targets)
-            if len(x) == batch_size:
+            if len(x) >= batch_size:
                 yield np.asarray(x), np.asarray(y)
                 x = list()
                 y = list()

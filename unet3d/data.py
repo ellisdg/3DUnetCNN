@@ -79,9 +79,9 @@ class DataFile(object):
         if roi_shape is None:
             roi_shape = self.get_roi_shape(name)
         roi_features_image = resample(image=features_image, target_affine=roi_affine, target_shape=roi_shape,
-                                      interpolation=features_interpolation)
+                                      interpolation=features_interpolation, pad=False)
         roi_targets_image = resample(image=targets_image, target_affine=roi_affine, target_shape=roi_shape,
-                                     interpolation=targets_interpolation)
+                                     interpolation=targets_interpolation, pad=False)
         return (move_4d_channels_first(roi_features_image.get_data()),
                 move_4d_channels_first(roi_targets_image.get_data()))
 
