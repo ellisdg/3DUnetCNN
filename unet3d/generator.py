@@ -19,15 +19,13 @@ from .data import DataFile
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
                                   skip_blank=False, permute=False, normalize=True, preload_validation_data=False,
                                   scale_deviation=None, use_multiprocessing=False):
-    training_generator = data_generator_from_data_file(data_file, data_file.get_training_groups(),
-                                                       batch_size=batch_size, skip_blank=skip_blank, permute=permute,
-                                                       translation_deviation=translation_deviation, normalize=normalize,
-                                                       scale_deviation=scale_deviation,
-                                                       use_multiprocessing=use_multiprocessing)
-    validation_generator = data_generator_from_data_file(data_file, data_file.get_validation_groups(),
-                                                         batch_size=validation_batch_size, normalize=normalize,
-                                                         use_preloaded=preload_validation_data,
-                                                         use_multiprocessing=False)
+    training_generator = DataGenerator(data_file, data_file.get_training_groups(), batch_size=batch_size,
+                                       skip_blank=skip_blank, permute=permute,
+                                       translation_deviation=translation_deviation, normalize=normalize,
+                                       scale_deviation=scale_deviation, use_multiprocessing=use_multiprocessing)
+    validation_generator = DataGenerator(data_file, data_file.get_validation_groups(), batch_size=validation_batch_size,
+                                         normalize=normalize, use_preloaded=preload_validation_data,
+                                         use_multiprocessing=False)
     return training_generator, validation_generator
 
 
@@ -79,6 +77,12 @@ class DataGenerator(object):
         self.subject_ids = subject_ids
         self.sleep_time = sleep_time
         self.data_file = data_file
+        self.translation_deviation = translation_deviation
+        self.skip_blank = skip_blank
+        self.permute = permute
+        self.normalize = normalize
+        self.use_preloaded = use_preloaded
+        self.scale_deviation = scale_deviation
         if self._use_multiprocessing:
             self.manager = Manager()
             self.features_bucket = self.manager.list()
@@ -136,6 +140,13 @@ class DataGenerator(object):
     def start_filling_buckets(self):
         if self.process:
             self.process.start()
+
+    def stop_filling_buckets(self):
+        if self.process and self.process.is_alive():
+            self.process.terminate()
+
+    def __del__(self):
+        self.stop_filling_buckets()
 
 
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
