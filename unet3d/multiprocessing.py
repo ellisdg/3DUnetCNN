@@ -35,6 +35,7 @@ def load_data_worker(queue, data_filename, skip_blank=False, **kwargs):
 
 class MultiProcessingDataGenerator(DataGenerator):
     def __init__(self, sleep_time=0.1, queue_size=12, **kwargs):
+        raise RuntimeError("Multiprocessing does not yet work for data generators")
         super(MultiProcessingDataGenerator, self).__init__(**kwargs)
         self.sleep_time = sleep_time
         self.queue = Queue(maxsize=queue_size)

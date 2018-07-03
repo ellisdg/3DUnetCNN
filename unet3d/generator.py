@@ -6,7 +6,6 @@ from random import shuffle
 import numpy as np
 from keras.utils import Sequence
 
-from .multiprocessing import MultiProcessingDataGenerator
 from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
 from .augment import scale_affine
 from .normalize import normalize_data
@@ -29,8 +28,7 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
                                          subject_ids=data_file.get_validation_groups(),
                                          batch_size=validation_batch_size,
                                          normalize=normalize,
-                                         use_preloaded=preload_validation_data,
-                                         verbose=True)
+                                         use_preloaded=preload_validation_data)
     return training_generator, validation_generator
 
 
