@@ -33,7 +33,7 @@ def data_loader(data_filename, subject_ids, features_bucket, targets_bucket, bat
                 buffer_factor=6, **load_data_kwargs):
     data_file = DataFile(data_filename, mode='r')
     while True:
-        _subject_ids = subject_ids.tolist()
+        _subject_ids = np.copy(subject_ids).tolist()
         shuffle(_subject_ids)
         while len(_subject_ids) > 0:
             if len(features_bucket) < (batch_size * buffer_factor):
