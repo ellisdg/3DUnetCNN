@@ -3,7 +3,6 @@ import itertools
 import os
 from random import shuffle
 
-
 import numpy as np
 from keras.utils import Sequence
 
@@ -17,24 +16,21 @@ from .utils.utils import pickle_dump, pickle_load, is_iterable
 
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
                                   skip_blank=False, permute=False, normalize=True, preload_validation_data=False,
-                                  scale_deviation=None, use_multiprocessing=False):
-    if use_multiprocessing:
-        generator_class = MultiProcessingDataGenerator
-    else:
-        generator_class = DataGenerator
-    training_generator = generator_class(data_file=data_file,
-                                         subject_ids=data_file.get_training_groups(),
-                                         batch_size=batch_size,
-                                         skip_blank=skip_blank,
-                                         permute=permute,
-                                         translation_deviation=translation_deviation,
+                                  scale_deviation=None):
+    training_generator = DataGenerator(data_file=data_file,
+                                       subject_ids=data_file.get_training_groups(),
+                                       batch_size=batch_size,
+                                       skip_blank=skip_blank,
+                                       permute=permute,
+                                       translation_deviation=translation_deviation,
+                                       normalize=normalize,
+                                       scale_deviation=scale_deviation)
+    validation_generator = DataGenerator(data_file=data_file,
+                                         subject_ids=data_file.get_validation_groups(),
+                                         batch_size=validation_batch_size,
                                          normalize=normalize,
-                                         scale_deviation=scale_deviation)
-    validation_generator = generator_class(data_file=data_file,
-                                           subject_ids=data_file.get_validation_groups(),
-                                           batch_size=validation_batch_size,
-                                           normalize=normalize,
-                                           use_preloaded=preload_validation_data)
+                                         use_preloaded=preload_validation_data,
+                                         verbose=True)
     return training_generator, validation_generator
 
 
@@ -218,9 +214,9 @@ def get_number_of_steps(n_samples, batch_size):
     if n_samples <= batch_size:
         return n_samples
     elif np.remainder(n_samples, batch_size) == 0:
-        return n_samples//batch_size
+        return n_samples // batch_size
     else:
-        return n_samples//batch_size + 1
+        return n_samples // batch_size + 1
 
 
 def get_validation_split(data_file, training_file, validation_file, data_split=0.8, overwrite=False):
