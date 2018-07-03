@@ -148,6 +148,10 @@ class DataGenerator(object):
     def __del__(self):
         self.stop_filling_buckets()
 
+    def __len__(self):
+        """Returns the number of batches per epoch"""
+        return int(np.floor(len(self.subject_ids) / self.batch_size))
+
 
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
                                   permute=False, normalize=True, use_preloaded=False, scale_deviation=None,
