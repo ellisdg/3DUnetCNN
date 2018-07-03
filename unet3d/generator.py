@@ -89,7 +89,7 @@ class DataGenerator(object):
             self.targets_bucket = self.manager.list()
             # start filling the buckets
             self.process = multiprocessing.Process(target=data_loader,
-                                                   kwargs=dict(data_file=data_file.filename,
+                                                   kwargs=dict(data_filename=data_file.filename,
                                                                subject_ids=self.subject_ids,
                                                                features_bucket=self.features_bucket,
                                                                targets_bucket=self.targets_bucket,
