@@ -10,10 +10,10 @@
     "permute": true,
     "translation_deviation": 0.05,
     "scale_deviation": 0.05,
+    "noise_deviation": 0.05,
     "skip_blank": true,
     "normalize": true,
-    "preload_validation_data": true,
-    "use_multiprocessing": false},
+    "preload_validation_data": true},
   "training_parameters": {
     "n_epochs": 500,
     "learning_rate_patience": 15,

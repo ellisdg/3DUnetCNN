@@ -6,8 +6,8 @@ from random import shuffle
 import numpy as np
 from keras.utils import Sequence
 
-from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
-from .augment import scale_affine
+from .augment import (augment_data, random_permutation_x_y, translate_affine, random_scale_factor, scale_affine,
+                      add_noise)
 from .normalize import normalize_data
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .utils.utils import pickle_dump, pickle_load, is_iterable
@@ -15,7 +15,7 @@ from .utils.utils import pickle_dump, pickle_load, is_iterable
 
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
                                   skip_blank=False, permute=False, normalize=True, preload_validation_data=False,
-                                  scale_deviation=None):
+                                  scale_deviation=None, noise_deviation=None):
     training_generator = DataGenerator(data_file=data_file,
                                        subject_ids=data_file.get_training_groups(),
                                        batch_size=batch_size,
@@ -23,7 +23,8 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
                                        permute=permute,
                                        translation_deviation=translation_deviation,
                                        normalize=normalize,
-                                       scale_deviation=scale_deviation)
+                                       scale_deviation=scale_deviation,
+                                       noise_deviation=noise_deviation)
     validation_generator = DataGenerator(data_file=data_file,
                                          subject_ids=data_file.get_validation_groups(),
                                          batch_size=validation_batch_size,
@@ -33,7 +34,7 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
 
 
 def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=None, scale_deviation=None,
-              permute=False, normalize=True):
+              permute=False, normalize=True, noise_deviation=None):
     if use_preloaded:
         features = data_file.get_supplemental_data(subject_id, "roi_features")
         targets = data_file.get_supplemental_data(subject_id, "roi_targets")
@@ -47,6 +48,8 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
             roi_affine = scale_affine(affine=roi_affine, shape=roi_shape,
                                       scale=random_scale_factor(std=scale_deviation))
         features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
+        if noise_deviation:
+            features = add_noise(features, sigma_factor=noise_deviation)
         if permute:
             features, targets = random_permutation_x_y(features, targets)
     if normalize:
