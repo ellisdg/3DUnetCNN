@@ -14,8 +14,9 @@ def byte_to_string(array):
 
 
 class DataFile(object):
-    def __init__(self, filename, image_class=nib.Nifti1Image):
-        self._data_file = tables.open_file(filename, mode='a')
+    def __init__(self, filename, image_class=nib.Nifti1Image, mode='a'):
+        self.filename = filename
+        self._data_file = tables.open_file(filename, mode=mode)
         try:
             self._data_group = self._data_file.root.data
             self._parameters_group = self._data_file.root.parameters
