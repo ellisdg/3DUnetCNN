@@ -68,6 +68,74 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
     return features, targets
 
 
+class DataGenerator(object):
+    def __init__(self, data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
+                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None, use_multiprocessing=False,
+                 sleep_time=1):
+        self._use_multiprocessing = use_multiprocessing
+        self.batch_size = batch_size
+        self.subject_ids = subject_ids
+        self.sleep_time = sleep_time
+        self.data_file = data_file
+        if self._use_multiprocessing:
+            self.manager = Manager()
+            self.features_bucket = self.manager.list()
+            self.targets_bucket = self.manager.list()
+            # start filling the buckets
+            self.process = multiprocessing.Process(target=data_loader,
+                                                   kwargs=dict(data_file=data_file.filename,
+                                                               subject_ids=self.subject_ids,
+                                                               features_bucket=self.features_bucket,
+                                                               targets_bucket=self.targets_bucket,
+                                                               batch_size=batch_size, sleep_time=sleep_time,
+                                                               skip_blank=skip_blank, use_preloaded=use_preloaded,
+                                                               normalize=normalize, permute=permute,
+                                                               translation_deviation=translation_deviation,
+                                                               scale_deviation=scale_deviation))
+            self.start_filling_buckets()
+            self.__iter__ = self.multiprocessing_iter
+        else:
+            self.process = None
+            self.__iter__ = self.single_process_iter
+
+    def multiprocessing_iter(self):
+        while True:
+            x = list()
+            y = list()
+            while len(x) < self.batch_size:
+                if len(self.features_bucket) > 0:
+                    x.append(self.features_bucket.pop(0))
+                    y.append(self.targets_bucket.pop(0))
+                else:
+                    sleep(self.sleep_time)
+            yield np.asarray(x), np.asarray(y)
+
+    def single_process_iter(self):
+        while True:
+            x = list()
+            y = list()
+            _subject_ids = np.copy(self.subject_ids).tolist()
+            shuffle(_subject_ids)
+            while len(_subject_ids) > 0:
+                subject_id = _subject_ids.pop()
+                features, targets = load_data(data_file=self.data_file, subject_id=subject_id,
+                                              use_preloaded=self.use_preloaded,
+                                              translation_deviation=self.translation_deviation,
+                                              scale_deviation=self.scale_deviation, permute=self.permute,
+                                              normalize=self.normalize)
+                if not (self.skip_blank and np.all(np.equal(targets, 0))):
+                    x.append(features)
+                    y.append(targets)
+                if len(x) >= self.batch_size:
+                    yield np.asarray(x), np.asarray(y)
+                    x = list()
+                    y = list()
+
+    def start_filling_buckets(self):
+        if self.process:
+            self.process.start()
+
+
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
                                   permute=False, normalize=True, use_preloaded=False, scale_deviation=None,
                                   use_multiprocessing=False, sleep_time=1):
