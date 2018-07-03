@@ -170,13 +170,12 @@ def main(config):
 
         if not skip:
             # run training
-            validation_batch_size = config["generator_parameters"]["validation_batch_size"]
             train_model(model=model,
                         model_file=model_file,
                         training_generator=train_generator,
                         validation_generator=validation_generator,
-                        steps_per_epoch=len(data_file.get_training_groups())/batch_size,
-                        validation_steps=len(data_file.get_validation_groups())/validation_batch_size,
+                        steps_per_epoch=len(train_generator),
+                        validation_steps=len(validation_generator),
                         **config["training_parameters"])
 
         data_file.close()
