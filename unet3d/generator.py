@@ -5,6 +5,7 @@ import multiprocessing
 from multiprocessing import Manager
 from random import shuffle
 import itertools
+from keras.utils import Sequence
 
 import numpy as np
 
@@ -68,10 +69,10 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
     return features, targets
 
 
-class DataGenerator(object):
+class DataGenerator(Sequence):
     def __init__(self, data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
                  permute=False, normalize=True, use_preloaded=False, scale_deviation=None, use_multiprocessing=False,
-                 sleep_time=1):
+                 sleep_time=0.1):
         self._use_multiprocessing = use_multiprocessing
         self.batch_size = batch_size
         self.subject_ids = subject_ids
@@ -100,21 +101,15 @@ class DataGenerator(object):
                                                                scale_deviation=scale_deviation))
             self.start_filling_buckets()
             self.__iter__ = self.multiprocessing_iter
+            self.__getitem__ = self.get_batch_from_bucket
         else:
             self.process = None
             self.__iter__ = self.single_process_iter
+            self.__getitem__ = self.get_batch_from_file
 
     def multiprocessing_iter(self):
         while True:
-            x = list()
-            y = list()
-            while len(x) < self.batch_size:
-                if len(self.features_bucket) > 0:
-                    x.append(self.features_bucket.pop(0))
-                    y.append(self.targets_bucket.pop(0))
-                else:
-                    sleep(self.sleep_time)
-            yield np.asarray(x), np.asarray(y)
+            yield self.get_batch_from_bucket()
 
     def single_process_iter(self):
         while True:
@@ -151,6 +146,32 @@ class DataGenerator(object):
     def __len__(self):
         """Returns the number of batches per epoch"""
         return int(np.floor(len(self.subject_ids) / self.batch_size))
+
+    def get_batch_from_bucket(self, index=None):
+        x = list()
+        y = list()
+        while len(x) < self.batch_size:
+            if len(self.features_bucket) > 0:
+                x.append(self.features_bucket.pop(0))
+                y.append(self.targets_bucket.pop(0))
+            else:
+                sleep(self.sleep_time)
+        return np.asarray(x), np.asarray(y)
+
+    def get_batch_from_file(self, index=None):
+        x = list()
+        y = list()
+        for i in index:
+            subject_id = self.subject_ids[i]
+            features, targets = load_data(data_file=self.data_file, subject_id=subject_id,
+                                          use_preloaded=self.use_preloaded,
+                                          translation_deviation=self.translation_deviation,
+                                          scale_deviation=self.scale_deviation, permute=self.permute,
+                                          normalize=self.normalize)
+        if not (self.skip_blank and np.all(np.equal(targets, 0))):
+            x.append(features)
+            y.append(targets)
+        return np.asarray(x), np.asarray(y)
 
 
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
