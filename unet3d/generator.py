@@ -2,14 +2,14 @@ import os
 import copy
 from time import sleep
 import multiprocessing
-from multiprocessing import Manager
+from multiprocessing import Manager, Queue, Process
 from random import shuffle
 import itertools
 from keras.utils import Sequence
 
 import numpy as np
 
-from .utils import pickle_dump, pickle_load
+from .utils.utils import pickle_dump, pickle_load, is_iterable
 from .augment import scale_affine
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .augment import augment_data, random_permutation_x_y, translate_affine, random_scale_factor
@@ -20,31 +20,42 @@ from .data import DataFile
 def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
                                   skip_blank=False, permute=False, normalize=True, preload_validation_data=False,
                                   scale_deviation=None, use_multiprocessing=False):
-    training_generator = DataGenerator(data_file, data_file.get_training_groups(), batch_size=batch_size,
-                                       skip_blank=skip_blank, permute=permute,
-                                       translation_deviation=translation_deviation, normalize=normalize,
-                                       scale_deviation=scale_deviation, use_multiprocessing=use_multiprocessing)
-    validation_generator = DataGenerator(data_file, data_file.get_validation_groups(), batch_size=validation_batch_size,
-                                         normalize=normalize, use_preloaded=preload_validation_data,
-                                         use_multiprocessing=False)
+    if use_multiprocessing:
+        generator_class = MultiProcessingDataGenerator
+    else:
+        generator_class = DataGenerator
+    training_generator = generator_class(data_file=data_file, subject_ids=data_file.get_training_groups(),
+                                         batch_size=batch_size, skip_blank=skip_blank, permute=permute,
+                                         translation_deviation=translation_deviation, normalize=normalize,
+                                         scale_deviation=scale_deviation)
+    validation_generator = data_generator_from_data_file(data_file=data_file, subject_ids=data_file.get_validation_groups(),
+                                         batch_size=validation_batch_size, normalize=normalize,
+                                         use_preloaded=preload_validation_data)
     return training_generator, validation_generator
 
 
-def data_loader(data_filename, subject_ids, features_bucket, targets_bucket, batch_size, skip_blank, sleep_time=1,
-                buffer_factor=6, **load_data_kwargs):
-    data_file = DataFile(data_filename, mode='r')
+def data_loader(data_filename, subject_ids, queue, skip_blank, sleep_time=0.1, **load_data_kwargs):
     while True:
         _subject_ids = np.copy(subject_ids).tolist()
         shuffle(_subject_ids)
+        processes = list()
         while len(_subject_ids) > 0:
-            if len(features_bucket) < (batch_size * buffer_factor):
+            if not queue.full():
                 subject_id = _subject_ids.pop()
-                features, targets = load_data(data_file=data_file, subject_id=subject_id, **load_data_kwargs)
-                if not (skip_blank and np.all(np.equal(targets, 0))):
-                    features_bucket.append(np.asarray(features))
-                    targets_bucket.append(np.asarray(targets))
+                process = Process(target=load_data_worker, kwargs=dict(queue=queue, data_filename=data_filename,
+                                                                       skip_blank=skip_blank, subject_id=subject_id,
+                                                                       **load_data_kwargs))
+                process.start()
+                processes.append(process)
             else:
                 sleep(sleep_time)
+
+
+def load_data_worker(queue, data_filename, skip_blank=False, **kwargs):
+    data_file = DataFile(data_filename, mode='r')
+    features, targets = load_data(data_file=data_file, **kwargs)
+    if not (skip_blank and np.all(np.equal(targets, 0))):
+        queue.put(np.asarray(features), np.asarray(targets))
 
 
 def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=None, scale_deviation=None,
@@ -71,12 +82,9 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
 
 class DataGenerator(Sequence):
     def __init__(self, data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
-                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None, use_multiprocessing=False,
-                 sleep_time=0.1):
-        self._use_multiprocessing = use_multiprocessing
+                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None):
         self.batch_size = batch_size
         self.subject_ids = subject_ids
-        self.sleep_time = sleep_time
         self.data_file = data_file
         self.translation_deviation = translation_deviation
         self.skip_blank = skip_blank
@@ -84,34 +92,8 @@ class DataGenerator(Sequence):
         self.normalize = normalize
         self.use_preloaded = use_preloaded
         self.scale_deviation = scale_deviation
-        if self._use_multiprocessing:
-            self.manager = Manager()
-            self.features_bucket = self.manager.list()
-            self.targets_bucket = self.manager.list()
-            # start filling the buckets
-            self.process = multiprocessing.Process(target=data_loader,
-                                                   kwargs=dict(data_filename=data_file.filename,
-                                                               subject_ids=self.subject_ids,
-                                                               features_bucket=self.features_bucket,
-                                                               targets_bucket=self.targets_bucket,
-                                                               batch_size=batch_size, sleep_time=sleep_time,
-                                                               skip_blank=skip_blank, use_preloaded=use_preloaded,
-                                                               normalize=normalize, permute=permute,
-                                                               translation_deviation=translation_deviation,
-                                                               scale_deviation=scale_deviation))
-            self.start_filling_buckets()
-            self.__iter__ = self.multiprocessing_iter
-            self.__getitem__ = self.get_batch_from_bucket
-        else:
-            self.process = None
-            self.__iter__ = self.single_process_iter
-            self.__getitem__ = self.get_batch_from_file
 
-    def multiprocessing_iter(self):
-        while True:
-            yield self.get_batch_from_bucket()
-
-    def single_process_iter(self):
+    def __iter__(self):
         while True:
             x = list()
             y = list()
@@ -132,46 +114,78 @@ class DataGenerator(Sequence):
                     x = list()
                     y = list()
 
-    def start_filling_buckets(self):
-        if self.process:
-            self.process.start()
-
-    def stop_filling_buckets(self):
-        if self.process and self.process.is_alive():
-            self.process.terminate()
-
-    def __del__(self):
-        self.stop_filling_buckets()
-
     def __len__(self):
         """Returns the number of batches per epoch"""
         return int(np.floor(len(self.subject_ids) / self.batch_size))
 
-    def get_batch_from_bucket(self, index=None):
-        x = list()
-        y = list()
-        while len(x) < self.batch_size:
-            if len(self.features_bucket) > 0:
-                x.append(self.features_bucket.pop(0))
-                y.append(self.targets_bucket.pop(0))
-            else:
-                sleep(self.sleep_time)
-        return np.asarray(x), np.asarray(y)
-
     def get_batch_from_file(self, index=None):
         x = list()
         y = list()
-        for i in index:
-            subject_id = self.subject_ids[i]
+        if is_iterable(index):
+            indices = index
+        else:
+            indices = [index]
+        for index in indices:
+            subject_id = self.subject_ids[index]
             features, targets = load_data(data_file=self.data_file, subject_id=subject_id,
                                           use_preloaded=self.use_preloaded,
                                           translation_deviation=self.translation_deviation,
                                           scale_deviation=self.scale_deviation, permute=self.permute,
                                           normalize=self.normalize)
-        if not (self.skip_blank and np.all(np.equal(targets, 0))):
-            x.append(features)
-            y.append(targets)
+            if not (self.skip_blank and np.all(np.equal(targets, 0))):
+                x.append(features)
+                y.append(targets)
         return np.asarray(x), np.asarray(y)
+
+    def __getitem__(self, index):
+        return self.get_batch_from_file(index)
+
+
+class MultiProcessingDataGenerator(DataGenerator):
+    def __init__(self, sleep_time=0.1, queue_size=12, **kwargs):
+        super(MultiProcessingDataGenerator, self).__init__(**kwargs)
+        self.sleep_time = sleep_time
+        self.queue = Queue(maxsize=queue_size)
+        self.loader_process = None
+        self.start_filling_queue()
+
+    def __getitem__(self, index):
+        return self.get_batch_from_queue()
+
+    def __iter__(self):
+        while True:
+            yield self.get_batch_from_queue()
+
+    def start_filling_queue(self):
+        self.loader_process = multiprocessing.Process(target=data_loader,
+                                                      kwargs=dict(data_filename=self.data_file.filename,
+                                                                  subject_ids=self.subject_ids,
+                                                                  queue=self.queue,
+                                                                  sleep_time=self.sleep_time,
+                                                                  skip_blank=self.skip_blank,
+                                                                  use_preloaded=self.use_preloaded,
+                                                                  normalize=self.normalize,
+                                                                  permute=self.permute,
+                                                                  translation_deviation=self.translation_deviation,
+                                                                  scale_deviation=self.scale_deviation))
+        if self.loader_process:
+            self.loader_process.start()
+
+    def stop_filling_queue(self):
+        if self.loader_process and self.loader_process.is_alive():
+            self.loader_process.terminate()
+
+    def get_batch_from_queue(self):
+        x = list()
+        y = list()
+        while len(x) < self.batch_size:
+            _x, _y = self.queue.get(timeout=200)
+            x.append(_x)
+            y.append(_y)
+        return np.asarray(x), np.asarray(y)
+
+    def __del__(self):
+        self.stop_filling_queue()
 
 
 def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,

@@ -151,11 +151,11 @@ def main(config):
                                                                                          config["batch_sizes"])):
         skip = config["skip_levels"] and level in config["skip_levels"]
         # set targets
-        print("Setting the targets to labels {}".format(labels))
-        set_targets(data_file, labels)
-        print("Setting regions of interest")
-        set_roi(data_file, level, image_shape, crop=config['crop'],
-                    preload_validation_data=config['generator_parameters']['preload_validation_data'])
+        # print("Setting the targets to labels {}".format(labels))
+        # set_targets(data_file, labels)
+        # print("Setting regions of interest")
+        # set_roi(data_file, level, image_shape, crop=config['crop'],
+        #         preload_validation_data=config['generator_parameters']['preload_validation_data'])
         # get training and testing generators
         data_file.close()
         data_file = DataFile(data_file.filename, mode='r')
