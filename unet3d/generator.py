@@ -59,7 +59,7 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
 
 class DataGenerator(Sequence):
     def __init__(self, data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
-                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None):
+                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None, noise_deviation=None):
         self.batch_size = batch_size
         self.subject_ids = copy.copy(subject_ids)
         self.data_file = data_file
@@ -69,6 +69,7 @@ class DataGenerator(Sequence):
         self.normalize = normalize
         self.use_preloaded = use_preloaded
         self.scale_deviation = scale_deviation
+        self.noise_deviation = noise_deviation
 
     def __len__(self):
         """Returns the number of batches per epoch"""
@@ -87,7 +88,7 @@ class DataGenerator(Sequence):
                                           use_preloaded=self.use_preloaded,
                                           translation_deviation=self.translation_deviation,
                                           scale_deviation=self.scale_deviation, permute=self.permute,
-                                          normalize=self.normalize)
+                                          normalize=self.normalize, noise_deviation=self.noise_deviation)
             if not (self.skip_blank and np.all(np.equal(targets, 0))):
                 x.append(features)
                 y.append(targets)
