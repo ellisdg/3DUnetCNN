@@ -87,7 +87,7 @@ class DataFile(object):
                 move_4d_channels_first(roi_targets_image.get_data()))
 
     def get_supplemental_data(self, name, key):
-        return self.__getitem__(name)._v_children[key]
+        return self._data_file.get_node(self.__getitem__(name), key)
 
     def get_supplemental_image(self, name, key):
         data = self.get_supplemental_data(name, key)
@@ -135,7 +135,7 @@ class DataFile(object):
         self._data_file.close()
 
     def __getitem__(self, key, group="data"):
-        return self._data_file.root._v_children[group]._v_children[key]
+        return self._data_file.get_node(self._data_file.get_node(self._data_file.root, group), key)
 
     def __del__(self):
         if self._data_file.isopen:
