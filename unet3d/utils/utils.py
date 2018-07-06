@@ -90,7 +90,7 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
 
 
 def resample_image(source_image, target_image, interpolation="linear", pad_mode='edge', pad=False):
-    if pad or np.any(np.greater(target_image.shape[-3:], source_image.shape[-3:])):
+    if pad:
         source_image = pad_image(source_image, mode=pad_mode)
     return resample_to_img(source_image, target_image, interpolation=interpolation)
 
@@ -135,7 +135,7 @@ def set_affine_spacing(affine, spacing):
 
 def resample(image, target_affine, target_shape, interpolation='linear', pad_mode='edge', pad=False):
     target_data = np.zeros(target_shape)
-    target_image = new_img_like(image, target_data, affine=target_affine)
+    target_image = image.__class__(target_data, affine=target_affine)
     return resample_image(image, target_image, interpolation=interpolation, pad_mode=pad_mode, pad=pad)
 
 
