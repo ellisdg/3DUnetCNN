@@ -86,7 +86,8 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
         np.fill_diagonal(new_affine, new_spacing.tolist() + [1])
         new_affine[:3, 3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
         new_img = new_img_like(image, new_data, affine=new_affine)
-        return resample_image(image, new_img, interpolation=interpolation, pad_mode=pad_mode)
+        return resample_image(image, new_img, interpolation=interpolation, pad_mode=pad_mode,
+                              pad=np.any(np.greater(new_shape, image.shape)))
 
 
 def resample_image(source_image, target_image, interpolation="linear", pad_mode='edge', pad=False):
