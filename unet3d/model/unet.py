@@ -16,7 +16,7 @@ except ImportError:
 
 def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning_rate=0.00001, deconvolution=False,
                   depth=4, n_base_filters=32, include_label_wise_dice_coefficients=False, metrics=dice_coefficient,
-                  batch_normalization=False, activation_name="sigmoid"):
+                  normalization=None, activation_name="sigmoid"):
     """
     Builds the 3D UNet Keras model.f
     :param metrics: List metrics to be calculated during model training (default is dice coefficient).
@@ -43,9 +43,9 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     # add levels with max pooling
     for layer_depth in range(depth):
         layer1 = create_convolution_block(input_layer=current_layer, n_filters=n_base_filters*(2**layer_depth),
-                                          batch_normalization=batch_normalization)
+                                          normalization=normalization)
         layer2 = create_convolution_block(input_layer=layer1, n_filters=n_base_filters*(2**layer_depth)*2,
-                                          batch_normalization=batch_normalization)
+                                          normalization=normalization)
         if layer_depth < depth - 1:
             current_layer = MaxPooling3D(pool_size=pool_size)(layer2)
             levels.append([layer1, layer2, current_layer])
@@ -59,10 +59,10 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
                                             n_filters=current_layer._keras_shape[1])(current_layer)
         concat = concatenate([up_convolution, levels[layer_depth][1]], axis=1)
         current_layer = create_convolution_block(n_filters=levels[layer_depth][1]._keras_shape[1],
-                                                 input_layer=concat, batch_normalization=batch_normalization)
+                                                 input_layer=concat, normalization=normalization)
         current_layer = create_convolution_block(n_filters=levels[layer_depth][1]._keras_shape[1],
                                                  input_layer=current_layer,
-                                                 batch_normalization=batch_normalization)
+                                                 normalization=normalization)
 
     final_convolution = Conv3D(n_labels, (1, 1, 1))(current_layer)
     act = Activation(activation_name)(final_convolution)
@@ -82,23 +82,22 @@ def unet_model_3d(input_shape, pool_size=(2, 2, 2), n_labels=1, initial_learning
     return model
 
 
-def create_convolution_block(input_layer, n_filters, batch_normalization=False, kernel=(3, 3, 3), activation=None,
-                             padding='same', strides=(1, 1, 1), instance_normalization=False):
+def create_convolution_block(input_layer, n_filters, kernel=(3, 3, 3), activation=None,
+                             padding='same', strides=(1, 1, 1), normalization='instance'):
     """
 
     :param strides:
     :param input_layer:
     :param n_filters:
-    :param batch_normalization:
     :param kernel:
     :param activation: Keras activation layer to use. (default is 'relu')
     :param padding:
     :return:
     """
     layer = Conv3D(n_filters, kernel, padding=padding, strides=strides)(input_layer)
-    if batch_normalization:
+    if normalization is 'batch':
         layer = BatchNormalization(axis=1)(layer)
-    elif instance_normalization:
+    elif normalization is 'instance':
         try:
             from keras_contrib.layers.normalization import InstanceNormalization
         except ImportError:
