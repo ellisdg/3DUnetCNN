@@ -1,6 +1,6 @@
 from functools import partial
 
-from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation, SpatialDropout3D
+from keras.layers import Input, LeakyReLU, Add, UpSampling3D, Activation, SpatialDropout3D, Conv3D
 from keras.engine import Model
 from keras.optimizers import Adam
 
@@ -61,7 +61,7 @@ def isensee2017_model(input_shape=(4, 128, 128, 128), n_base_filters=16, depth=5
         localization_output = create_localization_module(concatenation_layer, level_filters[level_number])
         current_layer = localization_output
         if level_number < n_segmentation_levels:
-            segmentation_layers.insert(0, create_convolution_block(current_layer, n_filters=n_labels, kernel=(1, 1, 1)))
+            segmentation_layers.insert(0, Conv3D(n_labels, (1, 1, 1))(current_layer))
 
     output_layer = None
     for level_number in reversed(range(n_segmentation_levels)):
