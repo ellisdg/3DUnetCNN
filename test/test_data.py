@@ -1,7 +1,7 @@
 from unittest import TestCase
 import os
 
-from unet3d.data import DataFile, move_image_channels
+from unet3d.data import DataFile, move_image_channels, combine_images
 from unet3d.utils.utils import resize_affine
 import numpy as np
 import nibabel as nib
@@ -183,8 +183,6 @@ class TestDataFile(TestCase):
         image1 = nib.Nifti1Image(data1, affine)
         image2 = nib.Nifti1Image(data2, affine)
 
-        from unet3d.data import combine_images
-
         image = combine_images([image1, image2])
         np.testing.assert_array_equal(image.shape, (4, 4, 4, 4))
         np.testing.assert_array_equal(image.affine, affine)
@@ -220,3 +218,32 @@ class TestDataFile(TestCase):
         self.data_file = DataFile(self.filename)
         features, targets = self.data_file.get_data(subject_id)
         np.testing.assert_array_equal(features, data)
+
+    def test_additional_features(self):
+        shape = (2, 2, 2)
+        feature_data = np.zeros(shape)[np.newaxis]
+        extra_feature_1 = np.ones(shape)
+        extra_feature_2 = np.ones(shape) * 2
+        subject_id = 'extra'
+        self.data_file.add_data(feature_data, feature_data, subject_id)
+        extras = {'cool_feature': extra_feature_1,
+                  'dumb_feature': extra_feature_2}
+        self.data_file.add_supplemental_data(subject_id, **extras)
+        cool_feature = self.data_file.get_supplemental_data(subject_id, 'cool_feature')
+        np.testing.assert_array_equal(extra_feature_1, cool_feature)
+
+        features, _ = self.data_file.get_roi_data(subject_id)
+        np.testing.assert_array_equal(feature_data, features)
+
+        features, _ = self.data_file.get_roi_data(subject_id,
+                                                  supplemental_feature_names=['cool_feature', 'dumb_feature'])
+        target_features = np.asarray([feature_data[0], extra_feature_1, extra_feature_2])
+        np.testing.assert_array_equal(target_features, features)
+
+        affine = np.diag(np.ones(4))
+        self.data_file.add_supplemental_data(subject_id, affine=affine)
+
+        features, _ = self.data_file.get_roi_data(subject_id,
+                                                  supplemental_feature_names=['cool_feature', 'dumb_feature'])
+        target_features = np.asarray([feature_data[0], extra_feature_1, extra_feature_2])
+        np.testing.assert_array_equal(target_features, features)

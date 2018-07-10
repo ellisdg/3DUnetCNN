@@ -52,11 +52,18 @@ class DataFile(object):
             except NodeError:
                 self.overwrite_array(name, kwargs[key], key)
 
-    def get_data(self, name):
-        return self[name].features, self[name].targets
+    def get_data(self, name, supplemental_feature_names=None, concatenation_axis=0):
+        features, targets = self[name].features, self[name].targets
+        if supplemental_feature_names:
+            for key in supplemental_feature_names:
+                supplemental_data = self.get_supplemental_data(name, key)
+                if len(supplemental_data.shape) < len(features.shape):
+                    supplemental_data = np.expand_dims(supplemental_data, axis=concatenation_axis)
+                features = np.concatenate((features, supplemental_data), axis=concatenation_axis)
+        return features, targets
 
-    def get_nibabel_images(self, name, channels_last=False):
-        features, targets = self.get_data(name)
+    def get_nibabel_images(self, name, channels_last=False, supplemental_feature_names=None):
+        features, targets = self.get_data(name, supplemental_feature_names=supplemental_feature_names)
         if channels_last:
             features = move_4d_channels_last(features)
             targets = move_4d_channels_last(targets)
@@ -73,12 +80,22 @@ class DataFile(object):
         return self[name].roi_shape
 
     def get_roi_data(self, name, features_interpolation='linear', targets_interpolation='nearest', roi_affine=None,
-                     roi_shape=None):
-        features_image, targets_image = self.get_nibabel_images(name, channels_last=True)
+                     roi_shape=None, supplemental_feature_names=None):
+        try:
+            features_image, targets_image = self.get_nibabel_images(
+                name, channels_last=True, supplemental_feature_names=supplemental_feature_names)
+        except NoSuchNodeError:
+            return self.get_data(name, supplemental_feature_names=supplemental_feature_names)
         if roi_affine is None:
-            roi_affine = self.get_roi_affine(name)
+            try:
+                roi_affine = self.get_roi_affine(name)
+            except NoSuchNodeError:
+                roi_affine = features_image.affine
         if roi_shape is None:
-            roi_shape = self.get_roi_shape(name)
+            try:
+                roi_shape = self.get_roi_shape(name)
+            except NoSuchNodeError:
+                roi_shape = features_image.shape[:3]
         roi_features_image = resample(image=features_image, target_affine=roi_affine, target_shape=roi_shape,
                                       interpolation=features_interpolation, pad=False)
         roi_targets_image = resample(image=targets_image, target_affine=roi_affine, target_shape=roi_shape,
