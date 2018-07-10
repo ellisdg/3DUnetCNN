@@ -8,8 +8,8 @@ from unet3d.normalize import (compute_region_of_interest_affine, compute_region_
                               normalize_data)
 from unet3d.generator import get_generators_from_data_file, split_list
 from unet3d.model import isensee2017_model
-from unet3d.training import load_old_model, train_model
-from unet3d.utils.utils import update_progress
+from unet3d.training import load_old_model, train_model, set_model_learning_rate
+from unet3d.utils.utils import update_progress, resize_affine
 from unet3d.utils.nilearn_custom_utils.nilearn_utils import reorder_affine
 from nilearn.image import resample_to_img
 
@@ -21,17 +21,22 @@ def load_json(filename):
         return json.load(opened_file)
 
 
-def get_model(model_file, overwrite=False, **kwargs):
+def get_model(model_file, overwrite=False, n_labels=1, batch_size=1, **kwargs):
     if not os.path.exists(model_file) or overwrite:
         # set the input shape to be the number of channels plus the image shape
         input_shape = [kwargs["n_channels"], *kwargs["image_shape"]]
+        if batch_size > 1:
+            normalization = 'batch'
+        else:
+            normalization = 'instance'
         # instantiate new model
-        model = isensee2017_model(input_shape=input_shape, n_labels=1,
+        model = isensee2017_model(input_shape=input_shape, n_labels=n_labels,
                                   initial_learning_rate=kwargs["initial_learning_rate"],
                                   n_base_filters=kwargs["n_filters"],
-                                  instance_normalization=True)
+                                  normalization=normalization)
     else:
         model = load_old_model(model_file)
+        set_model_learning_rate(model, kwargs['initial_learning_rate'])
     return model
 
 
@@ -67,7 +72,8 @@ def set_roi(data_file, level, image_shape, crop=True, preload_validation_data=Fa
                 if np.any(mask_image.get_data() > 0):
                     roi_affine = compute_region_of_interest_affine_from_foreground(mask_image, image_shape)
                 else:
-                    continue
+                    roi_affine, roi_shape = data_file.get_roi(subject_id)
+                    roi_affine = resize_affine(affine=roi_affine, shape=roi_shape, target_shape=image_shape)
         else:
             roi_affine = data_file.get_roi_affine(subject_id)
         roi_affine = reorder_affine(roi_affine, image_shape)
@@ -157,12 +163,17 @@ def main(config):
         set_roi(data_file, level, image_shape, crop=config['crop'],
                 preload_validation_data=config['generator_parameters']['preload_validation_data'])
         # get training and testing generators
+        training_ids = data_file.get_training_groups()
+        validation_ids = data_file.get_validation_groups()
         data_file.close()
-        data_file = DataFile(data_file.filename, mode='r')
-        train_generator, validation_generator = get_generators_from_data_file(data_file, batch_size=batch_size,
+        # data_file = DataFile(data_file.filename, mode='r')
+        train_generator, validation_generator = get_generators_from_data_file(data_file.filename,
+                                                                              training_ids=training_ids,
+                                                                              validation_ids=validation_ids,
+                                                                              batch_size=batch_size,
                                                                               **config["generator_parameters"])
         print("Creating model")
-        model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape,
+        model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape, batch_size=batch_size,
                           n_channels=config["n_channels"], n_filters=n_filters,
                           initial_learning_rate=config["training_parameters"]["initial_learning_rate"])
         if config['test_generators']:
@@ -178,12 +189,31 @@ def main(config):
                         validation_steps=len(validation_generator),
                         **config["training_parameters"])
 
-        data_file.close()
+        # data_file.close()
         data_file = DataFile(data_file.filename, mode='a')
         # make predictions on validation data
         print("Making predictions on validation data")
         predict_validation_data(model, data_file, 'level{}_prediction'.format(level),
                                 normalize_features=config['generator_parameters']['normalize'])
+
+    train_final_model(model_file='final_model.h5',
+                      image_shape=config['image_shape'][0],
+                      n_channels=config['n_channels'] + len(config['model_file']),
+                      n_filters=config['n_base_filters'][0],
+                      initial_learning_rate=config['training_parameters']['initial_learning_rate'])
+
+
+def train_final_model(model_file='final_model.h5', image_shape=(128, 128, 128), n_channels=7, n_filters=16,
+                      initial_learning_rate=1e-4):
+
+    final_model = get_model(model_file,
+                            image_shape=image_shape,
+                            n_channels=n_channels,
+                            n_filters=n_filters,
+                            initial_learning_rate=initial_learning_rate)
+
+
+
 
 
 def test_generators(train_generator, validation_generator):
