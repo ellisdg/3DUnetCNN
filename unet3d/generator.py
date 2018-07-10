@@ -11,13 +11,14 @@ from .augment import (augment_data, random_permutation_x_y, translate_affine, ra
 from .normalize import normalize_data
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
 from .utils.utils import pickle_dump, pickle_load, is_iterable
+from .data import DataFile
 
 
-def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size=1, translation_deviation=None,
-                                  skip_blank=False, permute=False, normalize=True, preload_validation_data=False,
-                                  scale_deviation=None, noise_deviation=None):
-    training_generator = DataGenerator(data_file=data_file,
-                                       subject_ids=data_file.get_training_groups(),
+def get_generators_from_data_file(data_filename, training_ids, validation_ids, batch_size=1, validation_batch_size=1,
+                                  translation_deviation=None, skip_blank=False, permute=False, normalize=True,
+                                  preload_validation_data=False, scale_deviation=None, noise_deviation=None):
+    training_generator = DataGenerator(data_filename=data_filename,
+                                       subject_ids=training_ids,
                                        batch_size=batch_size,
                                        skip_blank=skip_blank,
                                        permute=permute,
@@ -25,8 +26,8 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
                                        normalize=normalize,
                                        scale_deviation=scale_deviation,
                                        noise_deviation=noise_deviation)
-    validation_generator = DataGenerator(data_file=data_file,
-                                         subject_ids=data_file.get_validation_groups(),
+    validation_generator = DataGenerator(data_filename=data_filename,
+                                         subject_ids=validation_ids,
                                          batch_size=validation_batch_size,
                                          normalize=normalize,
                                          use_preloaded=preload_validation_data)
@@ -36,8 +37,8 @@ def get_generators_from_data_file(data_file, batch_size=1, validation_batch_size
 def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=None, scale_deviation=None,
               permute=False, normalize=True, noise_deviation=None):
     if use_preloaded:
-        features = data_file.get_supplemental_data(subject_id, "roi_features")
-        targets = data_file.get_supplemental_data(subject_id, "roi_targets")
+        features = np.asarray(data_file.get_supplemental_data(subject_id, "roi_features"))
+        targets = np.asarray(data_file.get_supplemental_data(subject_id, "roi_targets"))
     else:
         roi_affine, roi_shape = data_file.get_roi(subject_id)
         if translation_deviation:
@@ -58,11 +59,12 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
 
 
 class DataGenerator(Sequence):
-    def __init__(self, data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
+    def __init__(self, data_filename, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
                  permute=False, normalize=True, use_preloaded=False, scale_deviation=None, noise_deviation=None):
         self.batch_size = batch_size
         self.subject_ids = copy.copy(subject_ids)
-        self.data_file = data_file
+        self.data_filename = data_filename
+        self.data_file = DataFile(self.data_filename)
         self.translation_deviation = translation_deviation
         self.skip_blank = skip_blank
         self.permute = permute
