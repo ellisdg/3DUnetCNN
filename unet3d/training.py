@@ -96,3 +96,7 @@ def train_model(model, model_file, training_generator, validation_generator, ste
                                                 early_stopping_patience=early_stopping_patience,
                                                 save_best_only=save_best_only,
                                                 tensorboard_path=tensorboard_path))
+
+
+def set_model_learning_rate(model, learning_rate):
+    backend.set_value(model.optimizer.lr, learning_rate)
