@@ -113,7 +113,7 @@ def calculate_origin_offset(new_spacing, old_spacing):
 
 def resize_affine(affine, shape, target_shape, copy=True):
     if copy:
-        affine = affine.copy()
+        affine = np.copy(affine)
     scale = np.divide(shape, target_shape)
     spacing = get_spacing_from_affine(affine)
     target_spacing = np.multiply(spacing, scale)
