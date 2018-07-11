@@ -6,7 +6,7 @@ import numpy as np
 from unet3d.data import DataFile, combine_images, move_image_channels
 from unet3d.normalize import (compute_region_of_interest_affine, compute_region_of_interest_affine_from_foreground,
                               normalize_data)
-from unet3d.generator import get_generators_from_data_file, split_list
+from unet3d.generator import get_generators_from_data_file, split_list, label_map_to_4d_labels
 from unet3d.model import isensee2017_model
 from unet3d.training import load_old_model, train_model, set_model_learning_rate
 from unet3d.utils.utils import update_progress, resize_affine
@@ -22,6 +22,7 @@ def load_json(filename):
 
 
 def get_model(model_file, overwrite=False, n_labels=1, batch_size=1, **kwargs):
+    print(os.path.abspath(model_file))
     if not os.path.exists(model_file) or overwrite:
         # set the input shape to be the number of channels plus the image shape
         input_shape = [kwargs["n_channels"], *kwargs["image_shape"]]
@@ -128,8 +129,8 @@ def set_targets(data_file, labels):
         update_progress(float(i + 1)/n_subjects)
 
 
-def predict_validation_data(model, data_file, name, normalize_features=True):
-    for subject_id in data_file.get_validation_groups():
+def make_predictions(model, data_file, name, normalize_features=True):
+    for subject_id in data_file.get_data_groups():
         features_image, targets_image = data_file.get_nibabel_images(subject_id)
         targets_image = move_image_channels(targets_image, axis0=0, axis1=-1)
         assert np.all(np.greater(targets_image.shape[:3], 1))
@@ -155,6 +156,7 @@ def main(config):
                                                                                          config["model_file"],
                                                                                          config["n_base_filters"],
                                                                                          config["batch_sizes"])):
+        continue
         skip = config["skip_levels"] and level in config["skip_levels"]
         # set targets
         print("Setting the targets to labels {}".format(labels))
@@ -166,13 +168,13 @@ def main(config):
         training_ids = data_file.get_training_groups()
         validation_ids = data_file.get_validation_groups()
         data_file.close()
-        # data_file = DataFile(data_file.filename, mode='r')
+
         train_generator, validation_generator = get_generators_from_data_file(data_file.filename,
                                                                               training_ids=training_ids,
                                                                               validation_ids=validation_ids,
                                                                               batch_size=batch_size,
                                                                               **config["generator_parameters"])
-        print("Creating model")
+        print("Creating/loading model")
         model = get_model(model_file, overwrite=config["overwrite"], image_shape=image_shape, batch_size=batch_size,
                           n_channels=config["n_channels"], n_filters=n_filters,
                           initial_learning_rate=config["training_parameters"]["initial_learning_rate"])
@@ -189,43 +191,79 @@ def main(config):
                         validation_steps=len(validation_generator),
                         **config["training_parameters"])
 
-        # data_file.close()
         data_file = DataFile(data_file.filename, mode='a')
         # make predictions on validation data
-        print("Making predictions on validation data")
-        predict_validation_data(model, data_file, 'level{}_prediction'.format(level),
-                                normalize_features=config['generator_parameters']['normalize'])
+        print("Making predictions")
+        make_predictions(model, data_file, 'level{}_prediction'.format(level),
+                         normalize_features=config['generator_parameters']['normalize'])
+
+    labels = [config['labels'][-1][0]]  # last item should only contain 1 label
+    for label_set in config['labels'][:2][::-1]:
+        labels.insert(0, set(label_set).difference(set(labels)).pop())
 
     train_final_model(model_file='final_model.h5',
+                      labels=labels,
+                      data_file=data_file,
+                      training_ids=data_file.get_training_groups(),
+                      validation_ids=data_file.get_validation_groups(),
                       image_shape=config['image_shape'][0],
                       n_channels=config['n_channels'] + len(config['model_file']),
                       n_filters=config['n_base_filters'][0],
-                      initial_learning_rate=config['training_parameters']['initial_learning_rate'])
+                      initial_learning_rate=config['training_parameters']['initial_learning_rate'],
+                      generator_parameters=config['generator_parameters'],
+                      training_parameters=config['training_parameters'])
 
 
-def train_final_model(model_file='final_model.h5', image_shape=(128, 128, 128), n_channels=7, n_filters=16,
-                      initial_learning_rate=1e-4):
+def train_final_model(data_file, training_ids, validation_ids, labels, model_file='final_model.h5',
+                      image_shape=(128, 128, 128), n_channels=7, n_filters=16, initial_learning_rate=1e-4, batch_size=1,
+                      generator_parameters=None, roi_level=0, n_levels=3, training_parameters=None):
+
+    # Set ROI and targets
+    for subject_id in data_file.get_data_groups():
+        roi_affine = np.asarray(data_file.get_supplemental_data(subject_id, 'level{}_affine'.format(roi_level)))
+        data_file.add_supplemental_data(subject_id, roi_affine=roi_affine)
+        data_file.add_supplemental_data(subject_id, roi_shape=image_shape)
+
+        label_map = np.asarray(data_file.get_supplemental_data(subject_id, 'label_map'))
+        target_data = label_map_to_4d_labels(label_map, labels=labels)
+        data_file.add_supplemental_data(name=subject_id, targets=target_data)
+
+    data_file.close()
+    supplemental_feature_names = ['level{}_prediction'.format(level) for level in range(n_levels)]
+
+    train_generator, validation_generator = get_generators_from_data_file(
+        data_file.filename, training_ids=training_ids, validation_ids=validation_ids, batch_size=batch_size,
+        supplemental_feature_names=supplemental_feature_names, **generator_parameters)
+
+    test_generators(train_generator, validation_generator)
 
     final_model = get_model(model_file,
+                            n_labels=len(labels),
                             image_shape=image_shape,
                             n_channels=n_channels,
                             n_filters=n_filters,
-                            initial_learning_rate=initial_learning_rate)
+                            initial_learning_rate=initial_learning_rate,
+                            batch_size=batch_size)
 
-
-
+    train_model(model=final_model,
+                model_file=model_file,
+                training_generator=train_generator,
+                validation_generator=validation_generator,
+                steps_per_epoch=len(train_generator),
+                validation_steps=len(validation_generator),
+                **training_parameters)
 
 
 def test_generators(train_generator, validation_generator):
     affine = np.diag(np.ones(4))
     for i in range(10):
-        features, targets = next(train_generator)
+        features, targets = train_generator.get_batch_from_file(i)
         features_image = nib.Nifti1Image(features[0][0], affine)
         features_image.to_filename("{}_features.nii".format(i))
         targets_image = nib.Nifti1Image(targets[0][0], affine)
         targets_image.to_filename("{}_targets.nii".format(i))
 
-        features, targets = next(validation_generator)
+        features, targets = validation_generator.get_batch_from_file(i)
         features_image = nib.Nifti1Image(features[0][0], affine)
         features_image.to_filename("{}_features_validation.nii".format(i))
         targets_image = nib.Nifti1Image(targets[0][0], affine)

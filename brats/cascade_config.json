@@ -4,7 +4,7 @@
   "n_base_filters": [16, 16, 16],
   "n_channels": 4,
   "batch_sizes": [1, 2, 2],
-  "skip_levels": [0, 1],
+  "skip_levels": [0, 1, 2],
   "generator_parameters": {
     "validation_batch_size": 1,
     "permute": true,

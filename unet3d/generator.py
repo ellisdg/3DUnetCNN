@@ -16,7 +16,8 @@ from .data import DataFile
 
 def get_generators_from_data_file(data_filename, training_ids, validation_ids, batch_size=1, validation_batch_size=1,
                                   translation_deviation=None, skip_blank=False, permute=False, normalize=True,
-                                  preload_validation_data=False, scale_deviation=None, noise_deviation=None):
+                                  preload_validation_data=False, scale_deviation=None, noise_deviation=None,
+                                  supplemental_feature_names=None):
     training_generator = DataGenerator(data_filename=data_filename,
                                        subject_ids=training_ids,
                                        batch_size=batch_size,
@@ -25,17 +26,19 @@ def get_generators_from_data_file(data_filename, training_ids, validation_ids, b
                                        translation_deviation=translation_deviation,
                                        normalize=normalize,
                                        scale_deviation=scale_deviation,
-                                       noise_deviation=noise_deviation)
+                                       noise_deviation=noise_deviation,
+                                       supplemental_feature_names=supplemental_feature_names)
     validation_generator = DataGenerator(data_filename=data_filename,
                                          subject_ids=validation_ids,
                                          batch_size=validation_batch_size,
                                          normalize=normalize,
-                                         use_preloaded=preload_validation_data)
+                                         use_preloaded=preload_validation_data,
+                                         supplemental_feature_names=supplemental_feature_names)
     return training_generator, validation_generator
 
 
 def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=None, scale_deviation=None,
-              permute=False, normalize=True, noise_deviation=None):
+              permute=False, normalize=True, noise_deviation=None, supplemental_feature_names=None):
     if use_preloaded:
         features = np.asarray(data_file.get_supplemental_data(subject_id, "roi_features"))
         targets = np.asarray(data_file.get_supplemental_data(subject_id, "roi_targets"))
@@ -48,7 +51,8 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
         if scale_deviation:
             roi_affine = scale_affine(affine=roi_affine, shape=roi_shape,
                                       scale=random_scale_factor(std=scale_deviation))
-        features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape)
+        features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape,
+                                                   supplemental_feature_names=supplemental_feature_names)
         if noise_deviation:
             features = add_noise(features, sigma_factor=noise_deviation)
         if permute:
@@ -60,7 +64,8 @@ def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=
 
 class DataGenerator(Sequence):
     def __init__(self, data_filename, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
-                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None, noise_deviation=None):
+                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None, noise_deviation=None,
+                 supplemental_feature_names=None):
         self.batch_size = batch_size
         self.subject_ids = copy.copy(subject_ids)
         self.data_filename = data_filename
@@ -72,6 +77,7 @@ class DataGenerator(Sequence):
         self.use_preloaded = use_preloaded
         self.scale_deviation = scale_deviation
         self.noise_deviation = noise_deviation
+        self.supplemental_feature_names = supplemental_feature_names
 
     def __len__(self):
         """Returns the number of batches per epoch"""
@@ -90,7 +96,8 @@ class DataGenerator(Sequence):
                                           use_preloaded=self.use_preloaded,
                                           translation_deviation=self.translation_deviation,
                                           scale_deviation=self.scale_deviation, permute=self.permute,
-                                          normalize=self.normalize, noise_deviation=self.noise_deviation)
+                                          normalize=self.normalize, noise_deviation=self.noise_deviation,
+                                          supplemental_feature_names=self.supplemental_feature_names)
             if not (self.skip_blank and np.all(np.equal(targets, 0))):
                 x.append(features)
                 y.append(targets)
@@ -396,4 +403,12 @@ def get_multi_class_labels(data, n_labels, labels=None):
             y[:, label_index][data[:, 0] == labels[label_index]] = 1
         else:
             y[:, label_index][data[:, 0] == (label_index + 1)] = 1
+    return y
+
+
+def label_map_to_4d_labels(data, labels):
+    new_shape = (len(labels),) + data.shape
+    y = np.zeros(new_shape, np.int8)
+    for index, label in enumerate(labels):
+        y[index][data == label] = 1
     return y
