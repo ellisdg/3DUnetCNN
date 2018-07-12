@@ -162,10 +162,18 @@ class DataFile(object):
 def combine_images(images, axis=0):
     base_image = images[0]
     data = list()
+    max_dim = len(base_image.shape)
     for image in images:
         np.testing.assert_array_equal(image.affine, base_image.affine)
-        data.append(image.get_data())
-    if len(base_image.shape) > 3:
+        image_data = image.get_data()
+        dim = len(image.shape)
+        if dim < max_dim:
+            image_data = np.expand_dims(image_data, axis=axis)
+        elif dim > max_dim:
+            max_dim = max(max_dim, dim)
+            data = [np.expand_dims(x, axis=axis) for x in data]
+        data.append(image_data)
+    if len(data[0].shape) > 3:
         array = np.concatenate(data, axis=axis)
     else:
         array = np.stack(data, axis=axis)

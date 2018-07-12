@@ -183,12 +183,23 @@ class TestDataFile(TestCase):
         image1 = nib.Nifti1Image(data1, affine)
         image2 = nib.Nifti1Image(data2, affine)
 
-        image = combine_images([image1, image2])
-        np.testing.assert_array_equal(image.shape, (4, 4, 4, 4))
-        np.testing.assert_array_equal(image.affine, affine)
+        image3 = combine_images([image1, image2])
+        np.testing.assert_array_equal(image3.shape, (4, 4, 4, 4))
+        np.testing.assert_array_equal(image3.affine, affine)
 
         image4 = combine_images([image1, image2], axis=-1)
         np.testing.assert_array_equal(image4.shape, (2, 4, 4, 8))
+
+        # combine 4d image with 3d image
+        image5 = nib.Nifti1Image(np.ones(shape1[1:]), affine)
+        image6 = combine_images([image1, image5], axis=0)
+        np.testing.assert_array_equal(image6.shape, (3, 4, 4, 4))
+        self.assertTrue(np.all(image6.get_data()[2] == 1))
+
+        image7 = nib.Nifti1Image(np.ones((2, 4, 4)), affine)
+        image8 = combine_images([image7, image7, image1, image7], axis=1)
+        np.testing.assert_array_equal(image8.shape, (2, 7, 4, 4))
+        self.assertTrue(np.all(image8.get_data()[:, -1] == 1))
 
     def test_move_image_channels(self):
         shape = (6, 3, 4, 5)
