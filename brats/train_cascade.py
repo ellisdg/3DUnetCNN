@@ -156,7 +156,6 @@ def main(config):
                                                                                          config["model_file"],
                                                                                          config["n_base_filters"],
                                                                                          config["batch_sizes"])):
-        continue
         skip = config["skip_levels"] and level in config["skip_levels"]
         # set targets
         print("Setting the targets to labels {}".format(labels))
@@ -256,18 +255,12 @@ def train_final_model(data_file, training_ids, validation_ids, labels, model_fil
 
 def test_generators(train_generator, validation_generator):
     affine = np.diag(np.ones(4))
-    for i in range(10):
-        features, targets = train_generator.get_batch_from_file(i)
-        features_image = nib.Nifti1Image(features[0][0], affine)
-        features_image.to_filename("{}_features.nii".format(i))
-        targets_image = nib.Nifti1Image(targets[0][0], affine)
-        targets_image.to_filename("{}_targets.nii".format(i))
-
-        features, targets = validation_generator.get_batch_from_file(i)
-        features_image = nib.Nifti1Image(features[0][0], affine)
-        features_image.to_filename("{}_features_validation.nii".format(i))
-        targets_image = nib.Nifti1Image(targets[0][0], affine)
-        targets_image.to_filename("{}_targets_validation.nii".format(i))
+    for generator, name1 in zip((train_generator, validation_generator), ("training", "validation")):
+        for i in range(10):
+            for data, name2 in zip(generator.get_batch_from_file(i), ("feature", "target")):
+                for j in range(data.shape[1]):
+                    image = nib.Nifti1Image(data[0, j], affine)
+                    image.to_filename("{}_{}_{}_{}.nii".format(name1, name2, i, j))
 
 
 if __name__ == "__main__":
