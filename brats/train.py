@@ -45,6 +45,26 @@ config["training_file"] = os.path.abspath("training_ids.pkl")
 config["validation_file"] = os.path.abspath("validation_ids.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 
+config["intra"] = -1
+config["inter"] = -1
+
+#
+# Set "intra" and "inter" options to help Tensorflow get optimal performance on CPU.
+#
+try:
+    import tensorflow as tf
+    from keras import backend as K
+    
+    # if "inter" and "intra" are set, pass them to Tensorflow
+    if intra != -1 and inter != -1:
+        tf_config = tf.ConfigProto(intra_op_parallelism_threads=config["intra"], inter_op_parallelism_threads="inter")
+        sess = tf.Session(graph=tf.get_default_graph(), config=tf_config)
+        K.set_session(sess)
+
+except:
+    # Not running on Tensorflow backend. Do nothing
+    pass
+
 
 def fetch_training_data_files():
     training_data_files = list()
