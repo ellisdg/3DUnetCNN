@@ -7,7 +7,7 @@ The code was written to be trained using the
 [BRATS](http://www.med.upenn.edu/sbia/brats2017.html) data set for brain tumors, but it can
 be easily modified to be used in other 3D applications. 
 
-## Tutorial using BRATS Data
+## Tutorial using BRATS Data and Python 3
 ### Training
 1. Download the BRATS 2018 data by following the steps outlined on the [BRATS 2018 competition page](https://www.med.upenn.edu/sbia/brats2018/registration.html). Place the unzipped folders in the 
 ```brats/data/original``` folder.
@@ -20,7 +20,7 @@ nilearn,
 SimpleITK,
 nipype
 ```
-(nipype is required for preprocessing only)
+(nipype is required for preprocessing only) 
 
 3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add the location of the ANTs 
 binaries to the PATH environmental variable.
