@@ -9,8 +9,7 @@ be easily modified to be used in other 3D applications.
 
 ## Tutorial using BRATS Data
 ### Training
-1. Download the BRATS 2017 [GBM](https://app.box.com/shared/static/bpqo6uqmqinke5jkyhbik9va2uq8ky01.zip) and 
-[LGG](https://app.box.com/shared/static/pqkmy3zcvud2qxlx5poe458azb1dzj54.zip) data. Place the unzipped folders in the 
+1. Download the BRATS 2018 data by following the steps outlined on the [BRATS 2018 competition page](https://www.med.upenn.edu/sbia/brats2018/registration.html). Place the unzipped folders in the 
 ```brats/data/original``` folder.
 2. Install dependencies: 
 ```
