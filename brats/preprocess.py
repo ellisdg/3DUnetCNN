@@ -116,10 +116,17 @@ def normalize_image(in_file, out_file, bias_correction=True):
     return out_file
 
 
-def convert_brats_folder(in_folder, out_folder, truth_name="GlistrBoost_ManuallyCorrected",
-                         no_bias_correction_modalities=None):
+def convert_brats_folder(in_folder, out_folder, truth_name='seg', no_bias_correction_modalities=None):
     for name in config["all_modalities"]:
-        image_file = get_image(in_folder, name)
+        try:
+            image_file = get_image(in_folder, name)
+        except RuntimeError as error:
+            if name == 't1ce':
+                image_file = get_image(in_folder, 't1Gd')
+                truth_name = "GlistrBoost_ManuallyCorrected"
+            else:
+                raise error
+
         out_file = os.path.abspath(os.path.join(out_folder, name + ".nii.gz"))
         perform_bias_correction = no_bias_correction_modalities and name not in no_bias_correction_modalities
         normalize_image(image_file, out_file, bias_correction=perform_bias_correction)
@@ -128,6 +135,7 @@ def convert_brats_folder(in_folder, out_folder, truth_name="GlistrBoost_Manually
         truth_file = get_image(in_folder, truth_name)
     except RuntimeError:
         truth_file = get_image(in_folder, truth_name.split("_")[0])
+
     out_file = os.path.abspath(os.path.join(out_folder, "truth.nii.gz"))
     shutil.copy(truth_file, out_file)
     check_origin(out_file, get_image(in_folder, config["all_modalities"][0]))

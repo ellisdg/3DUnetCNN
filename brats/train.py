@@ -13,7 +13,7 @@ config["image_shape"] = (144, 144, 144)  # This determines what shape the images
 config["patch_shape"] = (64, 64, 64)  # switch to None to train on the whole image
 config["labels"] = (1, 2, 4)  # the label numbers on the input image
 config["n_labels"] = len(config["labels"])
-config["all_modalities"] = ["t1", "t1Gd", "flair", "t2"]
+config["all_modalities"] = ["t1", "t1ce", "flair", "t2"]
 config["training_modalities"] = config["all_modalities"]  # change this if you want to only use some of the modalities
 config["nb_channels"] = len(config["training_modalities"])
 if "patch_shape" in config and config["patch_shape"] is not None:
