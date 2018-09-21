@@ -90,6 +90,23 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
                               pad=np.any(np.greater(new_shape, image.shape)))
 
 
+def adjust_affine_spacing(affine, new_spacing, spacing=None):
+    if spacing is None:
+        spacing = get_spacing_from_affine(affine)
+    new_affine = np.copy(affine)
+    np.fill_diagonal(new_affine, np.asarray(new_spacing).tolist() + [1])
+    new_affine[:3, 3] += calculate_origin_offset(new_spacing, spacing)
+    return new_affine
+
+
+def resample_image_to_spacing(image, new_spacing, interpolation='continuous'):
+    new_affine = adjust_affine_spacing(image.affine, new_spacing, spacing=image.header.get_zooms())
+    new_shape = np.asarray(np.ceil(np.divide(get_extent_from_image(image), new_spacing)), dtype=np.int)
+    new_data = np.zeros(new_shape)
+    new_image = new_img_like(image, new_data, affine=new_affine)
+    return resample_to_img(image, new_image, interpolation=interpolation)
+
+
 def resample_image(source_image, target_image, interpolation="linear", pad_mode='edge', pad=False):
     if pad:
         source_image = pad_image(source_image, mode=pad_mode)
@@ -157,3 +174,11 @@ def update_progress(progress, bar_length=30, message=""):
     text = "\r{0}[{1}] {2:.2f}% {3}".format(message, "#" * block + "-" * (bar_length - block), progress*100, status)
     sys.stdout.write(text)
     sys.stdout.flush()
+
+
+def copy_image(image):
+    return image.__class__(np.copy(image.get_data()), image.affine)
+
+
+def get_extent_from_image(image):
+    return np.multiply(image.shape, image.header.get_zooms())
