@@ -5,6 +5,7 @@ from nilearn.image.resampling import BoundingBoxError
 import random
 import itertools
 
+from unet3d.utils.utils import copy_image, get_extent_from_image
 from .utils.utils import get_spacing_from_affine, set_affine_spacing
 from .utils.nilearn_custom_utils.nilearn_utils import get_background_values
 
@@ -208,14 +209,6 @@ def add_noise(data, mean=0., sigma_factor=0.1):
     sigma = np.std(data) * sigma_factor
     noise = np.random.normal(mean, sigma, data.shape)
     return np.add(data, noise)
-
-
-def copy_image(image):
-    return image.__class__(np.copy(image.get_data()), image.affine)
-
-
-def get_extent_from_image(image):
-    return np.multiply(image.shape, image.header.get_zooms())
 
 
 def translate_image(image, translation_scales, copy=False):
