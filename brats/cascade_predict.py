@@ -18,7 +18,7 @@ def load_json(filename):
         return json.load(opened_file)
 
 
-def main(threshold=0.75):
+def main(threshold=0.5):
     run_times = list()
     start_time = timeit.default_timer()
 
