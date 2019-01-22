@@ -9,8 +9,12 @@ be easily modified to be used in other 3D applications.
 
 ## Tutorial using BRATS Data and Python 3
 ### Training
-1. Download the BRATS 2018 data by following the steps outlined on the [BRATS 2018 competition page](https://www.med.upenn.edu/sbia/brats2018/registration.html). Place the unzipped folders in the 
+1. Download the BRATS 2018 data by following the steps outlined on the [BRATS 2018 competition page](https://www.med.upenn.edu/sbia/brats2018/registration.html).
+Place the unzipped folders in the
 ```brats/data/original``` folder.
+(You can also get the older versions of the dataset without signing up:
+[LGG](https://app.box.com/shared/static/x75fzof83mmomea2yy9kshzj3tr9zni3.zip)
+[GBM](https://app.box.com/shared/static/l5zoa0bjp1pigpgcgakup83pzadm6wxs.zip))
 2. Install dependencies: 
 ```
 nibabel,
