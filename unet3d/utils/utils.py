@@ -82,9 +82,7 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
         zoom_level = np.divide(new_shape, image.shape)
         new_spacing = np.divide(image.header.get_zooms(), zoom_level)
         new_data = np.zeros(new_shape)
-        new_affine = np.copy(image.affine)
-        np.fill_diagonal(new_affine, new_spacing.tolist() + [1])
-        new_affine[:3, 3] += calculate_origin_offset(new_spacing, image.header.get_zooms())
+        new_affine = adjust_affine_spacing(np.copy(image.affine), new_spacing)
         new_img = new_img_like(image, new_data, affine=new_affine)
         return resample_image(image, new_img, interpolation=interpolation, pad_mode=pad_mode,
                               pad=np.any(np.greater(new_shape, image.shape)))
@@ -93,9 +91,12 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
 def adjust_affine_spacing(affine, new_spacing, spacing=None):
     if spacing is None:
         spacing = get_spacing_from_affine(affine)
+    offset = calculate_origin_offset(new_spacing, spacing)
     new_affine = np.copy(affine)
-    np.fill_diagonal(new_affine, np.asarray(new_spacing).tolist() + [1])
-    new_affine[:3, 3] += calculate_origin_offset(new_spacing, spacing)
+    translation_affine = np.diag(np.ones(4))
+    translation_affine[:3, 3] = offset
+    new_affine = np.matmul(new_affine, translation_affine)
+    new_affine = set_affine_spacing(new_affine, new_spacing)
     return new_affine
 
 
@@ -125,7 +126,7 @@ def pad_image(image, mode='edge', pad_width=1):
 
 
 def calculate_origin_offset(new_spacing, old_spacing):
-    return np.subtract(new_spacing, old_spacing)/2
+    return np.divide(np.subtract(new_spacing, old_spacing)/2, old_spacing)
 
 
 def resize_affine(affine, shape, target_shape, copy=True):
@@ -134,9 +135,7 @@ def resize_affine(affine, shape, target_shape, copy=True):
     scale = np.divide(shape, target_shape)
     spacing = get_spacing_from_affine(affine)
     target_spacing = np.multiply(spacing, scale)
-    offset = calculate_origin_offset(target_spacing, spacing)
-    affine[:3, :3] *= scale
-    affine[:3, 3] += offset
+    affine = adjust_affine_spacing(affine, target_spacing)
     return affine
 
 
@@ -147,8 +146,9 @@ def get_spacing_from_affine(affine):
 
 def set_affine_spacing(affine, spacing):
     scale = np.divide(spacing, get_spacing_from_affine(affine))
-    affine[:3, :3] *= scale
-    return affine
+    affine_transform = np.diag(np.ones(4))
+    np.fill_diagonal(affine_transform, list(scale) + [1])
+    return np.matmul(affine, affine_transform)
 
 
 def resample(image, target_affine, target_shape, interpolation='linear', pad_mode='edge', pad=False):

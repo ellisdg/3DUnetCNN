@@ -3,7 +3,7 @@ from unittest import TestCase
 import nibabel as nib
 import numpy as np
 
-from unet3d.utils.utils import resize, resize_affine, resample
+from unet3d.utils.utils import resize, resize_affine, resample, get_spacing_from_affine, resample_image_to_spacing
 from unet3d.utils.nilearn_custom_utils.nilearn_utils import crop_img, reorder_affine
 from unet3d.utils.sitk_utils import resample_to_spacing
 
@@ -55,19 +55,25 @@ class TestUtils(TestCase):
         self.assertTrue(np.all(data == orig_data))
 
     def test_images_align(self):
+        # create 2x2x2 data array
         data = np.arange(1, 9).reshape((2, 2, 2))
+        # create affine with a spacing of 2mm x 2mm x 2mm
         affine = np.diag(np.ones(4) * 2)
         affine[3, 3] = 1
+        # create image
         image_nib = nib.Nifti1Image(data, affine=affine)
+        # resize image to a 4x4x4 shape
         new_image_nib = resize(image_nib, (4, 4, 4), interpolation="nearest")
+        # assert that the data has the expected values
         self.assertTrue(np.all(new_image_nib.get_data()[0] == np.asarray([[1, 1, 2, 2],
                                                                           [1, 1, 2, 2],
                                                                           [3, 3, 4, 4],
                                                                           [3, 3, 4, 4]])))
-        self.assertTrue(np.all(new_image_nib.affine == np.asarray([[1., 0., 0., -0.5],
-                                                                   [0., 1., 0., -0.5],
-                                                                   [0., 0., 1., -0.5],
-                                                                   [0., 0., 0., 1.]])))
+        # assert that the affine has the expected values
+        np.testing.assert_almost_equal(new_image_nib.affine, np.asarray([[1., 0., 0., -0.5],
+                                                                         [0., 1., 0., -0.5],
+                                                                         [0., 0., 1., -0.5],
+                                                                         [0., 0., 0., 1.]]))
         original_image = resize(new_image_nib, (2, 2, 2), interpolation="nearest")
         self.assertTrue(np.all(image_nib.get_data() == original_image.get_data()))
         self.assertTrue(np.all(image_nib.affine == original_image.affine))
@@ -136,3 +142,18 @@ class TestUtils(TestCase):
         np.testing.assert_array_equal(np.diagonal(new_affine), np.abs(np.diagonal(new_affine)))
         new_image = resample(image, new_affine, shape)
         np.testing.assert_array_equal(new_image.get_data(), image.get_data())
+
+    def test_adjust_image_spacing(self):
+        affine = np.asarray([[-1, 2.6e-4, -2.6e-4, -220],
+                             [-2.6e-4, 3.4e-8, 1, 98],
+                             [-2.6e-4, -1, -3.4e-8, 149],
+                             [0, 0, 0, 1]])
+        spacing = get_spacing_from_affine(affine)
+        np.testing.assert_almost_equal(spacing, [1, 1, 1], decimal=7)
+        data = np.asarray([np.diag(np.ones(10))] * 10)
+        image = nib.Nifti1Image(data, affine)
+        new_spacing = [2, 2, 2]
+        new_image = resample_image_to_spacing(image, new_spacing, interpolation='linear')
+        np.testing.assert_almost_equal(new_image.get_data().diagonal().diagonal(),
+                                       (image.get_data().diagonal().diagonal()/2)[:5],
+                                       decimal=7)
