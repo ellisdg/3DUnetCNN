@@ -1,20 +1,144 @@
-import os
 import copy
-from random import shuffle
 import itertools
+import os
+from random import shuffle
 
 import numpy as np
+from keras.utils import Sequence
 
-from .utils import pickle_dump, pickle_load
+from .augment import (augment_data, random_permutation_x_y, translate_affine, random_scale_factor, scale_affine,
+                      add_noise)
+from .normalize import normalize_data
 from .utils.patches import compute_patch_indices, get_random_nd_index, get_patch_from_3d_data
-from .augment import augment_data, random_permutation_x_y
+from .utils.utils import pickle_dump, pickle_load, is_iterable
+from .data import DataFile
+
+
+def get_generators_from_data_file(data_filename, training_ids, validation_ids, batch_size=1, validation_batch_size=1,
+                                  translation_deviation=None, skip_blank=False, permute=False, normalize=True,
+                                  preload_validation_data=False, scale_deviation=None, noise_deviation=None,
+                                  supplemental_feature_names=None):
+    training_generator = DataGenerator(data_filename=data_filename,
+                                       subject_ids=training_ids,
+                                       batch_size=batch_size,
+                                       skip_blank=skip_blank,
+                                       permute=permute,
+                                       translation_deviation=translation_deviation,
+                                       normalize=normalize,
+                                       scale_deviation=scale_deviation,
+                                       noise_deviation=noise_deviation,
+                                       supplemental_feature_names=supplemental_feature_names)
+    validation_generator = DataGenerator(data_filename=data_filename,
+                                         subject_ids=validation_ids,
+                                         batch_size=validation_batch_size,
+                                         normalize=normalize,
+                                         use_preloaded=preload_validation_data,
+                                         supplemental_feature_names=supplemental_feature_names)
+    return training_generator, validation_generator
+
+
+def load_data(data_file, subject_id, use_preloaded=False, translation_deviation=None, scale_deviation=None,
+              permute=False, normalize=True, noise_deviation=None, supplemental_feature_names=None):
+    if use_preloaded:
+        features = np.asarray(data_file.get_supplemental_data(subject_id, "roi_features"))
+        targets = np.asarray(data_file.get_supplemental_data(subject_id, "roi_targets"))
+    else:
+        roi_affine, roi_shape = data_file.get_roi(subject_id)
+        if translation_deviation:
+            roi_affine = translate_affine(affine=roi_affine, shape=roi_shape,
+                                          translation_scales=random_scale_factor(mean=0,
+                                                                                 std=translation_deviation))
+        if scale_deviation:
+            roi_affine = scale_affine(affine=roi_affine, shape=roi_shape,
+                                      scale=random_scale_factor(std=scale_deviation))
+        features, targets = data_file.get_roi_data(subject_id, roi_affine=roi_affine, roi_shape=roi_shape,
+                                                   supplemental_feature_names=supplemental_feature_names)
+        if noise_deviation:
+            features = add_noise(features, sigma_factor=noise_deviation)
+        if permute:
+            features, targets = random_permutation_x_y(features, targets)
+    if normalize:
+        features = normalize_data(features)
+    return features, targets
+
+
+class DataGenerator(Sequence):
+    def __init__(self, data_filename, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
+                 permute=False, normalize=True, use_preloaded=False, scale_deviation=None, noise_deviation=None,
+                 supplemental_feature_names=None):
+        self.batch_size = batch_size
+        self.subject_ids = copy.copy(subject_ids)
+        self.data_filename = data_filename
+        self.data_file = DataFile(self.data_filename)
+        self.translation_deviation = translation_deviation
+        self.skip_blank = skip_blank
+        self.permute = permute
+        self.normalize = normalize
+        self.use_preloaded = use_preloaded
+        self.scale_deviation = scale_deviation
+        self.noise_deviation = noise_deviation
+        self.supplemental_feature_names = supplemental_feature_names
+
+    def __len__(self):
+        """Returns the number of batches per epoch"""
+        return int(np.floor(len(self.subject_ids) / self.batch_size))
+
+    def get_batch_from_file(self, index=None):
+        x = list()
+        y = list()
+        if is_iterable(index):
+            indices = index
+        else:
+            indices = [index]
+        for index in indices:
+            subject_id = self.subject_ids[index]
+            features, targets = load_data(data_file=self.data_file, subject_id=subject_id,
+                                          use_preloaded=self.use_preloaded,
+                                          translation_deviation=self.translation_deviation,
+                                          scale_deviation=self.scale_deviation, permute=self.permute,
+                                          normalize=self.normalize, noise_deviation=self.noise_deviation,
+                                          supplemental_feature_names=self.supplemental_feature_names)
+            if not (self.skip_blank and np.all(np.equal(targets, 0))):
+                x.append(features)
+                y.append(targets)
+        return np.asarray(x), np.asarray(y)
+
+    def __getitem__(self, index):
+        return self.get_batch_from_file(index)
+
+    def on_epoch_end(self):
+        shuffle(self.subject_ids)
+
+
+def data_generator_from_data_file(data_file, subject_ids, batch_size=1, translation_deviation=None, skip_blank=False,
+                                  permute=False, normalize=True, use_preloaded=False, scale_deviation=None):
+    all_subject_ids = np.copy(subject_ids)
+    while True:
+        x = list()
+        y = list()
+        subject_ids = all_subject_ids.tolist()
+        shuffle(subject_ids)
+        while len(subject_ids) > 0:
+            subject_id = subject_ids.pop()
+            features, targets = load_data(data_file=data_file, subject_id=subject_id, use_preloaded=use_preloaded,
+                                          translation_deviation=translation_deviation,
+                                          scale_deviation=scale_deviation, permute=permute, normalize=normalize)
+            if not (skip_blank and np.all(np.equal(targets, 0))):
+                x.append(features)
+                y.append(targets)
+            if len(x) >= batch_size:
+                yield np.asarray(x), np.asarray(y)
+                x = list()
+                y = list()
 
 
 def get_training_and_validation_generators(data_file, batch_size, n_labels, training_keys_file, validation_keys_file,
-                                           data_split=0.8, overwrite=False, labels=None, augment=False,
-                                           augment_flip=True, augment_distortion_factor=0.25, patch_shape=None,
-                                           validation_patch_overlap=0, training_patch_start_offset=None,
-                                           validation_batch_size=None, skip_blank=True, permute=False):
+                                           data_split=0.8, overwrite=False, labels=None, augment_flip=True,
+                                           augment_distortion_factor=0.25, patch_shape=None, validation_patch_overlap=0,
+                                           training_patch_start_offset=None, validation_batch_size=None,
+                                           skip_blank=True, permute=False, training_indices=None,
+                                           validation_indices=None, weights=None, noise_factor=None,
+                                           background_correction=False, augment_translation_deviation=None):
     """
     Creates the training and validation generators that can be used when training the model.
     :param skip_blank: If True, any blank (all-zero) label images/patches will be skipped by the data generator.
@@ -50,40 +174,45 @@ def get_training_and_validation_generators(data_file, batch_size, n_labels, trai
     if not validation_batch_size:
         validation_batch_size = batch_size
 
-    training_list, validation_list = get_validation_split(data_file,
-                                                          data_split=data_split,
-                                                          overwrite=overwrite,
-                                                          training_file=training_keys_file,
-                                                          validation_file=validation_keys_file)
+    if training_indices is None or validation_indices is None:
+        training_indices, validation_indices = get_validation_split(data_file,
+                                                                    data_split=data_split,
+                                                                    overwrite=overwrite,
+                                                                    training_file=training_keys_file,
+                                                                    validation_file=validation_keys_file)
 
-    training_generator = data_generator(data_file, training_list,
+    training_generator = data_generator(data_file, training_indices,
                                         batch_size=batch_size,
                                         n_labels=n_labels,
                                         labels=labels,
-                                        augment=augment,
                                         augment_flip=augment_flip,
                                         augment_distortion_factor=augment_distortion_factor,
                                         patch_shape=patch_shape,
                                         patch_overlap=0,
                                         patch_start_offset=training_patch_start_offset,
                                         skip_blank=skip_blank,
-                                        permute=permute)
-    validation_generator = data_generator(data_file, validation_list,
+                                        permute=permute,
+                                        weights=weights,
+                                        noise_factor=noise_factor,
+                                        background_correction=background_correction,
+                                        augment_translation_deviation=augment_translation_deviation)
+    validation_generator = data_generator(data_file, validation_indices,
                                           batch_size=validation_batch_size,
                                           n_labels=n_labels,
                                           labels=labels,
                                           patch_shape=patch_shape,
                                           patch_overlap=validation_patch_overlap,
-                                          skip_blank=skip_blank)
+                                          skip_blank=skip_blank,
+                                          weights=weights)
 
     # Set the number of training and testing samples per epoch correctly
-    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_list, patch_shape,
+    num_training_steps = get_number_of_steps(get_number_of_patches(data_file, training_indices, patch_shape,
                                                                    skip_blank=skip_blank,
                                                                    patch_start_offset=training_patch_start_offset,
                                                                    patch_overlap=0), batch_size)
     print("Number of training steps: ", num_training_steps)
 
-    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_list, patch_shape,
+    num_validation_steps = get_number_of_steps(get_number_of_patches(data_file, validation_indices, patch_shape,
                                                                      skip_blank=skip_blank,
                                                                      patch_overlap=validation_patch_overlap),
                                                validation_batch_size)
@@ -96,9 +225,9 @@ def get_number_of_steps(n_samples, batch_size):
     if n_samples <= batch_size:
         return n_samples
     elif np.remainder(n_samples, batch_size) == 0:
-        return n_samples//batch_size
+        return n_samples // batch_size
     else:
-        return n_samples//batch_size + 1
+        return n_samples // batch_size + 1
 
 
 def get_validation_split(data_file, training_file, validation_file, data_split=0.8, overwrite=False):
@@ -133,13 +262,15 @@ def split_list(input_list, split=0.8, shuffle_list=True):
     return training, testing
 
 
-def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment=False, augment_flip=True,
+def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None, augment_flip=True,
                    augment_distortion_factor=0.25, patch_shape=None, patch_overlap=0, patch_start_offset=None,
-                   shuffle_index_list=True, skip_blank=True, permute=False):
+                   shuffle_index_list=True, skip_blank=True, permute=False, weights=None, noise_factor=None,
+                   background_correction=False, augment_translation_deviation=None):
     orig_index_list = index_list
     while True:
         x_list = list()
         y_list = list()
+        weight_list = list()
         if patch_shape:
             index_list = create_patch_index_list(orig_index_list, data_file.root.data.shape[-3:], patch_shape,
                                                  patch_overlap, patch_start_offset)
@@ -150,13 +281,17 @@ def data_generator(data_file, index_list, batch_size=1, n_labels=1, labels=None,
             shuffle(index_list)
         while len(index_list) > 0:
             index = index_list.pop()
-            add_data(x_list, y_list, data_file, index, augment=augment, augment_flip=augment_flip,
+            add_data(x_list, y_list, data_file, index, augment_flip=augment_flip,
                      augment_distortion_factor=augment_distortion_factor, patch_shape=patch_shape,
-                     skip_blank=skip_blank, permute=permute)
+                     skip_blank=skip_blank, permute=permute, noise_factor=noise_factor,
+                     background_correction=background_correction, translation_deviation=augment_translation_deviation)
+            if weights is not None:
+                weight_list.append(weights[index])
             if len(x_list) == batch_size or (len(index_list) == 0 and len(x_list) > 0):
-                yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels)
+                yield convert_data(x_list, y_list, n_labels=n_labels, labels=labels, weight_list=weight_list)
                 x_list = list()
                 y_list = list()
+                weight_list = list()
 
 
 def get_number_of_patches(data_file, index_list, patch_shape=None, patch_overlap=0, patch_start_offset=None,
@@ -188,8 +323,9 @@ def create_patch_index_list(index_list, image_shape, patch_shape, patch_overlap,
     return patch_index
 
 
-def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False, augment_distortion_factor=0.25,
-             patch_shape=False, skip_blank=True, permute=False):
+def add_data(x_list, y_list, data_file, index, augment_flip=False, augment_distortion_factor=None,
+             patch_shape=False, skip_blank=True, permute=False, background_correction=False, noise_factor=None,
+             translation_deviation=None):
     """
     Adds data from the data file to the given lists of feature and target data
     :param skip_blank: Data will not be added if the truth vector is all zeros (default is True).
@@ -198,8 +334,6 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False
     :param y_list: list of data to which the target data from the data_file will be appended.
     :param data_file: hdf5 data file.
     :param index: index of the data file from which to extract the data.
-    :param augment: if True, data will be augmented according to the other augmentation parameters (augment_flip and
-    augment_distortion_factor)
     :param augment_flip: if True and augment is True, then the data will be randomly flipped along the x, y and z axis
     :param augment_distortion_factor: if augment is True, this determines the standard deviation from the original
     that the data will be distorted (in a stretching or shrinking fashion). Set to None, False, or 0 to prevent the
@@ -208,12 +342,14 @@ def add_data(x_list, y_list, data_file, index, augment=False, augment_flip=False
     :return:
     """
     data, truth = get_data_from_file(data_file, index, patch_shape=patch_shape)
-    if augment:
+    if augment_distortion_factor or augment_flip or noise_factor:
         if patch_shape is not None:
             affine = data_file.root.affine[index[0]]
         else:
             affine = data_file.root.affine[index]
-        data, truth = augment_data(data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor)
+        data, truth = augment_data(data, truth, affine, flip=augment_flip, scale_deviation=augment_distortion_factor,
+                                   noise_factor=noise_factor, background_correction=background_correction,
+                                   translation_deviation=translation_deviation)
 
     if permute:
         if data.shape[-3] != data.shape[-2] or data.shape[-2] != data.shape[-1]:
@@ -239,13 +375,16 @@ def get_data_from_file(data_file, index, patch_shape=None):
     return x, y
 
 
-def convert_data(x_list, y_list, n_labels=1, labels=None):
+def convert_data(x_list, y_list, n_labels=1, labels=None, weight_list=None):
     x = np.asarray(x_list)
     y = np.asarray(y_list)
     if n_labels == 1:
         y[y > 0] = 1
     elif n_labels > 1:
         y = get_multi_class_labels(y, n_labels=n_labels, labels=labels)
+    if weight_list:
+        weights = np.asarray(weight_list)
+        return x, y, weights
     return x, y
 
 
@@ -264,4 +403,12 @@ def get_multi_class_labels(data, n_labels, labels=None):
             y[:, label_index][data[:, 0] == labels[label_index]] = 1
         else:
             y[:, label_index][data[:, 0] == (label_index + 1)] = 1
+    return y
+
+
+def label_map_to_4d_labels(data, labels):
+    new_shape = (len(labels),) + data.shape
+    y = np.zeros(new_shape, np.int8)
+    for index, label in enumerate(labels):
+        y[index][data == label] = 1
     return y

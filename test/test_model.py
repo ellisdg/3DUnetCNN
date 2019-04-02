@@ -6,7 +6,7 @@ from unet3d.model import unet_model_3d
 class TestModel(TestCase):
     def test_batch_normalization(self):
         model = unet_model_3d(input_shape=(1, 16, 16, 16), depth=2, deconvolution=True, metrics=[], n_labels=1,
-                              batch_normalization=True)
+                              normalization='batch')
 
         layer_names = [layer.name for layer in model.layers]
 

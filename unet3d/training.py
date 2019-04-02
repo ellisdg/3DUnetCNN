@@ -1,14 +1,15 @@
 import math
 from functools import partial
 
-from keras import backend as K
-from keras.callbacks import ModelCheckpoint, CSVLogger, LearningRateScheduler, ReduceLROnPlateau, EarlyStopping
+from keras import backend
+from keras.callbacks import (ModelCheckpoint, CSVLogger, LearningRateScheduler, ReduceLROnPlateau, EarlyStopping,
+                             TensorBoard)
 from keras.models import load_model
 
 from unet3d.metrics import (dice_coefficient, dice_coefficient_loss, dice_coef, dice_coef_loss,
                             weighted_dice_coefficient_loss, weighted_dice_coefficient)
 
-K.set_image_dim_ordering('th')
+backend.set_image_dim_ordering('th')
 
 
 # learning rate schedule
@@ -17,10 +18,11 @@ def step_decay(epoch, initial_lrate, drop, epochs_drop):
 
 
 def get_callbacks(model_file, initial_learning_rate=0.0001, learning_rate_drop=0.5, learning_rate_epochs=None,
-                  learning_rate_patience=50, logging_file="training.log", verbosity=1,
-                  early_stopping_patience=None):
+                  learning_rate_patience=50, logging_file="training.log", verbosity=1, save_best_only=True,
+                  early_stopping_patience=None, tensorboard_path=None, tensorboard_kwargs=None):
     callbacks = list()
-    callbacks.append(ModelCheckpoint(model_file, save_best_only=True))
+
+    callbacks.append(ModelCheckpoint(model_file, save_best_only=save_best_only))
     callbacks.append(CSVLogger(logging_file, append=True))
     if learning_rate_epochs:
         callbacks.append(LearningRateScheduler(partial(step_decay, initial_lrate=initial_learning_rate,
@@ -30,6 +32,10 @@ def get_callbacks(model_file, initial_learning_rate=0.0001, learning_rate_drop=0
                                            verbose=verbosity))
     if early_stopping_patience:
         callbacks.append(EarlyStopping(verbose=verbosity, patience=early_stopping_patience))
+    if tensorboard_path:
+        if tensorboard_kwargs is None:
+            tensorboard_kwargs = dict()
+        callbacks.append(TensorBoard(log_dir=tensorboard_path, **tensorboard_kwargs))
     return callbacks
 
 
@@ -56,7 +62,8 @@ def load_old_model(model_file):
 
 def train_model(model, model_file, training_generator, validation_generator, steps_per_epoch, validation_steps,
                 initial_learning_rate=0.001, learning_rate_drop=0.5, learning_rate_epochs=None, n_epochs=500,
-                learning_rate_patience=20, early_stopping_patience=None):
+                learning_rate_patience=20, early_stopping_patience=None, use_multiprocessing=False, save_best_only=True,
+                tensorboard_path=None):
     """
     Train a Keras model.
     :param early_stopping_patience: If set, training will end early if the validation loss does not improve after the
@@ -80,9 +87,16 @@ def train_model(model, model_file, training_generator, validation_generator, ste
                         epochs=n_epochs,
                         validation_data=validation_generator,
                         validation_steps=validation_steps,
+                        use_multiprocessing=use_multiprocessing,
                         callbacks=get_callbacks(model_file,
                                                 initial_learning_rate=initial_learning_rate,
                                                 learning_rate_drop=learning_rate_drop,
                                                 learning_rate_epochs=learning_rate_epochs,
                                                 learning_rate_patience=learning_rate_patience,
-                                                early_stopping_patience=early_stopping_patience))
+                                                early_stopping_patience=early_stopping_patience,
+                                                save_best_only=save_best_only,
+                                                tensorboard_path=tensorboard_path))
+
+
+def set_model_learning_rate(model, learning_rate):
+    backend.set_value(model.optimizer.lr, learning_rate)

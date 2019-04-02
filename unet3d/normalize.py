@@ -3,8 +3,8 @@ import os
 import numpy as np
 from nilearn.image import new_img_like
 
-from unet3d.utils.utils import resize, read_image_files
-from .utils import crop_img, crop_img_to, read_image
+from .utils.utils import resize, read_image_files, crop_img_to, read_image, resize_affine
+from .utils.nilearn_custom_utils.nilearn_utils import run_with_background_correction, crop_img
 
 
 def find_downsized_info(training_data_files, input_shape):
@@ -15,20 +15,26 @@ def find_downsized_info(training_data_files, input_shape):
     return crop_slices, final_image.affine, final_image.header
 
 
-def get_cropping_parameters(in_files):
+def get_cropping_parameters(in_files, background_correction=False, percentile=None, pad=False, return_slices=True,
+                            return_affine=False):
     if len(in_files) > 1:
-        foreground = get_complete_foreground(in_files)
+        foreground = get_complete_foreground(in_files, background_correction=background_correction,
+                                             percentile=percentile)
     else:
-        foreground = get_foreground_from_set_of_files(in_files[0], return_image=True)
-    return crop_img(foreground, return_slices=True, copy=True)
+        foreground = get_foreground_from_set_of_files(in_files[0], return_image=True, percentile=percentile,
+                                                      background_correction=background_correction)
+    return crop_img(foreground, return_slices=return_slices, copy=True, pad=pad, return_affine=return_affine)
 
 
-def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None, crop=False):
+def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None, crop=False,
+                      background_correction=False, percentile=None):
     if crop:
-        crop_slices = get_cropping_parameters([in_files])
+        crop_slices = get_cropping_parameters([in_files], background_correction=background_correction,
+                                              percentile=percentile)
     else:
         crop_slices = None
-    images = read_image_files(in_files, image_shape=image_shape, crop=crop_slices, label_indices=label_indices)
+    images = read_image_files(in_files, image_shape=image_shape, crop=crop_slices, label_indices=label_indices,
+                              background_correction=background_correction)
     if out_files:
         for image, out_file in zip(images, out_files):
             image.to_filename(out_file)
@@ -37,9 +43,10 @@ def reslice_image_set(in_files, image_shape, out_files=None, label_indices=None,
         return images
 
 
-def get_complete_foreground(training_data_files):
+def get_complete_foreground(training_data_files, background_correction=False, percentile=None):
     for i, set_of_files in enumerate(training_data_files):
-        subject_foreground = get_foreground_from_set_of_files(set_of_files)
+        subject_foreground = get_foreground_from_set_of_files(set_of_files, background_correction=background_correction,
+                                                              percentile=percentile)
         if i == 0:
             foreground = subject_foreground
         else:
@@ -48,38 +55,83 @@ def get_complete_foreground(training_data_files):
     return new_img_like(read_image(training_data_files[0][-1]), foreground)
 
 
-def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance=0.00001, return_image=False):
+def get_foreground_from_set_of_files(set_of_files, background_value=0, tolerance=0.00001, return_image=False,
+                                     background_correction=False, percentile=None):
+    foreground = None
     for i, image_file in enumerate(set_of_files):
         image = read_image(image_file)
-        is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
-                                      image.get_data() > (background_value + tolerance))
-        if i == 0:
-            foreground = np.zeros(is_foreground.shape, dtype=np.uint8)
-
-        foreground[is_foreground] = 1
+        foreground = get_image_foreground(image, background_value=background_value, tolerance=tolerance,
+                                          array=foreground, background_correction=background_correction,
+                                          percentile=percentile)
     if return_image:
         return new_img_like(image, foreground)
     else:
         return foreground
 
 
-def normalize_data(data, mean, std):
-    data -= mean[:, np.newaxis, np.newaxis, np.newaxis]
-    data /= std[:, np.newaxis, np.newaxis, np.newaxis]
+def compute_foreground_from_image_set(images, background_value=0, tolerance=1e-4, return_image=False,
+                                      background_correction=False, percentile=None):
+    foreground = None
+    for i, image in enumerate(images):
+        foreground = get_image_foreground(image, background_value=background_value, tolerance=tolerance,
+                                          array=foreground, background_correction=background_correction,
+                                          percentile=percentile)
+    if return_image:
+        return new_img_like(image, foreground)
+    else:
+        return foreground
+
+
+def compute_region_of_interest_affine(images, target_shape, background_value=0, tolerance=1e-4,
+                                      background_correction=False, percentile=None):
+    foreground = compute_foreground_from_image_set(images, background_value=background_value, tolerance=tolerance,
+                                                   background_correction=background_correction, percentile=percentile,
+                                                   return_image=True)
+    return compute_region_of_interest_affine_from_foreground(foreground, target_shape)
+
+
+def compute_region_of_interest_affine_from_foreground(foreground, target_shape):
+    cropped_affine, cropped_shape = crop_img(foreground, return_affine=True)
+    return resize_affine(cropped_affine, cropped_shape, target_shape)
+
+
+def get_image_foreground(image, background_value=0, tolerance=1e-5, array=None, background_correction=False,
+                         percentile=None):
+    if background_correction:
+        return run_with_background_correction(get_image_foreground, image, background_value=background_value,
+                                              tolerance=tolerance, array=array, background_correction=False,
+                                              returns_array=True, reset_background=False, percentile=percentile)
+    else:
+        if percentile:
+            is_foreground = image.get_data() > np.percentile(image.get_data(), percentile)
+        else:
+            is_foreground = np.logical_or(image.get_data() < (background_value - tolerance),
+                                          image.get_data() > (background_value + tolerance))
+        if array is None:
+            array = np.zeros(is_foreground.shape, dtype=np.uint8)
+
+        array[is_foreground] = 1
+        return array
+
+
+def normalize_data(data, mean=None, std=None, copy=True, axis=(-3, -2, -1)):
+    if copy:
+        data = np.copy(data)
+    if mean is None:
+        mean = np.mean(data, axis=axis)
+    if std is None:
+        std = np.std(data, axis=axis)
+    data = np.subtract(data, mean[..., np.newaxis, np.newaxis, np.newaxis])
+    data = np.divide(data, std[..., np.newaxis, np.newaxis, np.newaxis])
     return data
 
 
 def normalize_data_storage(data_storage):
-    means = list()
-    stds = list()
     for index in range(data_storage.shape[0]):
         data = data_storage[index]
-        means.append(data.mean(axis=(1, 2, 3)))
-        stds.append(data.std(axis=(1, 2, 3)))
-    mean = np.asarray(means).mean(axis=0)
-    std = np.asarray(stds).mean(axis=0)
-    for index in range(data_storage.shape[0]):
-        data_storage[index] = normalize_data(data_storage[index], mean, std)
+        mean = data.mean(axis=(1, 2, 3))
+        std = data.std(axis=(1, 2, 3))
+        data_storage[index] = normalize_data(data, mean, std)
     return data_storage
 
 

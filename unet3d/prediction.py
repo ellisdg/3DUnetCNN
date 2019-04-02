@@ -36,17 +36,25 @@ def patch_wise_prediction(model, data, overlap=0, batch_size=1, permute=False):
     return reconstruct_from_patches(predictions, patch_indices=indices, data_shape=output_shape)
 
 
-def get_prediction_labels(prediction, threshold=0.5, labels=None):
+def get_prediction_labels_from_samples(prediction, threshold=0.5, labels=None):
     n_samples = prediction.shape[0]
     label_arrays = []
     for sample_number in range(n_samples):
-        label_data = np.argmax(prediction[sample_number], axis=0) + 1
-        label_data[np.max(prediction[sample_number], axis=0) < threshold] = 0
-        if labels:
-            for value in np.unique(label_data).tolist()[1:]:
-                label_data[label_data == value] = labels[value - 1]
-        label_arrays.append(np.array(label_data, dtype=np.uint8))
+        label_data = get_prediction_labels(prediction[sample_number], threshold=threshold, labels=labels)
+        label_arrays.append(label_data)
     return label_arrays
+
+
+def get_prediction_labels(prediction, threshold=0.5, labels=None, dtype=np.int8):
+    above_threshold = np.max(prediction, axis=0) > threshold
+    args = np.argmax(prediction, axis=0)
+    label_data = np.zeros(prediction.shape[1:], dtype=dtype)
+    if labels:
+        for value, label in zip(np.unique(args), labels):
+            label_data[np.logical_and(args == value, above_threshold)] = label
+    else:
+        label_data[above_threshold] = args[above_threshold] + 1
+    return label_data
 
 
 def get_test_indices(testing_file):
@@ -70,7 +78,7 @@ def predict_from_data_file_and_write_image(model, open_data_file, index, out_fil
     image.to_filename(out_file)
 
 
-def prediction_to_image(prediction, affine, label_map=False, threshold=0.5, labels=None):
+def prediction_to_image(prediction, affine, label_map=False, threshold=0.5, labels=None, nibabel_class=nib.Nifti1Image):
     if prediction.shape[1] == 1:
         data = prediction[0, 0]
         if label_map:
@@ -83,13 +91,13 @@ def prediction_to_image(prediction, affine, label_map=False, threshold=0.5, labe
             data = label_map_data
     elif prediction.shape[1] > 1:
         if label_map:
-            label_map_data = get_prediction_labels(prediction, threshold=threshold, labels=labels)
+            label_map_data = get_prediction_labels_from_samples(prediction, threshold=threshold, labels=labels)
             data = label_map_data[0]
         else:
             return multi_class_prediction(prediction, affine)
     else:
         raise RuntimeError("Invalid prediction array shape: {0}".format(prediction.shape))
-    return nib.Nifti1Image(data, affine)
+    return nibabel_class(data, affine)
 
 
 def multi_class_prediction(prediction, affine):

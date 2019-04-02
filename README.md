@@ -17,6 +17,7 @@ Place the unzipped folders in the
 [GBM](https://app.box.com/shared/static/l5zoa0bjp1pigpgcgakup83pzadm6wxs.zip))
 2. Install Python 3 and dependencies: 
 ```
+python>=3.5,
 nibabel,
 keras,
 pytables,
@@ -29,7 +30,7 @@ nipype
 3. Install [ANTs N4BiasFieldCorrection](https://github.com/stnava/ANTs/releases) and add the location of the ANTs 
 binaries to the PATH environmental variable.
 
-4. Add the repository directory to the ```PYTONPATH``` system variable:
+4. Add the repository directory to the ```PYTHONPATH``` system variable:
 ```
 $ export PYTHONPATH=${PWD}:$PYTHONPATH
 ```

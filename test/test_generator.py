@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 
 from unet3d.data import add_data_to_storage, create_data_file
-from unet3d.generator import get_multi_class_labels, get_training_and_validation_generators
+from unet3d.generator import get_multi_class_labels, get_training_and_validation_generators, label_map_to_4d_labels
 from unet3d.augment import generate_permutation_keys, permute_data, reverse_permute_data
 
 
@@ -38,9 +38,8 @@ class TestDataGenerator(TestCase):
         truth = (data[:, 0] == 3).astype(np.int8).reshape(data.shape[0], 1, data.shape[2], data.shape[3], data.shape[4])
         affine = np.diag(np.ones(4))
         affine[:, -1] = 1
-        self.data_file, data_storage, truth_storage, affine_storage = create_data_file(self.data_file_path,
-                                                                                       self.n_channels, self.n_samples,
-                                                                                       image_shape)
+        storage = create_data_file(self.data_file_path, self.n_channels, self.n_samples, image_shape)
+        self.data_file, data_storage, truth_storage, affine_storage = storage[:4]
 
         for index in range(self.n_samples):
             add_data_to_storage(data_storage, truth_storage, affine_storage,
@@ -180,7 +179,7 @@ class TestDataGenerator(TestCase):
     def test_n_permutations(self):
         self.assertEqual(len(generate_permutation_keys()), 48)
 
-    def test_generator_with_permutations(self):
+    def _generator_with_permutations(self):
         self.create_data_file(len_x=5, len_y=5, len_z=5, n_channels=5)
         batch_size = 2
         generators = get_training_and_validation_generators(self.data_file, batch_size, self.n_labels,
@@ -199,3 +198,16 @@ class TestDataGenerator(TestCase):
             permuted_data = permute_data(data, permutation_key)
             reversed_permutation = reverse_permute_data(permuted_data, permutation_key)
             self.assertTrue(np.all(data == reversed_permutation))
+
+
+class TestGeneratorUtils(TestCase):
+    def test_split_classes(self):
+        shape = (8, 8, 8)
+        data = np.zeros(shape)
+        labels = (7, 2, 5)
+        data[0] = 7
+        data[1, 5] = 2
+        data[4] = 5
+        split_data = label_map_to_4d_labels(data, labels)
+        self.assertEqual(len(split_data.shape), 4)
+        self.assertTrue(np.all(split_data[0][data == 7]))
