@@ -181,4 +181,4 @@ def copy_image(image):
 
 
 def get_extent_from_image(image):
-    return np.multiply(image.shape, image.header.get_zooms()[:3])
+    return np.multiply(image.shape[:3], image.header.get_zooms()[:3])
