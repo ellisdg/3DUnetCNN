@@ -80,7 +80,7 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
                                               background_correction=False)
     else:
         zoom_level = np.divide(new_shape, image.shape)
-        new_spacing = np.divide(image.header.get_zooms(), zoom_level)
+        new_spacing = np.divide(image.header.get_zooms()[:3], zoom_level)
         new_data = np.zeros(new_shape)
         new_affine = adjust_affine_spacing(np.copy(image.affine), new_spacing)
         new_img = new_img_like(image, new_data, affine=new_affine)
@@ -101,7 +101,7 @@ def adjust_affine_spacing(affine, new_spacing, spacing=None):
 
 
 def resample_image_to_spacing(image, new_spacing, interpolation='continuous'):
-    new_affine = adjust_affine_spacing(image.affine, new_spacing, spacing=image.header.get_zooms())
+    new_affine = adjust_affine_spacing(image.affine, new_spacing, spacing=image.header.get_zooms()[:3])
     new_shape = np.asarray(np.ceil(np.divide(get_extent_from_image(image), new_spacing)), dtype=np.int)
     new_data = np.zeros(new_shape)
     new_image = new_img_like(image, new_data, affine=new_affine)
@@ -181,4 +181,4 @@ def copy_image(image):
 
 
 def get_extent_from_image(image):
-    return np.multiply(image.shape, image.header.get_zooms())
+    return np.multiply(image.shape, image.header.get_zooms()[:3])
