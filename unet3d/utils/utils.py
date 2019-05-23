@@ -79,13 +79,13 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
         return run_with_background_correction(resize, image, new_shape=new_shape, interpolation=interpolation,
                                               background_correction=False)
     else:
-        zoom_level = np.divide(new_shape, image.shape)
+        zoom_level = np.divide(new_shape, image.shape[:3])
         new_spacing = np.divide(image.header.get_zooms()[:3], zoom_level)
         new_data = np.zeros(new_shape)
         new_affine = adjust_affine_spacing(np.copy(image.affine), new_spacing)
         new_img = new_img_like(image, new_data, affine=new_affine)
         return resample_image(image, new_img, interpolation=interpolation, pad_mode=pad_mode,
-                              pad=np.any(np.greater(new_shape, image.shape)))
+                              pad=np.any(np.greater(new_shape, image.shape[:3])))
 
 
 def adjust_affine_spacing(affine, new_spacing, spacing=None):
