@@ -16,7 +16,7 @@ class TestAugmentation(TestCase):
         self.image = nib.Nifti1Image(self.data, self.affine)
 
     def test_scale_affine(self):
-        scale = (2, 2, 2)
+        scale = (0.5, 0.5, 0.5)
         new_affine = scale_affine(self.affine, self.shape, scale)
         new_image = resample(self.image, target_affine=new_affine, target_shape=self.shape)
         new_data = new_image.get_data()

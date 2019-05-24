@@ -4,17 +4,11 @@ from nilearn.image import new_img_like, resample_to_img
 from nilearn.image.resampling import BoundingBoxError
 import random
 import itertools
+from collections.abc import Iterable
 
 from unet3d.utils.utils import copy_image, get_extent_from_image
-from .utils.utils import get_spacing_from_affine, set_affine_spacing
+from .utils.utils import get_spacing_from_affine, resample
 from .utils.nilearn_custom_utils.nilearn_utils import get_background_values
-
-
-def scale_image(image, scale_factor):
-    scale_factor = np.asarray(scale_factor)
-    new_affine = np.copy(image.affine)
-    new_affine[:, 3][:3] = image.affine[:, 3][:3] + (image.shape * np.diag(image.affine)[:3] * (1 - scale_factor)) / 2
-    return new_img_like(image, data=image.get_data(), affine=new_affine)
 
 
 def flip_image(image, axis):
@@ -238,28 +232,6 @@ def translate_affine(affine, shape, translation_scales, copy=True):
     return affine
 
 
-def scale_affine(affine, shape, scale, copy=True):
-    """
-    Scales the affine (while keeping the shape the same) and then adjusts the origin so that the center of the image
-     remains the same. This will change the spacing of the affine. This function might not work with non-RAS images.
-    :param affine: Affine matrix to scale
-    :param shape: Shape of the image/region
-    :param scale: How to scale the affine
-    :param copy: copies the affine matrix before modifying it
-    :return: Modified affine matrix
-    """
-    if copy:
-        affine = np.copy(affine)
-    spacing = get_spacing_from_affine(affine)
-    extent = np.multiply(spacing, shape)
-    new_spacing = np.multiply(scale, spacing)
-    new_extent = np.multiply(new_spacing, shape)
-    direction = np.sign(np.diagonal(affine)[:3])
-    affine[:3, 3] += np.subtract(extent, new_extent)/2 * direction
-    affine = set_affine_spacing(affine, new_spacing)
-    return affine
-
-
 def rotate_affine(affine, rotation):
     rotation_affine = np.diag(np.ones(4))
     theta_x, theta_y, theta_z = rotation
@@ -270,3 +242,49 @@ def rotate_affine(affine, rotation):
     affine_x[2, 2] = np.sin(theta_x)
 
     return affine * affine_x
+
+
+def find_image_center(image, ndim=3):
+    return find_center(image.affine, image.shape, ndim=ndim)
+
+
+def find_center(affine, shape, ndim=3):
+    return np.matmul(affine,
+                     list(np.divide(shape[:ndim], 2)) + [1])[:ndim]
+
+
+def scale_image(image, scale, ndim=3, interpolation='linear'):
+    affine = scale_affine(image.affine, image.shape, scale=scale, ndim=ndim)
+    return resample(image, affine, image.shape, interpolation=interpolation)
+
+
+def scale_affine(affine, shape, scale, ndim=3):
+    """
+    This assumes that the shape stays the same.
+    :param affine: affine matrix for the image.
+    :param shape: current shape of the data. This will remain the same.
+    :param scale: iterable with length ndim, int, or float. A scale greater than 1 indicates the image will be zoomed,
+    the spacing will get smaller, and the affine window will be smaller as well. A scale of less than 1 indicates
+    zooming out with the spacing getting larger and the affine window getting bigger.
+    :param ndim: number of dimensions (default is 3).
+    :return:
+    """
+    if not isinstance(scale, Iterable):
+        scale = np.ones(ndim) * scale
+    else:
+        scale = np.asarray(scale)
+
+    # 1. find the image center
+    center = find_center(affine, shape, ndim=ndim)
+
+    # 2. translate the affine
+    affine = affine.copy()
+    origin = affine[:ndim, ndim]
+    t = np.diag(np.ones(ndim + 1))
+    t[:ndim, ndim] = (center - origin) * (1 - 1 / scale)
+    affine = np.matmul(t, affine)
+
+    # 3. scale the affine
+    s = np.diag(list(1 / scale) + [1])
+    affine = np.matmul(affine, s)
+    return affine

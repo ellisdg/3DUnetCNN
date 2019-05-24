@@ -85,7 +85,7 @@ def resize(image, new_shape, interpolation="linear", background_correction=False
         new_affine = adjust_affine_spacing(np.copy(image.affine), new_spacing)
         new_img = new_img_like(image, new_data, affine=new_affine)
         return resample_image(image, new_img, interpolation=interpolation, pad_mode=pad_mode,
-                              pad=np.any(np.greater(new_shape, image.shape[:3])))
+                              pad=np.any(np.greater(new_shape, image.shape)))
 
 
 def adjust_affine_spacing(affine, new_spacing, spacing=None):
@@ -152,7 +152,7 @@ def set_affine_spacing(affine, spacing):
 
 
 def resample(image, target_affine, target_shape, interpolation='linear', pad_mode='edge', pad=False):
-    target_data = np.zeros(target_shape, dtype=image.get_data_dtype())
+    target_data = np.zeros(target_shape)
     target_image = image.__class__(target_data, affine=target_affine)
     return resample_image(image, target_image, interpolation=interpolation, pad_mode=pad_mode, pad=pad)
 
