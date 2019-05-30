@@ -4,6 +4,7 @@ import numpy as np
 import tables
 from tables.exceptions import NoSuchNodeError, NodeError
 import nibabel as nib
+from nilearn.image import resample_to_img
 
 from .normalize import normalize_data_storage, reslice_image_set
 from .utils.utils import resample, is_iterable
@@ -159,12 +160,18 @@ class DataFile(object):
             self.close()
 
 
-def combine_images(images, axis=0):
+def combine_images(images, axis=0, resample_unequal_affines=False, interpolation="linear"):
     base_image = images[0]
     data = list()
     max_dim = len(base_image.shape)
     for image in images:
-        np.testing.assert_array_equal(image.affine, base_image.affine)
+        try:
+            np.testing.assert_array_equal(image.affine, base_image.affine)
+        except AssertionError as error:
+            if resample_unequal_affines:
+                image = resample_to_img(image, base_image, interpolation=interpolation)
+            else:
+                raise error
         image_data = image.get_data()
         dim = len(image.shape)
         if dim < max_dim:
