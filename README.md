@@ -1,15 +1,13 @@
 # 3D U-Net Convolution Neural Network with Keras
 ![Tumor Segmentation Example](doc/tumor_segmentation_illusatration.gif)
 ## Background
-Originally designed after [this paper](http://lmb.informatik.uni-freiburg.de/Publications/2016/CABR16/cicek16miccai.pdf) on 
-volumetric segmentation with a 3D U-Net.
 The code was written to be trained using the 
-[BRATS](http://www.med.upenn.edu/sbia/brats2017.html) data set for brain tumors, but it can
+[BRATS 2020](https://www.med.upenn.edu/cbica/brats2020/data.html) data set for brain tumors, but it can
 be easily modified to be used in other 3D applications. 
 
 ## Tutorial using BRATS Data
 ### Training
-1. Download the BRATS 2020 data after registering by following the steps outlined on the [BRATS 2020 competition page](https://www.med.upenn.edu/sbia/brats2018/registration.html).
+1. Download the BRATS 2020 data after registering by following the steps outlined on the [BRATS 2020 competition page](https://www.med.upenn.edu/cbica/brats2020/registration.html).
 Place the unzipped training data folder named "MICCAI_BraTS2020_TrainingData" in the
 ```brats/data``` folder.
 2. Install Python 3 and dependencies: 
@@ -48,10 +46,9 @@ The predictions will be written in the ```prediction``` folder along with the in
 comparison.
 
 ### Configuration
-Changing the configuration dictionary in the [train.py](brats/train.py) or the 
-[train_isensee2017.py](brats/train_isensee2017.py) scripts, makes it easy to test out different model and
+Changing the configuration dictionary in the [train.py](brats/train.py) scripts, makes it easy to test out different model and
 training configurations.
-I would recommend trying out the Isensee et al. model first and then modifying the parameters until you have satisfactory 
+I would recommend trying it out then modifying the parameters until you have satisfactory 
 results. 
 If you are running out of memory, try training using ```(64, 64, 64)``` shaped patches. 
 Reducing the "batch_size" and "validation_batch_size" parameters will also reduce the amount of memory required for 
