@@ -100,7 +100,7 @@ def create_convolution_block(input_layer, n_filters, batch_normalization=False, 
         layer = BatchNormalization(axis=1)(layer)
     elif instance_normalization:
         try:
-            from keras_contrib.layers.normalization import InstanceNormalization
+            from keras_contrib.layers import InstanceNormalization
         except ImportError:
             raise ImportError("Install keras_contrib in order to use instance normalization."
                               "\nTry: pip install git+https://www.github.com/farizrahman4u/keras-contrib.git")
