@@ -16,8 +16,8 @@ nibabel,
 keras,
 pytables,
 nilearn,
-SimpleITK,
-keras-contrib
+[SimpleITK](https://simpleitk.readthedocs.io/en/master/gettingStarted.html],
+[keras-contrib](https://github.com/keras-team/keras-contrib)
 ```
 3. ```cd``` into the 3DUnetCNN repository.
 
