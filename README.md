@@ -11,14 +11,13 @@ be easily modified to be used in other 3D applications.
 Place the unzipped training data folder named "MICCAI_BraTS2020_TrainingData" in the
 ```brats/data``` folder.
 2. Install Python 3 and dependencies: 
-```
-nibabel,
-keras,
-pytables,
-nilearn,
-[SimpleITK](https://simpleitk.readthedocs.io/en/master/gettingStarted.html],
-[keras-contrib](https://github.com/keras-team/keras-contrib)
-```
+* nibabel
+* keras
+* pytables
+* nilearn
+* [SimpleITK](https://simpleitk.readthedocs.io/en/master/gettingStarted.html)
+* [keras-contrib](https://github.com/keras-team/keras-contrib)
+
 3. ```cd``` into the 3DUnetCNN repository.
 
 4. Add the repository directory to the ```PYTONPATH``` system variable:
