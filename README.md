@@ -24,9 +24,9 @@ Place the unzipped training data folder named "MICCAI_BraTS2020_TrainingData" in
 ```
 $ export PYTHONPATH=${PWD}:$PYTHONPATH
 ```
+5. ```cd``` into the ```brats``` folder.
 
-5. Run the training:
-
+6. Run the training:
 ```
 $ python train.py
 ```
