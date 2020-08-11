@@ -15,3 +15,4 @@ data.hdf5
 test_dir
 *.hdr
 *.img
+.DS_Store
