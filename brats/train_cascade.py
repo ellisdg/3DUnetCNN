@@ -264,4 +264,4 @@ def test_generators(train_generator, validation_generator):
 
 
 if __name__ == "__main__":
-    main(load_json(os.path.join(os.path.dirname(__file__), "cascade_config.json")))
+    main(load_json(os.path.join(os.path.dirname(os.path.dirname(__file__)), "config", "cascade_config.json")))
