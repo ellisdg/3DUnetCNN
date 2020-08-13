@@ -46,20 +46,27 @@ config["validation_file"] = os.path.abspath("validation_ids.pkl")
 config["overwrite"] = False  # If True, will previous files. If False, will use previously written files.
 
 
-def fetch_training_data_files(return_subject_ids=False):
+def fetch_brats_2020_files(modalities, group="Training", include_truth=True, return_subject_ids=False):
     training_data_files = list()
     subject_ids = list()
-    for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data", "*Training*", "*Training*")):
+    modalities = list(modalities)
+    if include_truth:
+        modalities = modalities + ["seg"]
+    for subject_dir in glob.glob(os.path.join(os.path.dirname(__file__), "data", "*{0}*", "*{0}*").format(group)):
         subject_id = os.path.basename(subject_dir)
         subject_ids.append(subject_id)
         subject_files = list()
-        for modality in config["training_modalities"] + ["seg"]:
+        for modality in modalities:
             subject_files.append(os.path.join(subject_dir, subject_id + "_" + modality + ".nii.gz"))
         training_data_files.append(tuple(subject_files))
     if return_subject_ids:
         return training_data_files, subject_ids
     else:
         return training_data_files
+
+
+def fetch_training_data_files(return_subject_ids=False):
+    return fetch_brats_2020_files(modalities=config["training_modalities"], return_subject_ids=return_subject_ids)
 
 
 def main(overwrite=False):
