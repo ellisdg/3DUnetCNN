@@ -30,8 +30,8 @@ def main():
             else:
                 config[key] = value
     if not os.path.exists(config["data_file"]):
-        filenames, subject_ids = fetch_brats_2020_files(config["training_modalites"], group="Validation",
-                                                        include_truth=False, return_subject_ids=False)
+        filenames, subject_ids = fetch_brats_2020_files(config["training_modalities"], group="Validation",
+                                                        include_truth=False, return_subject_ids=True)
         write_data_to_file(filenames, config["data_file"], image_shape=config["image_shape"],
                            subject_ids=subject_ids)
         pickle_dump(list(range(len(subject_ids))), config["validation_file"])
