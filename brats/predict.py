@@ -16,6 +16,7 @@ def parse_args():
     parser.add_argument("--validation_file", default="./BraTS2020_Validation_ids.pkl")
     parser.add_argument("--no_label_map", action="store_true", default=False)
     parser.add_argument("--prediction_dir", default="./BraTS2020_Validation_predictions")
+    parser.add_argument("--output_basename", default="BraTS20_Validation_{subject}.nii.gz")
     return parser.parse_args()
 
 
@@ -42,7 +43,9 @@ def main():
                          labels=config["labels"],
                          hdf5_file=config["data_file"],
                          output_label_map=output_label_map,
-                         output_dir=prediction_dir)
+                         output_dir=prediction_dir,
+                         test=False,
+                         output_basename=kwargs["output_basename"])
 
 
 if __name__ == "__main__":
