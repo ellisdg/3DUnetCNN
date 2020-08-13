@@ -76,7 +76,7 @@ def write_data_to_file(training_data_files, out_file, image_shape, truth_dtype=n
         label_indices = []
     write_image_data_to_file(training_data_files, data_storage, truth_storage, image_shape,
                              truth_dtype=truth_dtype, n_channels=n_channels, affine_storage=affine_storage, crop=crop,
-                             label_indices=label_indices)
+                             label_indices=label_indices, save_truth=save_truth)
     if subject_ids:
         hdf5_file.create_array(hdf5_file.root, 'subject_ids', obj=subject_ids)
     if normalize:
