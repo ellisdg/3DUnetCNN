@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument("--modalities", nargs="*")
     parser.add_argument("--validation_file", default="./BraTS2020_Validation_ids.pkl")
     parser.add_argument("--no_label_map", action="store_true", default=False)
-    parser.add_argument("--prediction_dir", default="./prediction")
+    parser.add_argument("--prediction_dir", default="./BraTS2020_Validation_predictions")
     return parser.parse_args()
 
 
@@ -33,7 +33,7 @@ def main():
         filenames, subject_ids = fetch_brats_2020_files(config["training_modalities"], group="Validation",
                                                         include_truth=False, return_subject_ids=True)
         write_data_to_file(filenames, config["data_file"], image_shape=config["image_shape"],
-                           subject_ids=subject_ids)
+                           subject_ids=subject_ids, save_truth=False)
         pickle_dump(list(range(len(subject_ids))), config["validation_file"])
 
     run_validation_cases(validation_keys_file=config["validation_file"],
