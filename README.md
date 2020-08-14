@@ -7,9 +7,9 @@ be easily modified to be used in other 3D applications.
 
 ## Tutorial using BRATS Data
 ### Training
-1. Download the BRATS 2020 data after registering by following the steps outlined on the [BRATS 2020 competition page](https://www.med.upenn.edu/cbica/brats2020/registration.html).
-Place the unzipped training data folder named "MICCAI_BraTS2020_TrainingData" in the
-```brats/data``` folder.
+1. Download the BraTS 2020 data after registering by following the steps outlined on the [BraTS 2020 competition page](https://www.med.upenn.edu/cbica/brats2020/registration.html).
+Place the unzipped training and validation data folders named "MICCAI_BraTS2020_TrainingData" 
+and "MICCAI_BraTS2020_ValidationData" in the ```brats/data``` folder.
 2. Install Python 3 and dependencies: 
 * nibabel
 * keras
@@ -30,6 +30,11 @@ $ export PYTHONPATH=${PWD}:$PYTHONPATH
 ```
 $ python train.py
 ```
+7. Now that the model is trained, predict the BraTS validation data:
+```
+$ python predict.py
+```
+The predicted segmentations will be in the "BraTS2020_Validation_predictions".
 
 **If you run out of memory during training:** try setting 
 ```config['patch_shape`] = (64, 64, 64)``` for starters. 
