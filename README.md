@@ -65,6 +65,10 @@ Keep in mind, though, that a smaller patch sizes may not perform as well as larg
 If you want to train a 3D UNet on a different set of data, you can copy either the [train.py](brats/train.py) script and modify it to 
 read in your data rather than the preprocessed BRATS data that they are currently setup to train on.
 
-## Pre-trained Models
-The following Keras models were trained on the BRATS 2020 data:
-* coming soon.
+## Pre-trained Model
+The following Keras model were trained on the BRATS 2020 data:
+* [Model trained on BraTS2020 data](https://www.dropbox.com/s/onb87ze7t2t78h8/unet_model.h5?dl=0)
+### BraTS20 Validation Set Scores:
+|Dice Enhancing Tumor|Dice Whole Tumor|Dice Tumor Core|
+|:-----------:|:-----------:|:---------:|
+|0.65446|0.86171|0.75757|
