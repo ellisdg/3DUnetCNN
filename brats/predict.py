@@ -48,7 +48,8 @@ def main():
                          output_label_map=output_label_map,
                          output_dir=prediction_dir,
                          test=False,
-                         output_basename=kwargs["output_basename"])
+                         output_basename=kwargs["output_basename"],
+                         permute=config["permute"])
     for filename_list, subject_id in zip(filenames, subject_ids):
         prediction_filename = os.path.join(prediction_dir, kwargs["output_basename"].format(subject=subject_id))
         print("Resampling:", prediction_filename)
