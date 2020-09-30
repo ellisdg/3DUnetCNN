@@ -26,7 +26,7 @@ $ export PYTHONPATH=${PWD}:$PYTHONPATH
 ```
 5. ```cd``` into the ```brats``` folder.
 
-6. Run the training:
+6. Run training as :
 ```
 $ python train.py
 ```
@@ -46,7 +46,7 @@ To write the predicted label maps to file:
 ```
 $ python predict.py
 ```
-The predictions will be written in the ```prediction``` folder along with the input data and ground truth labels for 
+The predictions would be written in the ```prediction``` folder along with the input data and ground truth labels for 
 comparison.
 
 ### Configuration
@@ -54,7 +54,7 @@ Changing the configuration dictionary in the [train.py](brats/train.py) scripts,
 training configurations.
 I would recommend trying it out then modifying the parameters until you have satisfactory 
 results. 
-If you are running out of memory, try training using ```(64, 64, 64)``` shaped patches. 
+If you are running out of memory, try the training using ```(64, 64, 64)``` shaped patches. 
 Reducing the "batch_size" and "validation_batch_size" parameters will also reduce the amount of memory required for 
 training as smaller batch sizes feed smaller chunks of data to the CNN. 
 If the batch size is reduced down to 1 and it still you are still running 
