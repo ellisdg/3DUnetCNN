@@ -26,7 +26,7 @@ $ export PYTHONPATH=${PWD}:$PYTHONPATH
 ```
 5. ```cd``` into the ```brats``` folder.
 
-6. Run training as :
+6. Run the training:
 ```
 $ python train.py
 ```
@@ -46,7 +46,7 @@ To write the predicted label maps to file:
 ```
 $ python predict.py
 ```
-The predictions would be written in the ```prediction``` folder along with the input data and ground truth labels for 
+The predictions will be written in the ```prediction``` folder along with the input data and ground truth labels for 
 comparison.
 
 ### Configuration
