@@ -1,5 +1,8 @@
-# 3D U-Net Convolution Neural Network with Keras
-![Tumor Segmentation Example](doc/tumor_segmentation_illusatration.gif)
+# Legacy 3D U-Net Convolution Neural Network with Keras
+![Tumor Segmentation Example](../doc/tumor_segmentation_illusatration.gif)
+#### This is the version of this repository prior to October, 2020
+I am leaving this code to make it easier for people using the old code.
+Eventually, the only way to access this code will be through the "legacy" branch.
 ## Background
 The code was written to be trained using the 
 [BRATS 2020](https://www.med.upenn.edu/cbica/brats2020/data.html) data set for brain tumors, but it can
