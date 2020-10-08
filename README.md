@@ -1,8 +1,8 @@
 # 3D U-Net Convolution Neural Network
-## [Brain Tumor Segmentation (BraTS)](examples/brats2020/README.md)
 ![Tumor Segmentation Example](legacy/doc/tumor_segmentation_illusatration.gif)
-## [Automatic Cranial Implant Design (AutoImpant)](examples/autoimplant2020/README.md)
+## [Brain Tumor Segmentation (BraTS)](examples/brats2020)
 ![ Segmentation Example](doc/AutoImplant-Viz.png)
+## [Automatic Cranial Implant Design (AutoImpant)](examples/autoimplant2020)
 ## [Anatomical Barriers to Cancer Spread (ABCS)](examples/abcs2020/README.md)
 ## Background
 We designed 3DUnetCNN to make it easy to apply and control the training and application of various deep learning models to medical imaging data.
