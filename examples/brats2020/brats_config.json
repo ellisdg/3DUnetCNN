@@ -1,0 +1,75 @@
+{
+  "subjects_filename": "data/subjects_brats.json",
+  "generate_filenames": "templates",
+  "generate_filenames_kwargs": {
+    "directory": "/work/aizenberg/dgellis/MICCAI_BraTS2020/MICCAI_BraTS2020_TrainingData/BraTS20_Training_{subject}",
+    "feature_templates": [
+      "BraTS20_Training_{subject}_t1.nii.gz",
+      "BraTS20_Training_{subject}_t1ce.nii.gz",
+      "BraTS20_Training_{subject}_flair.nii.gz",
+      "BraTS20_Training_{subject}_t2.nii.gz"
+    ],
+    "target_templates": "BraTS20_Training_{subject}_seg.nii.gz"
+  },
+  "window": [
+    160,
+    160,
+    160
+  ],
+  "n_features": 4,
+  "optimizer": "Adam",
+  "package": "pytorch",
+  "loss": "per_channel_dice_loss",
+  "evaluation_metric": "per_channel_dice_loss",
+  "weights": null,
+  "custom_loss": true,
+  "regularized": false,
+  "reorder": true,
+  "n_epochs": 400,
+  "save_every_n_epochs": 50,
+  "initial_learning_rate": 1e-04,
+  "min_learning_rate": 1e-08,
+  "decay_factor": 0.5,
+  "decay_patience": 20,
+  "early_stopping_patience": 50,
+  "save_best": true,
+  "save_last_n_models": 10,
+  "batch_size": 2,
+  "validation_batch_size": 2,
+  "model_name": "UNet",
+  "model_kwargs": {
+    "base_width":  32,
+    "encoder_blocks": [2, 2, 2, 2, 2],
+    "decoder_mirrors_encoder": true,
+    "input_shape": [160, 160, 160],
+    "activation": "sigmoid"
+  },
+  "skip_validation": false,
+  "iterations_per_epoch": 1,
+  "n_outputs": 3,
+  "sequence": "WholeVolumeSegmentationDataset",
+  "sequence_kwargs": {
+    "normalization": "zero_one_window",
+    "crop": true,
+    "interpolation": "linear",
+    "labels": [2, 1, 4],
+    "add_contours": true,
+    "use_label_hierarchy": true
+  },
+  "additional_training_args": {
+    "augment_scale_std": 0.1,
+    "augment_scale_probability": 0.5,
+    "additive_noise_std": 0.1,
+    "additive_noise_probability": 0.5,
+    "augment_blur_mean": 1.5,
+    "augment_blur_std":  0.5,
+    "augment_blur_probability": 0.5,
+    "augment_translation_std": 0.05,
+    "augment_translation_probability": 0.5,
+    "flip_left_right_probability": 0,
+    "random_permutation_probability": 1.0
+  },
+  "additional_validation_args": {
+    "random_permutation_probability": 1.0
+  }
+}

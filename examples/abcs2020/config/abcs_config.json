@@ -1,0 +1,80 @@
+{
+  "subjects_filename": "abcs/config/subjects_abcs.json",
+  "generate_filenames": "templates",
+  "generate_filenames_kwargs": {
+    "directory": "/work/aizenberg/dgellis/MICCAI_ABCs_2020/ABCs_augmented_training_data",
+    "feature_templates": [
+      "{subject}_ct.nii.gz",
+      "{subject}_t1.nii.gz",
+      "{subject}_t2.nii.gz"
+    ],
+    "target_templates": ["{subject}_labelmap_task1.nii.gz", "{subject}_labelmap_task2.nii.gz"]
+  },
+  "window": [
+    176,
+    208,
+    144
+  ],
+  "n_features": 5,
+  "optimizer": "Adam",
+  "package": "pytorch",
+  "loss": "per_channel_dice_loss",
+  "evaluation_metric": "per_channel_dice_loss",
+  "weights": null,
+  "custom_loss": true,
+  "regularized": false,
+  "reorder": true,
+  "save_best": true,
+  "n_epochs": 2000,
+  "min_learning_rate": 1e-08,
+  "decay_patience": 50,
+  "decay_factor": 0.5,
+  "early_stopping_patience": 100,
+  "batch_size": 1,
+  "validation_batch_size": 2,
+  "initial_learning_rate": 1e-04,
+  "model_name": "UNet",
+  "model_kwargs": {
+    "base_width":  32,
+    "encoder_blocks": [2, 2, 2, 2, 2],
+    "decoder_mirrors_encoder": false,
+    "input_shape": [176, 208, 144],
+    "activation": "sigmoid"
+  },
+  "skip_validation": false,
+  "iterations_per_epoch": 1,
+  "n_outputs": 11,
+  "sequence": "WholeVolumeSegmentationDataset",
+  "sequence_kwargs": {
+    "normalization": ["static_windows", "zero_one_window"],
+    "normalization_args": {
+      "static_windows": {
+        "volume_indices": [0],
+        "windows": [[40, 80], [80, 200], [600, 2800]]
+      },
+      "zero_one_window": {
+        "volume_indices": [1, 2],
+        "ceiling_percentile": 99.5
+      }
+    },
+    "crop": true,
+    "cropping_kwargs": {"percentile": 90},
+    "interpolation": "linear",
+    "labels": [[1, 2, 3, 4, 5], [1, 2, [3, 4], [5, 6], [7, 8], [9, 10]]],
+    "add_contours": false
+  },
+  "additional_training_args": {
+    "augment_scale_std": 0.1,
+    "augment_scale_probability": 0.25,
+    "additive_noise_std": 0.1,
+    "additive_noise_probability": 0.75,
+    "augment_blur_mean": 1.5,
+    "augment_blur_std":  0.5,
+    "augment_blur_probability": 0.5,
+    "augment_translation_std": 0.05,
+    "augment_translation_probability": 0.25,
+    "flip_left_right_probability": 0.5,
+    "random_permutation_probability": null
+  },
+  "additional_validation_args": {}
+}
