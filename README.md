@@ -16,3 +16,7 @@ The links above give examples/tutorials for how to use this project with data fr
 
 ## Citation
 Coming soon.
+
+
+## Got Questions?
+email: davidgellis2@gmail.com
