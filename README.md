@@ -14,9 +14,10 @@ The links above give examples/tutorials for how to use this project with data fr
 * nilearn
 * keras
 
-## Citation
-Coming soon.
-
 
 ## Got Questions?
 Join the [Slack group](https://join.slack.com/t/newworkspace-8fj9313/shared_invite/zt-i7083sxj-y9aRXhdiawt9zqZyD8Q2kw) or email me at davidgellis2@gmail.com.
+
+
+## Citation
+Coming soon.
