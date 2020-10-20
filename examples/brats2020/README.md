@@ -1,6 +1,6 @@
 # BraTS 2020 Tutorial
 
-1. Change to brats2020 directory in terminal.
+1. Open terminal and go to ```examples/brats2020```.
 2. Download training data.
 3. Train the model.
 
