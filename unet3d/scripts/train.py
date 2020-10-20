@@ -82,7 +82,7 @@ def compute_window_size(step, step_size, ratios):
     return np.asarray(step_ratios - mod, dtype=int)
 
 
-def update_config_to_fit_gpu_memory(config, n_gpus, gpu_memory, output_filename, voxels_per_gb=14000000.0,
+def update_config_to_fit_gpu_memory(config, n_gpus, gpu_memory, output_filename, voxels_per_gb=13200000.0,
                                     ratios=(1.22, 1.56, 1.0)):
     max_voxels = voxels_per_gb * gpu_memory
     n_layers = len(config["model_kwargs"]["encoder_blocks"])
@@ -94,8 +94,7 @@ def update_config_to_fit_gpu_memory(config, n_gpus, gpu_memory, output_filename,
         step = step + 1
         window = compute_window_size(step, step_size, ratios)
         n_voxels = compute_unet_number_of_voxels(window, config["model_kwargs"]["base_width"], n_layers)
-    step = step - 1
-    window = compute_window_size(step, step_size, ratios).tolist()
+    window = compute_window_size(step - 1, step_size, ratios).tolist()
     print("Setting window size to {} x {} x {}".format(*window))
     print("Setting batch size to", n_gpus)
     config["window"] = window
