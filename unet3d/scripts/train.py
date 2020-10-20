@@ -72,7 +72,7 @@ def get_system_config(namespace):
 def compute_unet_number_of_voxels(window, channels, n_layers):
     n_voxels = 0
     for i in range(n_layers):
-        n_voxels = n_voxels + ((1/(2**(2*i))) * window[0] * window[1] * window[2] * channels)
+        n_voxels = n_voxels + ((1/(2**(3*i))) * window[0] * window[1] * window[2] * channels * 2**i * 2)
     return n_voxels
 
 
