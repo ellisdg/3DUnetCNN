@@ -2,10 +2,10 @@ import os
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, CSVLogger
 import keras
 import nibabel as nib
-from fcnn.models.keras.load import load_model
-from fcnn.models.keras.build import build_model
+from unet3d.models.keras.load import load_model
+from unet3d.models.keras.build import build_model
 import numpy as np
-from fcnn.utils.sequences import HCPRegressionSequence
+from unet3d.utils.sequences import HCPRegressionSequence
 
 
 def run_keras_training(config, model_filename, training_log_filename, verbose=1, use_multiprocessing=False,

@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 import nibabel as nib
 import numpy as np
 from nilearn.image import reorder_img, resample_to_img
-from fcnn.utils.utils import load_json, split_left_right, convert_one_hot_to_single_label_map_volume
+from unet3d.utils.utils import load_json, split_left_right, convert_one_hot_to_single_label_map_volume
 
 
 def parse_args():

@@ -3,9 +3,9 @@ from unittest import TestCase
 import numpy as np
 import nibabel as nib
 
-from fcnn.utils.resample import resample
+from unet3d.utils.resample import resample
 
-from fcnn.utils.augment import scale_affine, generate_permutation_keys, permute_data
+from unet3d.utils.augment import scale_affine, generate_permutation_keys, permute_data
 
 
 class TestAugmentation(TestCase):
