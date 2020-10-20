@@ -2,7 +2,7 @@
   "subjects_filename": "brats_subjects_2020.json",
   "generate_filenames": "templates",
   "generate_filenames_kwargs": {
-    "directory": "MICCAI_BraTS2020/MICCAI_BraTS2020_TrainingData/BraTS20_Training_{subject}",
+    "directory": "MICCAI_BraTS2020_TrainingData/BraTS20_Training_{subject}",
     "feature_templates": [
       "BraTS20_Training_{subject}_t1.nii.gz",
       "BraTS20_Training_{subject}_t1ce.nii.gz",
