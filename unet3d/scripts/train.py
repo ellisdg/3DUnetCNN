@@ -128,7 +128,7 @@ def main():
     print("Log: ", namespace.training_log_filename)
     system_config = get_system_config(namespace)
 
-    if namespace.fig_gpu_mem > 0:
+    if namespace.fit_gpu_mem and namespace.fit_gpu_mem > 0:
         update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,
                                         output_filename=namespace.confige_filename.replace(".json", "_auto.json"))
 
