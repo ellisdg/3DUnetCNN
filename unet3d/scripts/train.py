@@ -1,13 +1,14 @@
 import os
 import argparse
 import pandas as pd
+import numpy as np
 from unet3d.train import run_training
 from unet3d.utils.filenames import wrapped_partial, generate_filenames, load_bias, load_sequence
 from unet3d.utils.sequences import (WholeVolumeToSurfaceSequence, HCPRegressionSequence, ParcelBasedSequence,
                                     WindowedAutoEncoderSequence)
 from unet3d.utils.pytorch.dataset import (WholeBrainCIFTI2DenseScalarDataset, HCPRegressionDataset, AEDataset,
                                           WholeVolumeSegmentationDataset, WindowedAEDataset)
-from unet3d.utils.utils import load_json, in_config
+from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.utils.custom import get_metric_data_from_config
 from unet3d.models.keras.resnet.resnet import compare_scores
 from unet3d.scripts.predict import format_parser as format_prediction_args, check_hierarchy
@@ -40,6 +41,12 @@ def parse_args():
                         help="Directory within which to find the training data. This setting is ignored if "
                              "machine_config_filename is set.")
     parser.add_argument("--pin_memory", action="store_true", default=False)
+    parser.add_argument("--fit_gpu_mem", type=float,
+                        help="Specify the amount of gpu memory available on a single gpu and change the image size to "
+                             "fit into gpu memory automatically. Tries to find the largest image size that will fit "
+                             "onto a single gpu. The batch size is overwritten and set to the number of gpus available."
+                             " The new image size will be written to a new config file ending named "
+                             "'<original_config>_auto.json'.")
     parser.add_argument("--group_average_filenames")
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
@@ -62,6 +69,43 @@ def get_system_config(namespace):
                 "directory": namespace.directory}
 
 
+def compute_unet_number_of_voxels(window, channels, n_layers):
+    n_voxels = 0
+    for i in range(n_layers):
+        n_voxels = n_voxels + ((1/(2**(2*i))) * window[0] * window[1] * window[2] * channels)
+    return n_voxels
+
+
+def compute_window_size(step, step_size, ratios):
+    step_ratios = np.asarray(ratios) * step * step_size
+    mod = np.mod(step_ratios, step_size)
+    return np.asarray(step_ratios - mod + np.round(mod / step_size) * step_size, dtype=int)
+
+
+def update_config_to_fit_gpu_memory(config, n_gpus, gpu_memory, output_filename, voxels_per_gb=14000000.0,
+                                    ratios=(1.22, 1.56, 1.0)):
+    max_voxels = voxels_per_gb * gpu_memory
+    n_layers = len(config["model_kwargs"]["encoder_blocks"])
+    step_size = 2**(n_layers - 1)
+    step = 1
+    window = compute_window_size(step, step_size, ratios)
+    n_voxels = compute_unet_number_of_voxels(window, config["model_kwargs"]["base_width"], n_layers)
+    while n_voxels <= max_voxels:
+        step = step + 1
+        window = compute_window_size(step, step_size, ratios)
+        n_voxels = compute_unet_number_of_voxels(window, config["model_kwargs"]["base_width"], n_layers)
+    step = step - 1
+    window = compute_window_size(step, step_size, ratios).tolist()
+    print("Setting window size to {} x {} x {}".format(*window))
+    print("Setting batch size to", n_gpus)
+    config["window"] = window
+    config["model_kwargs"]["input_shape"] = window
+    config["batch_size"] = n_gpus
+    config["validation_batch_size"] = n_gpus
+    print("Writing new configuration file:", output_filename)
+    dump_json(config, output_filename)
+
+
 def main():
     import nibabel as nib
     nib.imageglobals.logger.level = 40
@@ -70,6 +114,7 @@ def main():
 
     print("Config: ", namespace.config_filename)
     config = load_json(namespace.config_filename)
+
     if "package" in config:
         package = config["package"]
     else:
@@ -82,6 +127,10 @@ def main():
     print("Model: ", namespace.model_filename)
     print("Log: ", namespace.training_log_filename)
     system_config = get_system_config(namespace)
+
+    if namespace.fig_gpu_mem > 0:
+        update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,
+                                        output_filename=namespace.confige_filename.replace(".json", "_auto.json"))
 
     if namespace.group_average_filenames is not None:
         group_average = get_metric_data_from_config(namespace.group_average_filenames, namespace.config_filename)
