@@ -16,10 +16,19 @@ from fcnn.scripts.run_unet_inference import run_inference
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config_filename", required=True, help="Trail config JSON file.")
-    parser.add_argument("--model_filename", required=True)
-    parser.add_argument("--training_log_filename", required=True)
-    parser.add_argument("--machine_config_filename", required=True)
+    parser.add_argument("--config_filename", required=True,
+                        help="JSON configuration file specifying the parameters for model training.")
+    parser.add_argument("--model_filename",
+                        help="Location to save the model during and after training. If this filename exists "
+                             "prior to training, the model will be loaded from the filename.",
+                        required=True)
+    parser.add_argument("--training_log_filename",
+                        help="CSV filename to save the to save the training and validation results for each epoch.",
+                        required=True)
+    parser.add_argument("--machine_config_filename",
+                        help="JSON configuration file containing the number of GPUs and threads that are available "
+                             "for model training.",
+                        required=True)
     parser.add_argument("--group_average_filenames")
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",

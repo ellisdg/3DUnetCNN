@@ -12,7 +12,7 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
         parser.add_argument("--config_filename", required=True)
         parser.add_argument("--model_filename", required=True)
         parser.add_argument("--machine_config_filename",
-                            default="/home/aizenberg/dgellis/fCNN/data/hcc_v100_2gpu_32gb_config.json")
+                            default="/home/aizenberg/dgellis/fCNN/data/v100_2gpu_32gb_config.json")
     parser.add_argument("--directory_template", help="Set this if directory template for running the predictions is "
                                                      "different from the directory used for training.")
     parser.add_argument("--group", default="test")
