@@ -4,14 +4,14 @@ import pandas as pd
 from unet3d.train import run_training
 from unet3d.utils.filenames import wrapped_partial, generate_filenames, load_bias, load_sequence
 from unet3d.utils.sequences import (WholeVolumeToSurfaceSequence, HCPRegressionSequence, ParcelBasedSequence,
-                                  WindowedAutoEncoderSequence)
+                                    WindowedAutoEncoderSequence)
 from unet3d.utils.pytorch.dataset import (WholeBrainCIFTI2DenseScalarDataset, HCPRegressionDataset, AEDataset,
-                                        WholeVolumeSegmentationDataset, WindowedAEDataset)
+                                          WholeVolumeSegmentationDataset, WindowedAEDataset)
 from unet3d.utils.utils import load_json, in_config
 from unet3d.utils.custom import get_metric_data_from_config
 from unet3d.models.keras.resnet.resnet import compare_scores
-from unet3d.scripts.run_unet_inference import format_parser as format_prediction_args, check_hierarchy
-from unet3d.scripts.run_unet_inference import run_inference
+from unet3d.scripts.predict import format_parser as format_prediction_args, check_hierarchy
+from unet3d.scripts.predict import run_inference
 
 
 def parse_args():
@@ -28,13 +28,38 @@ def parse_args():
     parser.add_argument("--machine_config_filename",
                         help="JSON configuration file containing the number of GPUs and threads that are available "
                              "for model training.",
-                        required=True)
+                        required=False)
+    parser.add_argument("--nthreads", default=1, type=int,
+                        help="Number of threads to use during training (default = 1). Warning: using a high number of "
+                             "threads can sometimes cause the computer to run out of memory. This setting is "
+                             "ignored if machine_config_filename is set.")
+    parser.add_argument("--ngpus", default=1, type=int,
+                        help="Number of gpus to use for training. This setting is ignored if machine_config_filename is"
+                             "set.")
+    parser.add_argument("--directory", default="",
+                        help="Directory within which to find the training data. This setting is ignored if "
+                             "machine_config_filename is set.")
+    parser.add_argument("--pin_memory", action="store_true", default=False)
     parser.add_argument("--group_average_filenames")
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
                                               help="Run prediction after the model has finished training")
     format_prediction_args(prediction_parser, sub_command=True)
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    return args
+
+
+def get_system_config(namespace):
+    if namespace.machine_config_filename:
+        print("MP Config: ", namespace.machine_config_filename)
+        return load_json(namespace.machine_config_filename)
+    else:
+        return {"n_workers": namespace.nthreads,
+                "n_gpus": namespace.ngpus,
+                "use_multiprocessing": namespace.nthreads > 1,
+                "pin_memory": namespace.pin_memory,
+                "directory": namespace.directory}
 
 
 def main():
@@ -56,8 +81,7 @@ def main():
 
     print("Model: ", namespace.model_filename)
     print("Log: ", namespace.training_log_filename)
-    print("MP Config: ", namespace.machine_config_filename)
-    system_config = load_json(namespace.machine_config_filename)
+    system_config = get_system_config(namespace)
 
     if namespace.group_average_filenames is not None:
         group_average = get_metric_data_from_config(namespace.group_average_filenames, namespace.config_filename)

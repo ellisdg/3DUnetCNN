@@ -166,7 +166,7 @@ def whole_brain_scalar_predictions(model_filename, subject_ids, hcp_dir, output_
                                    surface_basename_template, target_basenames, model_name, n_outputs, n_features,
                                    window, criterion_name, metric_names, surface_names, reference, package="keras",
                                    n_gpus=1, n_workers=1, batch_size=1, model_kwargs=None):
-    from .scripts.run_trial import generate_hcp_filenames
+    from .scripts.train import generate_hcp_filenames
     filenames = generate_hcp_filenames(directory=hcp_dir, surface_basename_template=surface_basename_template,
                                        target_basenames=target_basenames, feature_basenames=feature_basenames,
                                        subject_ids=subject_ids, hemispheres=hemispheres)
