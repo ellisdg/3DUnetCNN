@@ -19,4 +19,4 @@ Coming soon.
 
 
 ## Got Questions?
-Join the [Slack channel](https://join.slack.com/t/newworkspace-8fj9313/shared_invite/zt-i7083sxj-y9aRXhdiawt9zqZyD8Q2kw) or email me at davidgellis2@gmail.com.
+Join the [Slack group](https://join.slack.com/t/newworkspace-8fj9313/shared_invite/zt-i7083sxj-y9aRXhdiawt9zqZyD8Q2kw) or email me at davidgellis2@gmail.com.
