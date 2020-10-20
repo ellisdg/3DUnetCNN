@@ -79,7 +79,7 @@ def compute_unet_number_of_voxels(window, channels, n_layers):
 def compute_window_size(step, step_size, ratios):
     step_ratios = np.asarray(ratios) * step * step_size
     mod = np.mod(step_ratios, step_size)
-    return np.asarray(step_ratios - mod, dtype=int)
+    return np.asarray(step_ratios - mod + np.round(mod / step_size) * step_size, dtype=int)
 
 
 def update_config_to_fit_gpu_memory(config, n_gpus, gpu_memory, output_filename, voxels_per_gb=16000000.0,
