@@ -1,5 +1,5 @@
 {
-  "subjects_filename": "brats_subjects_2020.json",
+  "subjects_filename": "examples/brats2020/brats_subjects_2020.json",
   "generate_filenames": "templates",
   "generate_filenames_kwargs": {
     "directory": "MICCAI_BraTS2020_TrainingData/BraTS20_Training_{subject}",
