@@ -130,7 +130,7 @@ def main():
 
     if namespace.fit_gpu_mem and namespace.fit_gpu_mem > 0:
         update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,
-                                        output_filename=namespace.confige_filename.replace(".json", "_auto.json"))
+                                        output_filename=namespace.config_filename.replace(".json", "_auto.json"))
 
     if namespace.group_average_filenames is not None:
         group_average = get_metric_data_from_config(namespace.group_average_filenames, namespace.config_filename)
