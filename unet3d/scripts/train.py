@@ -43,10 +43,11 @@ def parse_args():
     parser.add_argument("--pin_memory", action="store_true", default=False)
     parser.add_argument("--fit_gpu_mem", type=float,
                         help="Specify the amount of gpu memory available on a single gpu and change the image size to "
-                             "fit into gpu memory automatically. Tries to find the largest image size that will fit "
+                             "fit into gpu memory automatically. Will try to find the largest image size that will fit "
                              "onto a single gpu. The batch size is overwritten and set to the number of gpus available."
                              " The new image size will be written to a new config file ending named "
-                             "'<original_config>_auto.json'.")
+                             "'<original_config>_auto.json'. This option is experimental and only works with the UNet "
+                             "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
     parser.add_argument("--group_average_filenames")
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
