@@ -1,7 +1,7 @@
 import numpy as np
 from nilearn.image import new_img_like, resample_to_img
 
-from fcnn.utils.affine import get_extent_from_image, adjust_affine_spacing
+from unet3d.utils.affine import get_extent_from_image, adjust_affine_spacing
 
 
 def pad_image(image, mode='edge', pad_width=1):

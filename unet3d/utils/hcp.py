@@ -1,6 +1,6 @@
 import numpy as np
 
-from fcnn.utils.utils import get_nibabel_data
+from unet3d.utils.utils import get_nibabel_data
 
 
 def extract_gifti_surface_vertices(surface, index=0, geometric_type="Anatomical", **kwargs):

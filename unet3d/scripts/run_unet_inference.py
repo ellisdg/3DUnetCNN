@@ -1,9 +1,9 @@
 import os
 import argparse
-from fcnn.utils.utils import load_json, in_config
-from fcnn.predict import volumetric_predictions
-from fcnn.utils.filenames import generate_filenames, load_subject_ids, load_sequence
-from fcnn.scripts.segment import format_parser as format_segmentation_parser
+from unet3d.utils.utils import load_json, in_config
+from unet3d.predict import volumetric_predictions
+from unet3d.utils.filenames import generate_filenames, load_subject_ids, load_sequence
+from unet3d.scripts.segment import format_parser as format_segmentation_parser
 
 
 def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
@@ -162,7 +162,7 @@ def run_inference(namespace):
             labels = list(labels) + list(labels)
 
     if namespace.alternate_prediction_func:
-        from fcnn import predict
+        from unet3d import predict
         func = getattr(predict, namespace.alternate_prediction_func)
     else:
         func = volumetric_predictions

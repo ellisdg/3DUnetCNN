@@ -1,11 +1,11 @@
 import os
 from functools import partial, update_wrapper
 
-from fcnn.utils import sequences as keras_sequences
-from fcnn.utils.pytorch import dataset as pytorch_datasets
-from fcnn.utils.utils import load_image, load_json, in_config
+from unet3d.utils import sequences as keras_sequences
+from unet3d.utils.pytorch import dataset as pytorch_datasets
+from unet3d.utils.utils import load_image, load_json, in_config
 
-fcnn_path = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+unet3d_path = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 
 def wrapped_partial(func, *args, **kwargs):
@@ -169,14 +169,14 @@ def generate_filenames(config, name, system_config, skip_targets=False):
 
 def load_subject_ids(config):
     if "subjects_filename" in config:
-        subjects = load_json(os.path.join(fcnn_path, config["subjects_filename"]))
+        subjects = load_json(os.path.join(unet3d_path, config["subjects_filename"]))
         for key, value in subjects.items():
             config[key] = value
 
 
 def load_bias(bias_filename):
     import numpy as np
-    return np.fromfile(os.path.join(fcnn_path, bias_filename))
+    return np.fromfile(os.path.join(unet3d_path, bias_filename))
 
 
 def load_sequence(sequence_name):

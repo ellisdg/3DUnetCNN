@@ -14,6 +14,6 @@ markComment: >
   recent activity. It will be closed if no further activity occurs. Thank you
   for your contributions. If you have questions, feel free to join the 
   [Slack group](https://join.slack.com/t/newworkspace-8fj9313/shared_invite/zt-i7083sxj-y9aRXhdiawt9zqZyD8Q2kw) 
-  or email me at davidgellis2@gmail.com.
+  or email davidgellis2@gmail.com.
 # Comment to post when closing a stale issue. Set to `false` to disable
 closeComment: false

@@ -1,9 +1,9 @@
 import sys
 import os
-from fcnn.utils.utils import load_json, nib_load_files
-from fcnn.utils.hcp import get_metric_data
-from fcnn.predict import whole_brain_scalar_predictions
-from fcnn.utils.filenames import load_subject_ids
+from unet3d.utils.utils import load_json, nib_load_files
+from unet3d.utils.hcp import get_metric_data
+from unet3d.predict import whole_brain_scalar_predictions
+from unet3d.utils.filenames import load_subject_ids
 
 
 def main():

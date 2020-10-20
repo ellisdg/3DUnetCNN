@@ -1,7 +1,7 @@
 import argparse
 import os
 import nibabel as nib
-from fcnn.utils.utils import one_hot_image_to_label_map
+from unet3d.utils.utils import one_hot_image_to_label_map
 
 
 def parse_args():

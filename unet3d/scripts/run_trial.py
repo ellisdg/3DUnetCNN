@@ -1,17 +1,17 @@
 import os
 import argparse
 import pandas as pd
-from fcnn.train import run_training
-from fcnn.utils.filenames import wrapped_partial, generate_filenames, load_bias, load_sequence
-from fcnn.utils.sequences import (WholeVolumeToSurfaceSequence, HCPRegressionSequence, ParcelBasedSequence,
+from unet3d.train import run_training
+from unet3d.utils.filenames import wrapped_partial, generate_filenames, load_bias, load_sequence
+from unet3d.utils.sequences import (WholeVolumeToSurfaceSequence, HCPRegressionSequence, ParcelBasedSequence,
                                   WindowedAutoEncoderSequence)
-from fcnn.utils.pytorch.dataset import (WholeBrainCIFTI2DenseScalarDataset, HCPRegressionDataset, AEDataset,
+from unet3d.utils.pytorch.dataset import (WholeBrainCIFTI2DenseScalarDataset, HCPRegressionDataset, AEDataset,
                                         WholeVolumeSegmentationDataset, WindowedAEDataset)
-from fcnn.utils.utils import load_json, in_config
-from fcnn.utils.custom import get_metric_data_from_config
-from fcnn.models.keras.resnet.resnet import compare_scores
-from fcnn.scripts.run_unet_inference import format_parser as format_prediction_args, check_hierarchy
-from fcnn.scripts.run_unet_inference import run_inference
+from unet3d.utils.utils import load_json, in_config
+from unet3d.utils.custom import get_metric_data_from_config
+from unet3d.models.keras.resnet.resnet import compare_scores
+from unet3d.scripts.run_unet_inference import format_parser as format_prediction_args, check_hierarchy
+from unet3d.scripts.run_unet_inference import run_inference
 
 
 def parse_args():

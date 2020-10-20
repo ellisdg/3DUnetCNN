@@ -93,7 +93,7 @@ def make_predictions(config_filename, model_filename, output_directory='./', n_s
 
     if single_subject is None:
         if package == "pytorch":
-            from fcnn.models.pytorch.build import build_or_load_model
+            from unet3d.models.pytorch.build import build_or_load_model
 
             model = build_or_load_model(model_filename=model_filename, model_name=config["model_name"],
                                         n_features=config["n_features"], n_outputs=config["n_outputs"],
@@ -112,7 +112,7 @@ def make_predictions(config_filename, model_filename, output_directory='./', n_s
         if single_subject is None or subject_id == single_subject:
             if model is None:
                 if package == "pytorch":
-                    from fcnn.models.pytorch.build import build_or_load_model
+                    from unet3d.models.pytorch.build import build_or_load_model
 
                     model = build_or_load_model(model_filename=model_filename, model_name=config["model_name"],
                                                 n_features=config["n_features"], n_outputs=config["n_outputs"],
@@ -232,7 +232,7 @@ def pytorch_whole_brain_scalar_predictions(model_filename, model_name, n_outputs
                                            output_csv=None, reference=None, n_gpus=1, n_workers=1, batch_size=1,
                                            model_kwargs=None):
     from .train.pytorch import load_criterion
-    from fcnn.models.pytorch.build import build_or_load_model
+    from unet3d.models.pytorch.build import build_or_load_model
     from .utils.pytorch.dataset import WholeBrainCIFTI2DenseScalarDataset
     import torch
     from torch.utils.data import DataLoader
@@ -296,7 +296,7 @@ def pytorch_whole_brain_scalar_predictions(model_filename, model_name, n_outputs
 
 
 def load_volumetric_model(model_name, model_filename, n_outputs, n_features, n_gpus, strict, **kwargs):
-    from fcnn.models.pytorch.build import build_or_load_model
+    from unet3d.models.pytorch.build import build_or_load_model
     model = build_or_load_model(model_name=model_name, model_filename=model_filename, n_outputs=n_outputs,
                                 n_features=n_features, n_gpus=n_gpus, strict=strict, **kwargs)
     model.eval()
