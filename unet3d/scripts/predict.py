@@ -109,7 +109,6 @@ def run_inference(namespace):
         model_kwargs["activation"] = namespace.activation
 
     if "sequence_kwargs" in config:
-        # check_hierarchy(config)
         sequence_kwargs = config["sequence_kwargs"]
         # make sure any augmentations are set to None
         for key in ["augment_scale_std", "additive_noise_std"]:
@@ -196,16 +195,6 @@ def run_inference(namespace):
                 sum_then_threshold=namespace.sum,
                 label_hierarchy=label_hierarchy,
                 write_input_images=namespace.write_input_images)
-
-
-def check_hierarchy(config):
-    if in_config("labels", config["sequence_kwargs"]) and in_config("use_label_hierarchy", config["sequence_kwargs"]):
-        labels = config["sequence_kwargs"].pop("labels")
-        new_labels = list()
-        while len(labels):
-            new_labels.append(labels)
-            labels = labels[1:]
-        config["sequence_kwargs"]["labels"] = new_labels
 
 
 if __name__ == '__main__':
