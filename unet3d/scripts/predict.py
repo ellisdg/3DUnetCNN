@@ -109,7 +109,7 @@ def run_inference(namespace):
         model_kwargs["activation"] = namespace.activation
 
     if "sequence_kwargs" in config:
-        check_hierarchy(config)
+        # check_hierarchy(config)
         sequence_kwargs = config["sequence_kwargs"]
         # make sure any augmentations are set to None
         for key in ["augment_scale_std", "additive_noise_std"]:
