@@ -4,7 +4,7 @@ from unet3d.utils.utils import load_json, in_config
 from unet3d.predict import volumetric_predictions
 from unet3d.utils.filenames import generate_filenames, load_subject_ids, load_sequence
 from unet3d.scripts.segment import format_parser as format_segmentation_parser
-from unet3d.scripts.script_utils import get_system_config
+from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
 
 
 def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
@@ -12,15 +12,7 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
     if not sub_command:
         parser.add_argument("--config_filename", required=True)
         parser.add_argument("--model_filename", required=True)
-        parser.add_argument("--machine_config_filename")
-        parser.add_argument("--nthreads", default=1, type=int,
-                            help="Number of threads to use during training (default = 1). Warning: using a high number "
-                                 "of threads can sometimes cause the computer to run out of memory. This setting is "
-                                 "ignored if machine_config_filename is set.")
-        parser.add_argument("--ngpus", default=1, type=int,
-                            help="Number of gpus to use for training. This setting is ignored if "
-                                 "machine_config_filename is set.")
-
+        add_machine_config_to_parser(parser)
     parser.add_argument("--directory_template", help="Set this if directory template for running the predictions is "
                                                      "different from the directory used for training.")
     parser.add_argument("--group", default="test")
@@ -64,7 +56,7 @@ def run_inference(namespace):
     config = load_json(namespace.config_filename)
     key = namespace.group + "_filenames"
 
-    machine_config = get_system_config(namespace)
+    machine_config = get_machine_config(namespace)
 
     if namespace.filenames:
         filenames = list()
