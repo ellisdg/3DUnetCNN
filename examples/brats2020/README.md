@@ -27,7 +27,7 @@ should be set to the number of threads, number of GPUs, and the amount of GPU me
 
 ```python ../../unet3d/scripts/predict.py --segment --output_directory ./predictions/validation/baseline --config_filename ./brats_config_auto.json --model_filename ./brats_unet3d_baseline.h5 --replace Training Validation --group validation --output_template "BraTS20_Validation_{subject}.nii.gz" --nthreads <nthreads> --ngpus <ngpus>```
 
-```<nthreads>```, and
+```<nthreads>``` and
 ```<ngpus>```
 should be set to the number of threads and gpus that you are using.
 The predicted tumor label map volumes will be in the folder: ```./predictions/validation/baseline```
