@@ -11,8 +11,15 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
     if not sub_command:
         parser.add_argument("--config_filename", required=True)
         parser.add_argument("--model_filename", required=True)
-        parser.add_argument("--machine_config_filename",
-                            default="/home/aizenberg/dgellis/fCNN/data/v100_2gpu_32gb_config.json")
+        parser.add_argument("--machine_config_filename")
+        parser.add_argument("--nthreads", default=1, type=int,
+                            help="Number of threads to use during training (default = 1). Warning: using a high number "
+                                 "of threads can sometimes cause the computer to run out of memory. This setting is "
+                                 "ignored if machine_config_filename is set.")
+        parser.add_argument("--ngpus", default=1, type=int,
+                            help="Number of gpus to use for training. This setting is ignored if "
+                                 "machine_config_filename is set.")
+
     parser.add_argument("--directory_template", help="Set this if directory template for running the predictions is "
                                                      "different from the directory used for training.")
     parser.add_argument("--group", default="test")
