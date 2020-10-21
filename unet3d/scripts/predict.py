@@ -147,7 +147,6 @@ def run_inference(namespace):
 
     labels = sequence_kwargs["labels"] if namespace.segment else None
     label_hierarchy = labels is not None and in_config("use_label_hierarchy", sequence_kwargs, False)
-    print("LABELS", labels, label_hierarchy)
     if label_hierarchy and (namespace.threahold != 0.5 or not namespace.no_sum):
         # TODO: put a warning here instead of a print statement
         print("Using label hierarchy. Resetting threshold to 0.5 and turning the summation off.")
@@ -197,7 +196,6 @@ def run_inference(namespace):
 
 def check_hierarchy(config):
     if in_config("labels", config["sequence_kwargs"]) and in_config("use_label_hierarchy", config["sequence_kwargs"]):
-        config["sequence_kwargs"].pop("use_label_hierarchy")
         labels = config["sequence_kwargs"].pop("labels")
         new_labels = list()
         while len(labels):
