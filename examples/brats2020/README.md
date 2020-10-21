@@ -10,7 +10,8 @@ export PYTHONPATH=${PWD}:${PYTHONPATH}
 
 ```cd examples/brats2020``` 
 
-3. Download BraTS2020 data to the ```brats2020``` example directory. 
+3. Download the [BraTS2020 data](https://www.med.upenn.edu/cbica/brats2020/data.html) 
+to the ```brats2020``` example directory. 
 The training data folder should be named ```MICCAI_BraTS2020_TrainingData```
 and the validation data folder should be named ```MICCAI_BraTS2020_ValidationData```.
 4. Train the model:
@@ -30,7 +31,8 @@ should be set to the number of threads, number of GPUs, and the amount of GPU me
 should be set to the number of threads and gpus that you are using.
 The predicted tumor label map volumes will be in the folder: ```./predictions/validation/baseline```
 
-These label maps can be uploaded and scored via the CBICA portal.
+These label maps are ready to be submitted to the [CBICA portal](https://ipp.cbica.upenn.edu/) 
+that the BraTS challenge uses to score and rank submissions.
 
 #### Notes on configuration
 The ```train.py``` script will automatically set the input image size and batch size based on the amount of GPU memory and number of GPUs.
