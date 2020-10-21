@@ -23,7 +23,7 @@ and the validation data folder should be named ```MICCAI_BraTS2020_ValidationDat
 should be set to the number of threads, number of GPUs, and the amount of GPU memory in GB on a single gpu that will be used for training.
 5. Predict the tumor label maps for the validation data:
 
-```python ../../unet3d/scripts/predict.py segment --output_directory ./predictions/validation/baseline --config_filename ./brats_config_auto.json --model_filename ./brats_unet3d_baseline.h5 --replace Training Validation --group validation --output_template "BraTS20_Validation_{subject}.nii.gz" --nthreads <nthreads> --ngpus <ngpus>```
+```python ../../unet3d/scripts/predict.py --segment --output_directory ./predictions/validation/baseline --config_filename ./brats_config_auto.json --model_filename ./brats_unet3d_baseline.h5 --replace Training Validation --group validation --output_template "BraTS20_Validation_{subject}.nii.gz" --nthreads <nthreads> --ngpus <ngpus>```
 
 ```<nthreads>```, and
 ```<ngpus>```

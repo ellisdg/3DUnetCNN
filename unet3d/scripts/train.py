@@ -13,6 +13,7 @@ from unet3d.utils.custom import get_metric_data_from_config
 from unet3d.models.keras.resnet.resnet import compare_scores
 from unet3d.scripts.predict import format_parser as format_prediction_args, check_hierarchy
 from unet3d.scripts.predict import run_inference
+from unet3d.scripts.script_utils import get_system_config
 
 
 def parse_args():
@@ -56,18 +57,6 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-
-
-def get_system_config(namespace):
-    if namespace.machine_config_filename:
-        print("MP Config: ", namespace.machine_config_filename)
-        return load_json(namespace.machine_config_filename)
-    else:
-        return {"n_workers": namespace.nthreads,
-                "n_gpus": namespace.ngpus,
-                "use_multiprocessing": namespace.nthreads > 1,
-                "pin_memory": namespace.pin_memory,
-                "directory": namespace.directory}
 
 
 def compute_unet_number_of_voxels(window, channels, n_layers):
