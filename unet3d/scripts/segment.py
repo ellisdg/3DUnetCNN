@@ -10,7 +10,7 @@ def parse_args():
 
 def format_parser(parser, sub_command=False):
     if sub_command:
-        parser.add_argument("--segmentation", action="store_true", default=False)
+        parser.add_argument("--segment", action="store_true", default=False)
     else:
         parser.add_argument("--filenames", nargs="*", required=True)
         parser.add_argument("--labels", nargs="*", required=True)

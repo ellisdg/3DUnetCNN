@@ -13,6 +13,7 @@ from unet3d.utils.custom import get_metric_data_from_config
 from unet3d.models.keras.resnet.resnet import compare_scores
 from unet3d.scripts.predict import format_parser as format_prediction_args, check_hierarchy
 from unet3d.scripts.predict import run_inference
+from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
 
 
 def parse_args():
@@ -26,21 +27,6 @@ def parse_args():
     parser.add_argument("--training_log_filename",
                         help="CSV filename to save the to save the training and validation results for each epoch.",
                         required=True)
-    parser.add_argument("--machine_config_filename",
-                        help="JSON configuration file containing the number of GPUs and threads that are available "
-                             "for model training.",
-                        required=False)
-    parser.add_argument("--nthreads", default=1, type=int,
-                        help="Number of threads to use during training (default = 1). Warning: using a high number of "
-                             "threads can sometimes cause the computer to run out of memory. This setting is "
-                             "ignored if machine_config_filename is set.")
-    parser.add_argument("--ngpus", default=1, type=int,
-                        help="Number of gpus to use for training. This setting is ignored if machine_config_filename is"
-                             "set.")
-    parser.add_argument("--directory", default="",
-                        help="Directory within which to find the training data. This setting is ignored if "
-                             "machine_config_filename is set.")
-    parser.add_argument("--pin_memory", action="store_true", default=False)
     parser.add_argument("--fit_gpu_mem", type=float,
                         help="Specify the amount of gpu memory available on a single gpu and change the image size to "
                              "fit into gpu memory automatically. Will try to find the largest image size that will fit "
@@ -49,6 +35,7 @@ def parse_args():
                              "'<original_config>_auto.json'. This option is experimental and only works with the UNet "
                              "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
     parser.add_argument("--group_average_filenames")
+    add_machine_config_to_parser(parser)
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
                                               help="Run prediction after the model has finished training")
@@ -56,18 +43,6 @@ def parse_args():
     args = parser.parse_args()
 
     return args
-
-
-def get_system_config(namespace):
-    if namespace.machine_config_filename:
-        print("MP Config: ", namespace.machine_config_filename)
-        return load_json(namespace.machine_config_filename)
-    else:
-        return {"n_workers": namespace.nthreads,
-                "n_gpus": namespace.ngpus,
-                "use_multiprocessing": namespace.nthreads > 1,
-                "pin_memory": namespace.pin_memory,
-                "directory": namespace.directory}
 
 
 def compute_unet_number_of_voxels(window, channels, n_layers):
@@ -126,7 +101,7 @@ def main():
 
     print("Model: ", namespace.model_filename)
     print("Log: ", namespace.training_log_filename)
-    system_config = get_system_config(namespace)
+    system_config = get_machine_config(namespace)
 
     if namespace.fit_gpu_mem and namespace.fit_gpu_mem > 0:
         update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,

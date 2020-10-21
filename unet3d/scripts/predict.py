@@ -4,6 +4,7 @@ from unet3d.utils.utils import load_json, in_config
 from unet3d.predict import volumetric_predictions
 from unet3d.utils.filenames import generate_filenames, load_subject_ids, load_sequence
 from unet3d.scripts.segment import format_parser as format_segmentation_parser
+from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
 
 
 def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
@@ -11,8 +12,7 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
     if not sub_command:
         parser.add_argument("--config_filename", required=True)
         parser.add_argument("--model_filename", required=True)
-        parser.add_argument("--machine_config_filename",
-                            default="/home/aizenberg/dgellis/fCNN/data/v100_2gpu_32gb_config.json")
+        add_machine_config_to_parser(parser)
     parser.add_argument("--directory_template", help="Set this if directory template for running the predictions is "
                                                      "different from the directory used for training.")
     parser.add_argument("--group", default="test")
@@ -56,8 +56,7 @@ def run_inference(namespace):
     config = load_json(namespace.config_filename)
     key = namespace.group + "_filenames"
 
-    print("Machine config: ", namespace.machine_config_filename)
-    machine_config = load_json(namespace.machine_config_filename)
+    machine_config = get_machine_config(namespace)
 
     if namespace.filenames:
         filenames = list()
@@ -110,7 +109,6 @@ def run_inference(namespace):
         model_kwargs["activation"] = namespace.activation
 
     if "sequence_kwargs" in config:
-        check_hierarchy(config)
         sequence_kwargs = config["sequence_kwargs"]
         # make sure any augmentations are set to None
         for key in ["augment_scale_std", "additive_noise_std"]:
@@ -146,13 +144,17 @@ def run_inference(namespace):
     else:
         sequence = None
 
-    labels = sequence_kwargs["labels"] if namespace.segmentation else None
-    label_hierarchy = labels is not None and in_config("use_label_hierarchy", sequence_kwargs, False)
-    if label_hierarchy:
+    labels = sequence_kwargs["labels"] if namespace.segment else None
+    if "use_label_hierarchy" in sequence_kwargs:
+        label_hierarchy = sequence_kwargs.pop("use_label_hierarchy")
+    else:
+        label_hierarchy = False
+
+    if label_hierarchy and (namespace.threshold != 0.5 or namespace.sum):
         # TODO: put a warning here instead of a print statement
         print("Using label hierarchy. Resetting threshold to 0.5 and turning the summation off.")
         namespace.threshold = 0.5
-        namespace.no_sum = True
+        namespace.sum = False
     if in_config("add_contours", sequence_kwargs, False):
         config["n_outputs"] = config["n_outputs"] * 2
         if namespace.use_contours:
@@ -187,23 +189,12 @@ def run_inference(namespace):
                 resample_predictions=(not namespace.no_resample),
                 interpolation=namespace.interpolation,
                 output_template=namespace.output_template,
-                segmentation=namespace.segmentation,
+                segmentation=namespace.segment,
                 segmentation_labels=labels,
                 threshold=namespace.threshold,
                 sum_then_threshold=namespace.sum,
                 label_hierarchy=label_hierarchy,
                 write_input_images=namespace.write_input_images)
-
-
-def check_hierarchy(config):
-    if in_config("labels", config["sequence_kwargs"]) and in_config("use_label_hierarchy", config["sequence_kwargs"]):
-        config["sequence_kwargs"].pop("use_label_hierarchy")
-        labels = config["sequence_kwargs"].pop("labels")
-        new_labels = list()
-        while len(labels):
-            new_labels.append(labels)
-            labels = labels[1:]
-        config["sequence_kwargs"]["labels"] = new_labels
 
 
 if __name__ == '__main__':
