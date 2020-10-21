@@ -1,5 +1,5 @@
 # 3D U-Net Convolution Neural Network
-## [Brain Tumor Segmentation (BraTS)](examples/brats2020)
+## [Brain Tumor Segmentation (BraTS) Tutorial](examples/brats2020)
 [![Tumor Segmentation Example](legacy/doc/tumor_segmentation_illusatration.gif)](examples/brats2020)
 ## [Automatic Cranial Implant Design (AutoImpant)](examples/autoimplant2020)
 [![ Segmentation Example](doc/AutoImplant-Viz.png)](examples/autoimplant2020)
