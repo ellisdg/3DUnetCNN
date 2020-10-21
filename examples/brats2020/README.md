@@ -19,4 +19,14 @@ The training data folder should be named ```MICCAI_BraTS2020_TrainingData```.
 ```<nthreads>```,
 ```<ngpus>```, and
 ```<gpu_mem>```
-should be set to the number of threads, number of gpus, and the amount of gpu memory on a single gpu that will be used for training.
+should be set to the number of threads, number of GPUs, and the amount of GPU memory in GB on a single gpu that will be used for training.
+
+
+
+#### Notes on configuration
+The ```train.py``` script will automatically set the input image size and batch size based on the amount of GPU memory and number of GPUs.
+If you do not want these settings automatically set, you can adjust them yourself by making changes to the config filename and not using the
+```--fit_gpu_mem``` flag. 
+Instead of specifying the number of GPUs and threads on the command line, you can also make a configuration file for the machine you are using
+and pass this using the ```--machine_config_filename``` flag. 
+Click [here](../machine_configs/v100_2gpu_32gb_config.json) to see an example machine configuration JSON file.
