@@ -11,7 +11,7 @@ from unet3d.utils.pytorch.dataset import (WholeBrainCIFTI2DenseScalarDataset, HC
 from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.utils.custom import get_metric_data_from_config
 from unet3d.models.keras.resnet.resnet import compare_scores
-from unet3d.scripts.predict import format_parser as format_prediction_args, check_hierarchy
+from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
 from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
 
@@ -43,6 +43,17 @@ def parse_args():
     args = parser.parse_args()
 
     return args
+
+
+def check_hierarchy(config):
+    if in_config("labels", config["sequence_kwargs"]) and in_config("use_label_hierarchy", config["sequence_kwargs"]):
+        config["sequence_kwargs"].pop("use_label_hierarchy")
+        labels = config["sequence_kwargs"].pop("labels")
+        new_labels = list()
+        while len(labels):
+            new_labels.append(labels)
+            labels = labels[1:]
+        config["sequence_kwargs"]["labels"] = new_labels
 
 
 def compute_unet_number_of_voxels(window, channels, n_layers):
