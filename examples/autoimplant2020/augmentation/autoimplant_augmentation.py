@@ -36,7 +36,7 @@ def register_skull_to_skull(skull_filename1, skull_filename2, prefix, num_thread
     print(cmd.cmdline)
     cmd.run()
     if not debug:
-        for fn in glob.glob(os.path.abspath(os.path.join(".", prefix + "*Warped.nii.gz"))):
+        for fn in glob.glob(os.path.abspath(os.path.join("..", prefix + "*Warped.nii.gz"))):
             print("Removing:", fn)
             os.remove(fn)
 
