@@ -10,6 +10,7 @@ export PYTHONPATH=${PWD}:${PYTHONPATH}
 ```cd examples/brats2020``` 
 
 3. Download the augmented dataset and un-archive it into the current directory ("examples/autoimplant2020"):
+
 [https://zenodo.org/record/4270278](https://zenodo.org/record/4270278)
 
 4. Train the model:
