@@ -31,3 +31,5 @@ Note that the training will take a long time. Training on 2 V100 GPUs took 7 day
 ```<ngpus>```
 should be set to the number of threads and gpus that you are using.
 The predicted complete skull volumes will be in the folder: ```./predictions/validation/fold0```
+
+See for [Configuration.md](../../doc/Configuration.md) for tips on how to customize the configuration.
