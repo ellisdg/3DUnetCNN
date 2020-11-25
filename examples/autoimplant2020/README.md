@@ -5,9 +5,9 @@ git clone https://github.com/ellisdg/3DUnetCNN.git
 cd 3DUnetCNN
 export PYTHONPATH=${PWD}:${PYTHONPATH}
 ``` 
-2. ```cd``` into the ```brats2020``` example directory:
+2. ```cd``` into the ```autoimplant2020``` example directory:
 
-```cd examples/brats2020``` 
+```cd examples/autoimplant2020``` 
 
 3. Download the augmented dataset and un-archive it into the current directory ("examples/autoimplant2020"):
 
