@@ -34,3 +34,6 @@ should be set to the number of threads and gpus that you are using.
 The predicted complete skull volumes will be in the folder: ```./predictions/validation/fold0```
 
 See for [Configuration.md](../../doc/Configuration.md) for tips on how to customize the configuration.
+
+## Citation
+Ellis D.G., Aizenberg M.R. (2020) Deep Learning Using Augmentation via Registration: 1st Place Solution to the AutoImplant 2020 Challenge. In: Li J., Egger J. (eds) Towards the Automatization of Cranial Implant Design in Cranioplasty. AutoImplant 2020. Lecture Notes in Computer Science, vol 12439. Springer, Cham. https://doi.org/10.1007/978-3-030-64327-0_6
