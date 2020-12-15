@@ -38,6 +38,7 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
                                                             "volumetric predictions.")
     parser.add_argument("--activation", default=None)
     parser.add_argument("--write_input_images", default=False, action="store_true")
+    parser.add_argument("--debug", default=False, action="store_true")
     format_segmentation_parser(parser, sub_command=True)
     return parser
 
@@ -81,7 +82,7 @@ def run_inference(namespace):
         if namespace.subjects_config_filename:
             config[namespace.group] = load_json(namespace.subjects_config_filename)[namespace.group]
         filenames = generate_filenames(config, namespace.group, machine_config,
-                                       skip_targets=(not namespace.eval))
+                                       skip_targets=(not namespace.eval), raise_if_not_exists=namespace.debug)
 
     else:
         filenames = config[key]

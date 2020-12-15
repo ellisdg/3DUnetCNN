@@ -144,7 +144,7 @@ def generate_filenames_from_multisource_templates(subject_ids, feature_templates
     return filenames
 
 
-def generate_filenames(config, name, system_config, skip_targets=False):
+def generate_filenames(config, name, system_config, skip_targets=False, raise_if_not_exists=False):
     if name not in config:
         load_subject_ids(config)
     if "generate_filenames" not in config or config["generate_filenames"] == "classic":
@@ -164,7 +164,7 @@ def generate_filenames(config, name, system_config, skip_targets=False):
         return generate_filenames_from_multisource_templates(config[name], **config["generate_filenames_kwargs"])
     elif config["generate_filenames"] == "templates":
         return generate_filenames_from_templates(config[name], **config["generate_filenames_kwargs"],
-                                                 skip_targets=skip_targets)
+                                                 skip_targets=skip_targets, raise_if_not_exists=raise_if_not_exists)
 
 
 def load_subject_ids(config):
