@@ -17,7 +17,7 @@ The links above give examples/tutorials for how to use this project with data fr
 ## [Pretrained Models](https://zenodo.org/record/4289225)
 
 ## Got Questions?
-Join the [Slack group](https://join.slack.com/t/3dunet/shared_invite/zt-nto1zzth-IJDmwEkRi1ftk50KZXCBYg) or email me at davidgellis2@gmail.com.
+See [FAQ](doc/FAQ.md), raise an issue on GitHub, or email me at davidgellis2@gmail.com.
 
 
 ## Citation
