@@ -29,7 +29,11 @@ def resample_image(source_image, target_image, interpolation="linear", pad_mode=
     return resample_to_img(source_image, target_image, interpolation=interpolation)
 
 
-def resample(image, target_affine, target_shape, interpolation='linear', pad_mode='edge', pad=False):
-    target_data = np.zeros(target_shape, dtype=image.get_data_dtype())
+def resample(image, target_affine, target_shape, interpolation='linear', pad_mode='edge', pad=False, dtype=None):
+    if dtype is None:
+        dtype = image.get_data_dtype()
+    else:
+        image = image.__class__(np.asarray(image.dataobj, dtype), affine=image.affine)
+    target_data = np.zeros(target_shape, dtype=dtype)
     target_image = image.__class__(target_data, affine=target_affine)
     return resample_image(image, target_image, interpolation=interpolation, pad_mode=pad_mode, pad=pad)

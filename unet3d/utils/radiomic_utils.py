@@ -3,7 +3,6 @@ from multiprocessing import Pool, Manager, Process
 from functools import partial
 import os
 from nilearn.image import reorder_img, resample_to_img
-import matplotlib.pyplot as plt
 import nibabel as nib
 
 from .utils import update_progress, move_channels_first, move_channels_last, load_single_image
@@ -105,6 +104,7 @@ def load_fs_lut():
 
 
 def view_mdfa_image(mdfa_filename, reference_filename):
+    import matplotlib.pyplot as plt
     reference_image = nib.load(reference_filename)
     mdfa_image = reorder_img(nib.load(mdfa_filename), resample='linear')
     resampled_reference_image = resample_to_img(reference_image, mdfa_image,
@@ -147,6 +147,7 @@ def index_to_point(index, affine):
 
 
 def view_input_data(data):
+    import matplotlib.pyplot as plt
     midway_points = np.asarray(np.divide(data.shape[:3], 2), np.int)
     fig, axes = plt.subplots(2, 3, figsize=(12, 8), num=1)
     axes[0, 1].imshow(np.rot90(data[midway_points[0], :, :,0]), cmap='gray')
@@ -279,6 +280,7 @@ def plot_diagonal(ax):
     
 
 def plot_predictions(predictions):
+    import matplotlib.pyplot as plt
     fig, ax = plt.subplots(1)
     for dataset_name, dataset_predictions in predictions.items():
         plot_dataset_predictions(ax, dataset_predictions, dataset_name)

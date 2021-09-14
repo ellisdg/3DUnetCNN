@@ -230,15 +230,15 @@ def move_channels_first(data):
     return np.moveaxis(data, -1, 0)
 
 
-def nib_load_files(filenames, reorder=False, interpolation="linear"):
+def nib_load_files(filenames, reorder=False, interpolation="linear", dtype=None):
     if type(filenames) != list:
         filenames = [filenames]
-    return [load_image(filename, reorder=reorder, interpolation=interpolation, force_4d=False)
+    return [load_image(filename, reorder=reorder, interpolation=interpolation, force_4d=False, dtype=dtype)
             for filename in filenames]
 
 
 def load_image(filename, feature_axis=3, resample_unequal_affines=True, interpolation="linear", force_4d=False,
-               reorder=False):
+               reorder=False, dtype=None):
     """
     :param feature_axis: axis along which to combine the images, if necessary.
     :param filename: can be either string path to the file or a list of paths.
@@ -247,16 +247,19 @@ def load_image(filename, feature_axis=3, resample_unequal_affines=True, interpol
 
     if type(filename) != list:
         if not force_4d:
-            return load_single_image(filename=filename, resample=interpolation, reorder=reorder)
+            return load_single_image(filename=filename, resample=interpolation, reorder=reorder, dtype=dtype)
         else:
             filename = [filename]
 
-    return combine_images(nib_load_files(filename, reorder=reorder, interpolation=interpolation), axis=feature_axis,
-                          resample_unequal_affines=resample_unequal_affines, interpolation=interpolation)
+    return combine_images(nib_load_files(filename, reorder=reorder, interpolation=interpolation, dtype=dtype),
+                          axis=feature_axis, resample_unequal_affines=resample_unequal_affines,
+                          interpolation=interpolation)
 
 
-def load_single_image(filename, resample=None, reorder=True):
+def load_single_image(filename, resample=None, reorder=True, dtype=None):
     image = nib.load(filename)
+    if dtype is not None:
+        image = new_img_like(image, np.asarray(image.dataobj, dtype))
     if reorder:
         return reorder_img(image, resample=resample)
     return image

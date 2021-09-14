@@ -2,7 +2,6 @@ import os
 from functools import partial
 import numpy as np
 import nibabel as nib
-from keras.utils import Sequence
 from nilearn.image import new_img_like, resample_to_img, reorder_img
 import random
 import warnings
@@ -21,6 +20,25 @@ from . import normalize
 from .resample import resample
 from .augment import scale_affine, add_noise, affine_swap_axis, translate_affine, random_blur, random_permutation_x_y
 from .affine import resize_affine
+
+
+class Sequence(object):
+    """
+    Based off of keras.utils.Sequence
+    """
+
+    def __getitem__(self, index):
+        raise NotImplementedError
+
+    def __len__(self):
+        raise NotImplementedError
+
+    def on_epoch_end(self):
+        pass
+
+    def __iter__(self):
+        for item in (self[i] for i in range(len(self))):
+            yield item
 
 
 def normalization_name_to_function(normalization_name):
@@ -387,7 +405,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
                  augment_scale_std=0, augment_scale_probability=1, additive_noise_std=0, additive_noise_probability=1,
                  augment_blur_mean=None, augment_blur_std=None, augment_blur_probability=1,
                  augment_translation_std=None, augment_translation_probability=1, flip_left_right_probability=0,
-                 flip_front_back_probability=0, resample=None, **kwargs):
+                 flip_front_back_probability=0, resample=None, dtype=None, **kwargs):
         """
 
         :param interpolation: interpolation to use when formatting the feature image.
@@ -424,6 +442,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
         self.augment_translation_probability = augment_translation_probability
         self.flip_left_right_probability = flip_left_right_probability
         self.flip_front_back_probability = flip_front_back_probability
+        self.dtype = dtype
 
     def __len__(self):
         return int(np.ceil(np.divide(len(self.epoch_filenames), self.batch_size)))
@@ -521,7 +540,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
     def load_image(self, filenames, index, force_4d=True, interpolation="linear", sub_volume_indices=None):
         filename = filenames[index]
         # Reordering is done when the image is formatted
-        image = load_image(filename, force_4d=force_4d, reorder=False, interpolation=interpolation)
+        image = load_image(filename, force_4d=force_4d, reorder=False, interpolation=interpolation, dtype=self.dtype)
         if sub_volume_indices:
             image = extract_sub_volumes(image, sub_volume_indices)
         return image
