@@ -3,7 +3,6 @@ import time
 import numpy as np
 import nibabel as nib
 import pandas as pd
-from keras.models import load_model
 from nilearn.image import resample_to_img, new_img_like
 from .utils.utils import (load_json, get_nibabel_data, one_hot_image_to_label_map,
                           break_down_volume_into_half_size_volumes, combine_half_size_volumes)
@@ -99,6 +98,7 @@ def make_predictions(config_filename, model_filename, output_directory='./', n_s
                                         n_features=config["n_features"], n_outputs=config["n_outputs"],
                                         n_gpus=n_gpus, **model_kwargs)
         else:
+            from keras.models import load_model
             model = load_model(model_filename)
     else:
         model = None

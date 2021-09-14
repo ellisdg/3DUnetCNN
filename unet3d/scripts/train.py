@@ -10,7 +10,6 @@ from unet3d.utils.pytorch.dataset import (WholeBrainCIFTI2DenseScalarDataset, HC
                                           WholeVolumeSegmentationDataset, WindowedAEDataset)
 from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.utils.custom import get_metric_data_from_config
-from unet3d.models.keras.resnet.resnet import compare_scores
 from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
 from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
@@ -120,6 +119,7 @@ def main():
 
     if namespace.group_average_filenames is not None:
         group_average = get_metric_data_from_config(namespace.group_average_filenames, namespace.config_filename)
+        from unet3d.models.keras.resnet.resnet import compare_scores
         model_metrics = [wrapped_partial(compare_scores, comparison=group_average)]
         metric_to_monitor = "compare_scores"
     else:

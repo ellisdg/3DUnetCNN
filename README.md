@@ -8,11 +8,9 @@
 We designed 3DUnetCNN to make it easy to apply and control the training and application of various deep learning models to medical imaging data.
 The links above give examples/tutorials for how to use this project with data from various MICCAI challenges.
 
-## Dependencies
-* Pytorch
-* nilearn
-* pandas
-* keras
+## Getting started
+Install [PyTorch](https://pytorch.org/get-started/locally/) and 
+[nilearn](https://nilearn.github.io/introduction.html#installing-nilearn).
 
 ## [Pretrained Models](https://zenodo.org/record/4289225)
 
