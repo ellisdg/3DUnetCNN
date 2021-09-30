@@ -15,7 +15,7 @@ Install [PyTorch](https://pytorch.org/get-started/locally/) and
 ## [Pretrained Models](https://zenodo.org/record/4289225)
 
 ## Got Questions?
-See [FAQ](doc/FAQ.md), raise an issue on GitHub, or email me at davidgellis2@gmail.com.
+See [FAQ](doc/FAQ.md), raise an issue on GitHub, or email me at david.ellis@unmc.edu.
 
 
 ## Citation
