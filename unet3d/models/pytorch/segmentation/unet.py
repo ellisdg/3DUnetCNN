@@ -41,6 +41,13 @@ class UNet(ConvolutionalAutoEncoder):
         self.set_final_convolution(n_outputs=n_outputs)
 
 
+class AutocastUNet(UNet):
+    def forward(self, *args, **kwargs):
+        from torch.cuda.amp import autocast
+        with autocast():
+            super().forward(*args, **kwargs)
+
+
 class AutoImplantUNet(UNet):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

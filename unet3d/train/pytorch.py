@@ -22,7 +22,8 @@ def build_optimizer(optimizer_name, model_parameters, learning_rate=1e-4):
 def run_pytorch_training(config, model_filename, training_log_filename, verbose=1, use_multiprocessing=False,
                          n_workers=1, max_queue_size=5, model_name='resnet_34', n_gpus=1, regularized=False,
                          sequence_class=WholeBrainCIFTI2DenseScalarDataset, directory=None, test_input=1,
-                         metric_to_monitor="loss", model_metrics=(), bias=None, pin_memory=False, **unused_args):
+                         metric_to_monitor="loss", model_metrics=(), bias=None, pin_memory=False, amp=False,
+                         **unused_args):
     """
     :param test_input: integer with the number of inputs from the generator to write to file. 0, False, or None will
     write no inputs to file.
@@ -170,7 +171,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
           model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
           learning_rate_decay_patience=None, save_best=False, n_gpus=1, verbose=True, regularized=False,
           vae=False, decay_factor=0.1, min_lr=0., learning_rate_decay_step_size=None, save_every_n_epochs=None,
-          save_last_n_models=1):
+          save_last_n_models=1, amp=False):
     training_log = list()
     if os.path.exists(training_log_filename):
         training_log.extend(pd.read_csv(training_log_filename).values)
@@ -207,7 +208,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
         # train the model
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
-                              regularized=regularized, vae=vae)
+                              regularized=regularized, vae=vae, amp=amp)
         try:
             training_loader.dataset.on_epoch_end()
         except AttributeError:
