@@ -77,9 +77,9 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
 
 def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, scaler=None):
-    if n_gpus is not None:
-        images = images.cuda()
-        target = target.cuda()
+    # if n_gpus is not None:
+    #     images = images.cuda()
+    #     target = target.cuda()
     # compute output
     if scaler:
         from torch.cuda.amp import autocast
