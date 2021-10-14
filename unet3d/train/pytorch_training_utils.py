@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 
 def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None, print_frequency=1, regularized=False,
-                   print_gpu_memory=False, vae=False, amp=False):
+                   print_gpu_memory=False, vae=False, scaler=None):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -25,10 +25,6 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
         len(train_loader),
         [batch_time, data_time, losses],
         prefix="Epoch: [{}]".format(epoch))
-
-    if amp:
-        from torch.cuda.amp import GradScaler, autocast
-        scaler = GradScaler()
 
     # switch to train mode
     model.train()
@@ -39,7 +35,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
         data_time.update(time.time() - end)
 
         if n_gpus:
-            torch.cuda.empty_cache()
+            # torch.cuda.empty_cache()
             if print_gpu_memory:
                 for i_gpu in range(n_gpus):
                     print("Memory allocated (device {}):".format(i_gpu),
@@ -52,20 +48,21 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
                           human_readable_size(torch.cuda.max_memory_cached(i_gpu)))
 
         optimizer.zero_grad()
-        if amp:
+        if scaler:
+            from torch.cuda.amp import autocast
             with autocast():
                 loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
                                               vae=vae)
         else:
             loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
                                           vae=vae)
-        if n_gpus:
-            torch.cuda.empty_cache()
+        # if n_gpus:
+        #    torch.cuda.empty_cache()
 
         # measure accuracy and record loss
         losses.update(loss.item(), batch_size)
 
-        if amp:
+        if scaler:
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
@@ -74,7 +71,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
             loss.backward()
             optimizer.step()
 
-        del loss
+        # del loss
 
         # measure elapsed time
         batch_time.update(time.time() - end)

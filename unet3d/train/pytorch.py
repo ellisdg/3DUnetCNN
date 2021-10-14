@@ -198,6 +198,12 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
     else:
         scheduler = None
 
+    if amp:
+        from torch.cuda.amp import GradScaler
+        scaler = GradScaler()
+    else:
+        scaler = None
+
     for epoch in range(start_epoch, n_epochs):
 
         # early stopping
@@ -209,7 +215,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
         # train the model
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
-                              regularized=regularized, vae=vae, amp=amp)
+                              regularized=regularized, vae=vae, scaler=scaler)
         try:
             training_loader.dataset.on_epoch_end()
         except AttributeError:
