@@ -164,7 +164,8 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
           min_lr=in_config("min_learning_rate", config),
           learning_rate_decay_step_size=in_config("decay_step_size", config),
           save_every_n_epochs=in_config("save_every_n_epochs", config),
-          save_last_n_models=in_config("save_last_n_models", config, 1))
+          save_last_n_models=in_config("save_last_n_models", config, 1),
+          amp=amp)
 
 
 def train(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
