@@ -48,14 +48,8 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
                           human_readable_size(torch.cuda.max_memory_cached(i_gpu)))
 
         optimizer.zero_grad()
-        if scaler:
-            from torch.cuda.amp import autocast
-            with autocast():
-                loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
-                                              vae=vae)
-        else:
-            loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
-                                          vae=vae)
+        loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
+                                      vae=vae, scaler=scaler)
         # if n_gpus:
         #    torch.cuda.empty_cache()
 
@@ -82,11 +76,20 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
     return losses.avg
 
 
-def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False):
+def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, scaler=None):
     if n_gpus is not None:
         images = images.cuda()
         target = target.cuda()
     # compute output
+    if scaler:
+        from torch.cuda.amp import autocast
+        with autocast():
+            return _batch_loss(model, images, target, criterion, regularized=regularized, vae=vae)
+    else:
+        return _batch_loss(model, images, target, criterion, regularized=regularized, vae=vae)
+
+
+def _batch_loss(model, images, target, criterion, regularized=False, vae=False):
     output = model(images)
     batch_size = images.size(0)
     if regularized:
