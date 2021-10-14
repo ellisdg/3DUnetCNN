@@ -1,5 +1,5 @@
 {
-  "subjects_filename": "examples/autoimplant2020/subjects_augmented.json",
+  "subjects_filename": "examples/autoimplant2020/crossvalidation/autoimplant_config_fold0.json",
   "generate_filenames": "templates",
   "generate_filenames_kwargs": {
     "directory": "augmented",
