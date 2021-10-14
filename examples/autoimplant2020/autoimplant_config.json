@@ -2,7 +2,7 @@
   "subjects_filename": "examples/autoimplant2020/subjects_augmented.json",
   "generate_filenames": "templates",
   "generate_filenames_kwargs": {
-    "directory": "augmented_autoimplant2020_data",
+    "directory": "examples/autoimplant2020/augmented",
     "feature_templates": [
       "augmented_defective_skull/{subject}_defective_skull.nii.gz"
     ],
