@@ -15,7 +15,7 @@ export PYTHONPATH=${PWD}:${PYTHONPATH}
 
 4. Train the model:
 
-```python -W ignore::UserWarning:nilearn.image.resampling:273 ../../unet3d/scripts/train.py --config_filename ./crossvalidation/autoimplant_config_fold0.json --model_filename ./autoimplant_unet3d_fold0.h5 --training_log_filename ./autoimplant_unet3d_fold0_training_log.csv --nthreads <nthreads> --ngpus <ngpus> --fit_gpu_mem <gpu_mem>```
+```python -W ignore::UserWarning:nilearn.image.resampling:273 ../../unet3d/scripts/train.py --config_filename ./autoimplant_config.json --model_filename ./autoimplant_unet3d_fold0.h5 --training_log_filename ./autoimplant_unet3d_fold0_training_log.csv --nthreads <nthreads> --ngpus <ngpus> --fit_gpu_mem <gpu_mem>```
 
 ```<nthreads>```,
 ```<ngpus>```, and
