@@ -34,6 +34,7 @@ def parse_args():
                              "'<original_config>_auto.json'. This option is experimental and only works with the UNet "
                              "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
     parser.add_argument("--group_average_filenames")
+    parser.add_argument("--batch_size", help="Override the batch size from the config file.")
     add_machine_config_to_parser(parser)
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
@@ -113,6 +114,10 @@ def main():
     print("Log: ", namespace.training_log_filename)
     system_config = get_machine_config(namespace)
     training_function_kwargs = in_config("training_function_kwargs", config, dict())
+
+    # Override the batch size from the config file
+    if namespace.batch_size:
+        config["batch_size"] = namespace.batch_size
 
     if namespace.fit_gpu_mem and namespace.fit_gpu_mem > 0:
         update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,
