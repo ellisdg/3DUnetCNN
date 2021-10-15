@@ -67,8 +67,8 @@
     "augment_translation_probability": 0.75,
     "flip_left_right_probability": 0.5,
     "flip_front_back_probability": 0.5,
-    "random_permutation_probability": null,
-    "amp": true
+    "random_permutation_probability": null
   },
-  "additional_validation_args": {}
+  "additional_validation_args": {},
+  "training_function_kwargs": {"amp": true}
 }

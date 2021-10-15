@@ -112,6 +112,7 @@ def main():
     print("Model: ", namespace.model_filename)
     print("Log: ", namespace.training_log_filename)
     system_config = get_machine_config(namespace)
+    training_function_kwargs = in_config("training_function_kwargs", config, dict())
 
     if namespace.fit_gpu_mem and namespace.fit_gpu_mem > 0:
         update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,
@@ -202,12 +203,17 @@ def main():
                          sequence_class=sequence_class,
                          model_metrics=model_metrics,
                          metric_to_monitor=metric_to_monitor,
+                         **training_function_kwargs,
                          **system_config)
 
     else:
         run_training(package, config, namespace.model_filename, namespace.training_log_filename,
                      sequence_class=sequence_class,
-                     model_metrics=model_metrics, metric_to_monitor=metric_to_monitor, bias=bias, **system_config)
+                     model_metrics=model_metrics,
+                     metric_to_monitor=metric_to_monitor,
+                     bias=bias,
+                     **training_function_kwargs,
+                     **system_config)
 
     if namespace.sub_command == "predict":
         run_inference(namespace)
