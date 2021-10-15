@@ -82,6 +82,8 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, scaler=None):
     if n_gpus is not None:
         print("To cuda")
+        print("images", images.size())
+        print("target", target.size())
         images = images.cuda()
         target = target.cuda()
     # compute output
