@@ -14,6 +14,6 @@ markComment: >
   recent activity. It will be closed if no further activity occurs. Thank you
   for your contributions. If you have questions, feel free to join the 
   [Slack group](https://github.com/ellisdg/3DUnetCNN#got-questions) 
-  or email davidgellis2@gmail.com.
+  or email david.ellis@unmc.edu.
 # Comment to post when closing a stale issue. Set to `false` to disable
 closeComment: false
