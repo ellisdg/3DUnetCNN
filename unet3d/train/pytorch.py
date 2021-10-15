@@ -164,7 +164,7 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
           min_lr=in_config("min_learning_rate", config),
           learning_rate_decay_step_size=in_config("decay_step_size", config),
           save_every_n_epochs=in_config("save_every_n_epochs", config),
-          save_last_n_models=in_config("save_last_n_models", config, 1),
+          save_last_n_models=in_config("save_last_n_models", config),
           amp=amp)
 
 
@@ -172,7 +172,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
           model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
           learning_rate_decay_patience=None, save_best=False, n_gpus=1, verbose=True, regularized=False,
           vae=False, decay_factor=0.1, min_lr=0., learning_rate_decay_step_size=None, save_every_n_epochs=None,
-          save_last_n_models=1, amp=False):
+          save_last_n_models=None, amp=False):
     training_log = list()
     if os.path.exists(training_log_filename):
         training_log.extend(pd.read_csv(training_log_filename).values)
@@ -205,7 +205,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         scaler = None
 
     for epoch in range(start_epoch, n_epochs):
-
+        print("save_last_n_models", save_last_n_models)
         # early stopping
         if (training_log and early_stopping_patience
             and np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)].argmin()
