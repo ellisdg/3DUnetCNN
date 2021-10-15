@@ -45,7 +45,8 @@ class AutocastUNet(UNet):
     def forward(self, *args, **kwargs):
         from torch.cuda.amp import autocast
         with autocast():
-            super().forward(*args, **kwargs)
+            output = super().forward(*args, **kwargs)
+        return output
 
 
 class AutoImplantUNet(UNet):
