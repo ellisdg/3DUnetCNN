@@ -252,7 +252,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
             epoch_filename = model_filename.replace(".h5", "_{}.h5".format(epoch))
             forced_copy(model_filename, epoch_filename)
 
-        if save_last_n_models > 1:
+        if save_last_n_models is not None and save_last_n_models > 1:
             if not save_every_n_epochs or not ((epoch - save_last_n_models) % save_every_n_epochs) == 0:
                 to_delete = model_filename.replace(".h5", "_{}.h5".format(epoch - save_last_n_models))
                 remove_file(to_delete)
