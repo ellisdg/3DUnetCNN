@@ -34,7 +34,7 @@ def parse_args():
                              "'<original_config>_auto.json'. This option is experimental and only works with the UNet "
                              "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
     parser.add_argument("--group_average_filenames")
-    parser.add_argument("--batch_size", help="Override the batch size from the config file.")
+    parser.add_argument("--batch_size", help="Override the batch size from the config file.", type=int)
     add_machine_config_to_parser(parser)
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
