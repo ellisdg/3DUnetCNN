@@ -214,6 +214,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
             break
 
         # train the model
+        print("n gpus:", n_gpus)
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
                               regularized=regularized, vae=vae, scaler=scaler)
         try:
