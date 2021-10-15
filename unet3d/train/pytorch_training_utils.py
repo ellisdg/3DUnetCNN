@@ -57,8 +57,11 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
         losses.update(loss.item(), batch_size)
 
         if scaler:
+            print("Backward")
             scaler.scale(loss).backward()
+            print("Step")
             scaler.step(optimizer)
+            print("Update")
             scaler.update()
         else:
             # compute gradient and do step
@@ -78,6 +81,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
 def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, scaler=None):
     if n_gpus is not None:
+        print("To cuda")
         images = images.cuda()
         target = target.cuda()
     # compute output
@@ -90,7 +94,9 @@ def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, va
 
 
 def _batch_loss(model, images, target, criterion, regularized=False, vae=False):
+    print("Forward")
     output = model(images)
+    print("Batch size")
     batch_size = images.size(0)
     if regularized:
         try:
