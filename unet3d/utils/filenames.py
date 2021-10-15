@@ -146,7 +146,7 @@ def generate_filenames_from_multisource_templates(subject_ids, feature_templates
 
 def generate_filenames(config, name, system_config, skip_targets=False):
     if name not in config:
-        load_subject_ids(config)
+        load_subject_ids(config, name)
     if "generate_filenames" not in config or config["generate_filenames"] == "classic":
         return generate_hcp_filenames(in_config('directory', system_config, ""),
                                       config['surface_basename_template']
@@ -167,11 +167,10 @@ def generate_filenames(config, name, system_config, skip_targets=False):
                                                  skip_targets=skip_targets)
 
 
-def load_subject_ids(config):
+def load_subject_ids(config, name):
     if "subjects_filename" in config:
         subjects = load_json(os.path.join(unet3d_path, config["subjects_filename"]))
-        for key, value in subjects.items():
-            config[key] = value
+        config[name] = subjects[name]
 
 
 def load_bias(bias_filename):
