@@ -9,6 +9,7 @@ import torch.nn.parallel
 import torch.optim
 import torch.utils.data
 import torch.utils.data.distributed
+
 try:
     from torch.utils.data._utils.collate import default_collate
 except ModuleNotFoundError:
@@ -25,6 +26,8 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
         len(train_loader),
         [batch_time, data_time, losses],
         prefix="Epoch: [{}]".format(epoch))
+
+    use_amp = scaler is not None
 
     # switch to train mode
     model.train()
@@ -49,7 +52,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
         optimizer.zero_grad()
         loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
-                                      vae=vae, scaler=scaler)
+                                      vae=vae, use_amp=use_amp)
         if n_gpus:
             torch.cuda.empty_cache()
 
@@ -76,12 +79,12 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
     return losses.avg
 
 
-def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, scaler=None):
+def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, use_amp=None):
     if n_gpus is not None:
         images = images.cuda()
         target = target.cuda()
     # compute output
-    if scaler:
+    if use_amp:
         from torch.cuda.amp import autocast
         with autocast():
             return _batch_loss(model, images, target, criterion, regularized=regularized, vae=vae)
@@ -107,7 +110,7 @@ def _batch_loss(model, images, target, criterion, regularized=False, vae=False):
     return loss, batch_size
 
 
-def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regularized=False, vae=False):
+def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regularized=False, vae=False, use_amp=False):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     progress = ProgressMeter(
@@ -123,7 +126,7 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regul
         for i, (images, target) in enumerate(val_loader):
 
             loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
-                                          vae=vae)
+                                          vae=vae, use_amp=use_amp)
 
             # measure accuracy and record loss
             losses.update(loss.item(), batch_size)
@@ -146,6 +149,7 @@ def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
+
     def __init__(self, name, fmt=':f'):
         self.name = name
         self.fmt = fmt

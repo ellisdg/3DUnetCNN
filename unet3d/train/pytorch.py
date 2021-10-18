@@ -225,7 +225,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         # predict validation data
         if validation_loader:
             val_loss = epoch_validatation(validation_loader, model, criterion, n_gpus=n_gpus, regularized=regularized,
-                                          vae=vae)
+                                          vae=vae, use_amp=scaler is not None)
         else:
             val_loss = None
 
