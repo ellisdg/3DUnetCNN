@@ -22,6 +22,11 @@ export PYTHONPATH=${PWD}:${PYTHONPATH}
 ```<gpu_mem>```
 should be set to the number of threads, number of GPUs, and the amount of GPU memory in GB on a single gpu that will be used for training.
 
+```-W ignore:UserWarning:nilearn.image.resampling:273``` ignores a warning that
+nilearn outputs when you resample an image with all zeros and ones using linear or continuous resampling. 
+Normally, we would not want to resample a labeled image in this way, but in this case we do. The linear
+resampling makes the interpolated voxels carry less weight than they would using nearest neighbor.
+
 Note that the training will take a long time. Training on 2 V100 GPUs took 7 days to complete 35 epochs.
 
 5. Predict the complete skulls for the held-out validation data:
