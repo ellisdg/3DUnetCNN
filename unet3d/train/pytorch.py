@@ -22,7 +22,8 @@ def build_optimizer(optimizer_name, model_parameters, learning_rate=1e-4):
 def run_pytorch_training(config, model_filename, training_log_filename, verbose=1, use_multiprocessing=False,
                          n_workers=1, max_queue_size=5, model_name='resnet_34', n_gpus=1, regularized=False,
                          sequence_class=WholeBrainCIFTI2DenseScalarDataset, directory=None, test_input=1,
-                         metric_to_monitor="loss", model_metrics=(), bias=None, pin_memory=False, **unused_args):
+                         metric_to_monitor="loss", model_metrics=(), bias=None, pin_memory=False, amp=False,
+                         **unused_args):
     """
     :param test_input: integer with the number of inputs from the generator to write to file. 0, False, or None will
     write no inputs to file.
@@ -163,14 +164,15 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
           min_lr=in_config("min_learning_rate", config),
           learning_rate_decay_step_size=in_config("decay_step_size", config),
           save_every_n_epochs=in_config("save_every_n_epochs", config),
-          save_last_n_models=in_config("save_last_n_models", config, 1))
+          save_last_n_models=in_config("save_last_n_models", config),
+          amp=amp)
 
 
 def train(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
           model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
           learning_rate_decay_patience=None, save_best=False, n_gpus=1, verbose=True, regularized=False,
           vae=False, decay_factor=0.1, min_lr=0., learning_rate_decay_step_size=None, save_every_n_epochs=None,
-          save_last_n_models=1):
+          save_last_n_models=None, amp=False):
     training_log = list()
     if os.path.exists(training_log_filename):
         training_log.extend(pd.read_csv(training_log_filename).values)
@@ -196,8 +198,14 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
     else:
         scheduler = None
 
-    for epoch in range(start_epoch, n_epochs):
+    if amp:
+        from torch.cuda.amp import GradScaler
+        scaler = GradScaler()
+    else:
+        scaler = None
 
+    for epoch in range(start_epoch, n_epochs):
+        print("save_last_n_models", save_last_n_models)
         # early stopping
         if (training_log and early_stopping_patience
             and np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)].argmin()
@@ -206,8 +214,9 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
             break
 
         # train the model
+        print("n gpus:", n_gpus)
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
-                              regularized=regularized, vae=vae)
+                              regularized=regularized, vae=vae, scaler=scaler)
         try:
             training_loader.dataset.on_epoch_end()
         except AttributeError:
@@ -216,7 +225,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         # predict validation data
         if validation_loader:
             val_loss = epoch_validatation(validation_loader, model, criterion, n_gpus=n_gpus, regularized=regularized,
-                                          vae=vae)
+                                          vae=vae, use_amp=scaler is not None)
         else:
             val_loss = None
 
@@ -244,7 +253,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
             epoch_filename = model_filename.replace(".h5", "_{}.h5".format(epoch))
             forced_copy(model_filename, epoch_filename)
 
-        if save_last_n_models > 1:
+        if save_last_n_models is not None and save_last_n_models > 1:
             if not save_every_n_epochs or not ((epoch - save_last_n_models) % save_every_n_epochs) == 0:
                 to_delete = model_filename.replace(".h5", "_{}.h5".format(epoch - save_last_n_models))
                 remove_file(to_delete)

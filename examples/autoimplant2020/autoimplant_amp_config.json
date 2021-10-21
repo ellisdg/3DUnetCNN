@@ -35,7 +35,7 @@
   "batch_size": 2,
   "validation_batch_size": 2,
   "initial_learning_rate": 1e-04,
-  "model_name": "UNet",
+  "model_name": "AutocastUNet",
   "model_kwargs": {
     "base_width":  32,
     "encoder_blocks": [2, 2, 2, 2, 2],
@@ -69,5 +69,6 @@
     "flip_front_back_probability": 0.5,
     "random_permutation_probability": null
   },
-  "additional_validation_args": {}
+  "additional_validation_args": {},
+  "training_function_kwargs": {"amp": true}
 }
