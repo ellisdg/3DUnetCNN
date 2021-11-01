@@ -35,7 +35,7 @@ def parse_args():
                              "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
     parser.add_argument("--group_average_filenames")
     parser.add_argument("--batch_size", help="Override the batch size from the config file.", type=int)
-    parser.add_argument("--debug", type=bool, action="store_true", default=False,
+    parser.add_argument("--debug", action="store_true", default=False,
                         help="Raises an error if a training file is not found. The default is to silently skip"
                              "any training files that cannot be found. Use this flag to debug the config for finding"
                              "the data.")
