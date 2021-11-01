@@ -123,7 +123,7 @@ def main():
     if namespace.verbose:
         if "sequence_kwargs" not in config:
             config["sequence_kwargs"] = dict()
-        config["sequence_kwargs"]["verbose"] = namespace.verbose
+        config["sequence_kwargs"]["verbose"] = namespace.debug
 
     # Override the batch size from the config file
     if namespace.batch_size:
