@@ -35,6 +35,10 @@ def parse_args():
                              "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
     parser.add_argument("--group_average_filenames")
     parser.add_argument("--batch_size", help="Override the batch size from the config file.", type=int)
+    parser.add_argument("--debug", type=bool, default=False,
+                        help="Raises an error if a training file is not found. The default is to silently skip"
+                             "any training files that cannot be found. Use this flag to debug the config for finding"
+                             "the data.")
     add_machine_config_to_parser(parser)
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
@@ -143,7 +147,8 @@ def main():
     for name in groups:
         key = name + "_filenames"
         if key not in config:
-            config[key] = generate_filenames(config, name, system_config)
+            config[key] = generate_filenames(config, name, system_config,
+                                             raise_if_not_exists=namespace.debug)
     if "directory" in system_config:
         directory = system_config.pop("directory")
     else:

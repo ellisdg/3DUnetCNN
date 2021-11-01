@@ -47,7 +47,7 @@ def generate_hcp_filenames(directory, surface_basename_template, target_basename
 
 
 def generate_paired_filenames(directory, subject_ids, group, keys, basename, additional_feature_basename=None,
-                              raise_if_not_exist=False):
+                              raise_if_not_exists=False):
     rows = list()
     pair = keys["all"]
     pair_key = list(keys["all"].keys())[0]
@@ -58,7 +58,7 @@ def generate_paired_filenames(directory, subject_ids, group, keys, basename, add
         if additional_feature_basename is not None:
             additional_feature_filename = os.path.join(directory, subject_id, additional_feature_basename)
             if not os.path.exists(additional_feature_filename):
-                if raise_if_not_exist:
+                if raise_if_not_exists:
                     raise FileNotFoundError(additional_feature_filename)
                 continue
         else:
@@ -81,7 +81,7 @@ def generate_paired_filenames(directory, subject_ids, group, keys, basename, add
                         else:
                             rows.append([filename1, [volume_number], filename2, [volume_number], subject_id])
                             rows.append([filename2, [volume_number], filename1, [volume_number], subject_id])
-                elif raise_if_not_exist:
+                elif raise_if_not_exists:
                     for filename in (filename1, filename2):
                         raise FileNotFoundError(filename)
     return rows
@@ -144,7 +144,7 @@ def generate_filenames_from_multisource_templates(subject_ids, feature_templates
     return filenames
 
 
-def generate_filenames(config, name, system_config, skip_targets=False):
+def generate_filenames(config, name, system_config, skip_targets=False, raise_if_not_exists=False):
     if name not in config:
         load_subject_ids(config, name)
     if "generate_filenames" not in config or config["generate_filenames"] == "classic":
@@ -159,11 +159,16 @@ def generate_filenames(config, name, system_config, skip_targets=False):
         return generate_paired_filenames(in_config('directory', system_config, ""),
                                          config[name],
                                          name,
+                                         raise_if_not_exists=raise_if_not_exists,
                                          **config["generate_filenames_kwargs"])
     elif config["generate_filenames"] == "multisource_templates":
-        return generate_filenames_from_multisource_templates(config[name], **config["generate_filenames_kwargs"])
+        return generate_filenames_from_multisource_templates(config[name],
+                                                             raise_if_not_exists=raise_if_not_exists,
+                                                             **config["generate_filenames_kwargs"])
     elif config["generate_filenames"] == "templates":
-        return generate_filenames_from_templates(config[name], **config["generate_filenames_kwargs"],
+        return generate_filenames_from_templates(config[name],
+                                                 raise_if_not_exists=raise_if_not_exists,
+                                                 **config["generate_filenames_kwargs"],
                                                  skip_targets=skip_targets)
 
 
