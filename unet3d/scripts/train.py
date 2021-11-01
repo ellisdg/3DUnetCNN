@@ -119,6 +119,12 @@ def main():
     system_config = get_machine_config(namespace)
     training_function_kwargs = in_config("training_function_kwargs", config, dict())
 
+    # set verbosity
+    if namespace.verbose:
+        if "sequence_kwargs" not in config:
+            config["sequence_kwargs"] = dict()
+        config["sequence_kwargs"]["verbose"] = namespace.verbose
+
     # Override the batch size from the config file
     if namespace.batch_size:
         config["batch_size"] = namespace.batch_size

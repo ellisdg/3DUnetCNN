@@ -164,7 +164,8 @@ def decision(probability):
 class BaseSequence(Sequence):
     def __init__(self, filenames, batch_size, target_labels, window, spacing, classification='binary', shuffle=True,
                  points_per_subject=1, flip=False, reorder=False, iterations_per_epoch=1, deformation_augmentation=None,
-                 base_directory=None, subject_ids=None, inputs_per_epoch=None, channel_axis=3):
+                 base_directory=None, subject_ids=None, inputs_per_epoch=None, channel_axis=3,
+                 verbose=False):
         self.deformation_augmentation = deformation_augmentation
         self.base_directory = base_directory
         self.subject_ids = subject_ids
@@ -184,6 +185,7 @@ class BaseSequence(Sequence):
         self.flip = flip
         self.reorder = reorder
         self.spacing = spacing
+        self.verbose = verbose
         self.iterations_per_epoch = iterations_per_epoch
         self.subjects_per_batch = int(np.floor(self.batch_size / self.points_per_subject))
         assert self.subjects_per_batch > 0
@@ -460,7 +462,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
         return np.asarray(x), np.asarray(y)
 
     def resample_input(self, feature_filename):
-        feature_image = load_image(feature_filename, reorder=False)
+        feature_image = load_image(feature_filename, reorder=False, verbose=self.verbose)
         feature_image, affine = format_feature_image(feature_image=feature_image, window=self.window, crop=self.crop,
                                                      cropping_kwargs=self.cropping_kwargs,
                                                      augment_scale_std=self.augment_scale_std,
@@ -540,7 +542,8 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
     def load_image(self, filenames, index, force_4d=True, interpolation="linear", sub_volume_indices=None):
         filename = filenames[index]
         # Reordering is done when the image is formatted
-        image = load_image(filename, force_4d=force_4d, reorder=False, interpolation=interpolation, dtype=self.dtype)
+        image = load_image(filename, force_4d=force_4d, reorder=False, interpolation=interpolation, dtype=self.dtype,
+                           verbose=self.verbose)
         if sub_volume_indices:
             image = extract_sub_volumes(image, sub_volume_indices)
         return image

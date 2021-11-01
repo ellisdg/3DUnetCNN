@@ -238,7 +238,7 @@ def nib_load_files(filenames, reorder=False, interpolation="linear", dtype=None)
 
 
 def load_image(filename, feature_axis=3, resample_unequal_affines=True, interpolation="linear", force_4d=False,
-               reorder=False, dtype=None):
+               reorder=False, dtype=None, verbose=False):
     """
     :param feature_axis: axis along which to combine the images, if necessary.
     :param filename: can be either string path to the file or a list of paths.
@@ -250,7 +250,8 @@ def load_image(filename, feature_axis=3, resample_unequal_affines=True, interpol
             return load_single_image(filename=filename, resample=interpolation, reorder=reorder, dtype=dtype)
         else:
             filename = [filename]
-
+    if verbose:
+        print("Loading", filename)
     return combine_images(nib_load_files(filename, reorder=reorder, interpolation=interpolation, dtype=dtype),
                           axis=feature_axis, resample_unequal_affines=resample_unequal_affines,
                           interpolation=interpolation)
