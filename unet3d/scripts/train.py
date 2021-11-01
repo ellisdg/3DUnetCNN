@@ -120,7 +120,7 @@ def main():
     training_function_kwargs = in_config("training_function_kwargs", config, dict())
 
     # set verbosity
-    if namespace.verbose:
+    if namespace.debug:
         if "sequence_kwargs" not in config:
             config["sequence_kwargs"] = dict()
         config["sequence_kwargs"]["verbose"] = namespace.debug
