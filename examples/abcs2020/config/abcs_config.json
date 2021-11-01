@@ -46,7 +46,7 @@
   "n_outputs": 11,
   "sequence": "WholeVolumeSegmentationDataset",
   "sequence_kwargs": {
-    "normalization": ["static_windows", "zero_one_window"],
+    "normalization": ["radiology_style_windowing", "zero_one_window"],
     "normalization_args": {
       "static_windows": {
         "volume_indices": [0],
