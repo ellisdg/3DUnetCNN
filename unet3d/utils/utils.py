@@ -230,10 +230,11 @@ def move_channels_first(data):
     return np.moveaxis(data, -1, 0)
 
 
-def nib_load_files(filenames, reorder=False, interpolation="linear", dtype=None):
+def nib_load_files(filenames, reorder=False, interpolation="linear", dtype=None, verbose=False):
     if type(filenames) != list:
         filenames = [filenames]
-    return [load_image(filename, reorder=reorder, interpolation=interpolation, force_4d=False, dtype=dtype)
+    return [load_image(filename, reorder=reorder, interpolation=interpolation, force_4d=False, dtype=dtype,
+                       verbose=verbose)
             for filename in filenames]
 
 
@@ -250,15 +251,18 @@ def load_image(filename, feature_axis=3, resample_unequal_affines=True, interpol
             return load_single_image(filename=filename, resample=interpolation, reorder=reorder, dtype=dtype)
         else:
             filename = [filename]
-    if verbose:
-        print("Loading", filename)
-    return combine_images(nib_load_files(filename, reorder=reorder, interpolation=interpolation, dtype=dtype),
+    return combine_images(nib_load_files(filename, reorder=reorder, interpolation=interpolation, dtype=dtype,
+                                         verbose=verbose),
                           axis=feature_axis, resample_unequal_affines=resample_unequal_affines,
                           interpolation=interpolation)
 
 
-def load_single_image(filename, resample=None, reorder=True, dtype=None):
+def load_single_image(filename, resample=None, reorder=True, dtype=None, verbose=False):
+    if verbose:
+        print("Loading", filename)
     image = nib.load(filename)
+    if verbose:
+        print("Finished loading", filename, "Shape:", image.shape)
     if dtype is not None:
         image = new_img_like(image, np.asarray(image.dataobj, dtype))
     if reorder:
