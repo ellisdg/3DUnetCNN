@@ -248,7 +248,8 @@ def load_image(filename, feature_axis=3, resample_unequal_affines=True, interpol
 
     if type(filename) != list:
         if not force_4d:
-            return load_single_image(filename=filename, resample=interpolation, reorder=reorder, dtype=dtype)
+            return load_single_image(filename=filename, resample=interpolation, reorder=reorder, dtype=dtype,
+                                     verbose=verbose)
         else:
             filename = [filename]
     return combine_images(nib_load_files(filename, reorder=reorder, interpolation=interpolation, dtype=dtype,
