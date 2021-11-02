@@ -34,6 +34,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
+        print("epoch_training:", target.size())
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -80,6 +81,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
 
 def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, use_amp=None):
+    print("batch_loss:", target.size())
     if n_gpus is not None:
         images = images.cuda()
         target = target.cuda()
@@ -93,6 +95,7 @@ def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, va
 
 
 def _batch_loss(model, images, target, criterion, regularized=False, vae=False):
+    print("_batch_loss:", target.size())
     output = model(images)
     batch_size = images.size(0)
     if regularized:
