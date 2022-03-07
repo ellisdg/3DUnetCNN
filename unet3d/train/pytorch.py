@@ -110,7 +110,8 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                                  shuffle=True,
                                  num_workers=n_workers,
                                  collate_fn=collate_fn,
-                                 pin_memory=pin_memory)
+                                 pin_memory=pin_memory,
+                                 prefetch_factor=0)
 
     if test_input:
         for index in range(test_input):
@@ -148,7 +149,8 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                                        shuffle=False,
                                        num_workers=n_workers,
                                        collate_fn=collate_fn,
-                                       pin_memory=pin_memory)
+                                       pin_memory=pin_memory,
+                                       prefetch_factor=0)
 
     train(model=model, optimizer=optimizer, criterion=criterion, n_epochs=config["n_epochs"], verbose=bool(verbose),
           training_loader=training_loader, validation_loader=validation_loader, model_filename=model_filename,
