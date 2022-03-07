@@ -511,9 +511,9 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         x_batch = list()
         y_batch = list()
         batch_filenames = self.epoch_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
+        print(self.batch_size, len(batch_filenames))
         for item in batch_filenames:
             x, y = self.resample_input(item)
-            print("self.__getitem__:", y.shape)
             x_batch.append(x)
             y_batch.append(y)
         return np.asarray(x_batch), np.asarray(y_batch)
@@ -521,7 +521,6 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
     def resample_input(self, input_filenames):
         input_image, target_image = self.resample_image(input_filenames)
         x, y = get_nibabel_data(input_image), get_nibabel_data(target_image)
-        print("self.resample_input:", y.shape)
         return self.permute_inputs(x, y)
 
     def permute_inputs(self, x, y):
@@ -533,7 +532,6 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         feature_image = self.format_feature_image(input_filenames=input_filenames)
         target_image = self.resample_target(self.load_target_image(feature_image, input_filenames),
                                             feature_image)
-        print("self.resample_image:", target_image.shape)
         feature_image = augment_image(feature_image,
                                       additive_noise_std=self.additive_noise_std,
                                       additive_noise_probability=self.additive_noise_probability,
@@ -593,12 +591,10 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
             target_image = self.load_image(input_filenames, self.target_index, force_4d=True,
                                            sub_volume_indices=sub_volume_indices,
                                            interpolation=self.target_interpolation)
-        print("self.load_target_image:", target_image.shape)
         return target_image
 
     def resample_target(self, target_image, feature_image):
         target_image = resample_to_img(target_image, feature_image, interpolation=self.target_interpolation)
-        print("self.resample_target:", target_image.shape)
         return target_image
 
     def get_image(self, idx):

@@ -207,7 +207,6 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         scaler = None
 
     for epoch in range(start_epoch, n_epochs):
-        print("save_last_n_models", save_last_n_models)
         # early stopping
         if (training_log and early_stopping_patience
             and np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)].argmin()
@@ -216,7 +215,6 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
             break
 
         # train the model
-        print("n gpus:", n_gpus)
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
                               regularized=regularized, vae=vae, scaler=scaler)
         try:
