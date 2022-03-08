@@ -616,16 +616,20 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
     def resample_input(self, input_filenames):
         input_image, target_image = self.resample_image(input_filenames)
         target_data = get_nibabel_data(target_image)
-        if self.labels is None:
-            self.labels = np.asarray(np.unique(target_data), dtype=int)
         assert len(target_data.shape) == 4
         if target_data.shape[3] == 1:
+            if self.labels is None:
+                self.labels = np.asarray(np.unique(target_data)[1:], dtype=int)
             target_data = np.moveaxis(
                 compile_one_hot_encoding(np.moveaxis(target_data, 3, 0),
                                          n_labels=len(self.labels),
                                          labels=self.labels,
                                          return_4d=True), 0, 3)
         else:
+            if self.labels is None:
+                self.labels = np.asarray([np.unique(target_data[:, :, :, channel])[1:]
+                                          for channel in np.arange(target_data.shape[self.channel_axis])],
+                                         dtype=int)
             _target_data = list()
             for channel, labels in zip(range(target_data.shape[self.channel_axis]), self.labels):
                 if type(labels) != list:

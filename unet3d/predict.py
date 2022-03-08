@@ -359,6 +359,8 @@ def pytorch_predict_batch(batch_x, model, n_gpus):
 
 def prediction_to_image(data, input_image, reference_image=None, interpolation="linear", segmentation=False,
                         segmentation_labels=None, threshold=0.5, sum_then_threshold=False, label_hierarchy=False):
+    if data.dtype == np.float16:
+        data = np.asarray(data, dtype=np.float32)
     pred_image = new_img_like(input_image, data=data)
     if reference_image is not None:
         pred_image = resample_to_img(pred_image, reference_image,

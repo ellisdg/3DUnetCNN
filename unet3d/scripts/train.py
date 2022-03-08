@@ -150,16 +150,18 @@ def main():
     else:
         groups = ("training", "validation")
 
+    if "directory" in system_config:
+        directory = system_config.pop("directory")
+    elif "directory" in config:
+        directory = config["directory"]
+    else:
+        directory = ""
+
     for name in groups:
         key = name + "_filenames"
         if key not in config:
-            config[key] = generate_filenames(config, name, system_config,
+            config[key] = generate_filenames(config, name, directory,
                                              raise_if_not_exists=namespace.debug)
-    if "directory" in system_config:
-        directory = system_config.pop("directory")
-    else:
-        directory = "."
-
     if "sequence" in config:
         sequence_class = load_sequence(config["sequence"])
     elif "_wb_" in os.path.basename(namespace.config_filename):

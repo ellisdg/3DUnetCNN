@@ -116,7 +116,7 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regul
     progress = ProgressMeter(
         len(val_loader),
         [batch_time, losses],
-        prefix='Test: ')
+        prefix='Validation: ')
 
     # switch to evaluate mode
     model.eval()

@@ -144,11 +144,11 @@ def generate_filenames_from_multisource_templates(subject_ids, feature_templates
     return filenames
 
 
-def generate_filenames(config, name, system_config, skip_targets=False, raise_if_not_exists=False):
+def generate_filenames(config, name, directory="", skip_targets=False, raise_if_not_exists=False):
     if name not in config:
         load_subject_ids(config, name)
     if "generate_filenames" not in config or config["generate_filenames"] == "classic":
-        return generate_hcp_filenames(in_config('directory', system_config, ""),
+        return generate_hcp_filenames(directory,
                                       config['surface_basename_template']
                                       if "surface_basename_template" in config else None,
                                       config['target_basenames'],
@@ -156,7 +156,7 @@ def generate_filenames(config, name, system_config, skip_targets=False, raise_if
                                       config[name],
                                       config['hemispheres'] if 'hemispheres' in config else None)
     elif config["generate_filenames"] == "paired":
-        return generate_paired_filenames(in_config('directory', system_config, ""),
+        return generate_paired_filenames(directory,
                                          config[name],
                                          name,
                                          raise_if_not_exists=raise_if_not_exists,
