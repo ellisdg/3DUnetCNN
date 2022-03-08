@@ -34,7 +34,6 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
     end = time.time()
     for i, (images, target) in enumerate(train_loader):
-        print("epoch_training:", target.size())
         # measure data loading time
         data_time.update(time.time() - end)
 
