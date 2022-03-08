@@ -81,7 +81,6 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
 
 def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, use_amp=None):
-    print("batch_loss:", target.size())
     if n_gpus is not None:
         images = images.cuda()
         target = target.cuda()
@@ -95,7 +94,6 @@ def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, va
 
 
 def _batch_loss(model, images, target, criterion, regularized=False, vae=False):
-    print("_batch_loss:", target.size())
     output = model(images)
     batch_size = images.size(0)
     if regularized:
@@ -119,7 +117,7 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regul
     progress = ProgressMeter(
         len(val_loader),
         [batch_time, losses],
-        prefix='Test: ')
+        prefix='Validation: ')
 
     # switch to evaluate mode
     model.eval()

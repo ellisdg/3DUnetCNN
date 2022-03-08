@@ -96,6 +96,7 @@ class WholeVolumeSupervisedRegressionDataset(WholeVolumeSupervisedRegressionSequ
     def __getitem__(self, idx):
         item = self.epoch_filenames[idx]
         x, y = self.resample_input(item)
+        print(x.shape, y.shape)
         return (torch.from_numpy(np.moveaxis(np.asarray(x), -1, 0)).float(),
                 torch.from_numpy(np.moveaxis(np.asarray(y), -1, 0)).float())
 

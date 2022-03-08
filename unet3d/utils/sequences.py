@@ -511,7 +511,6 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         x_batch = list()
         y_batch = list()
         batch_filenames = self.epoch_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
-        print(self.batch_size, len(batch_filenames))
         for item in batch_filenames:
             x, y = self.resample_input(item)
             x_batch.append(x)
