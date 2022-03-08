@@ -56,7 +56,7 @@ def run_inference(namespace):
     config = load_json(namespace.config_filename)
     key = namespace.group + "_filenames"
 
-    machine_config = get_machine_config(namespace)
+    system_config = get_machine_config(namespace)
 
     if namespace.filenames:
         filenames = list()
@@ -77,10 +77,18 @@ def run_inference(namespace):
                                                                      in
                                                                      config["generate_filenames_kwargs"][_key]]
         if namespace.directory_template is not None:
-            machine_config["directory"] = namespace.directory_template
+            directory = namespace.directory_template
+        elif "directory" in system_config and system_config["directory"]:
+            directory = system_config["directory"]
+        elif "directory" in config:
+            directory = config["directory"]
+        else:
+            directory = ""
         if namespace.subjects_config_filename:
             config[namespace.group] = load_json(namespace.subjects_config_filename)[namespace.group]
-        filenames = generate_filenames(config, namespace.group, machine_config,
+        else:
+            load_subject_ids(config, namespace.group)
+        filenames = generate_filenames(config, namespace.group, directory,
                                        skip_targets=(not namespace.eval))
 
     else:
@@ -92,8 +100,6 @@ def run_inference(namespace):
 
     if not os.path.exists(namespace.output_directory):
         os.makedirs(namespace.output_directory)
-
-    load_subject_ids(config)
 
     if "evaluation_metric" in config and config["evaluation_metric"] is not None:
         criterion_name = config['evaluation_metric']
@@ -177,9 +183,9 @@ def run_inference(namespace):
                 window=config["window"],
                 criterion_name=criterion_name,
                 package=config['package'],
-                n_gpus=machine_config['n_gpus'],
+                n_gpus=system_config['n_gpus'],
                 batch_size=config['validation_batch_size'],
-                n_workers=machine_config["n_workers"],
+                n_workers=system_config["n_workers"],
                 model_kwargs=model_kwargs,
                 sequence_kwargs=sequence_kwargs,
                 sequence=sequence,
