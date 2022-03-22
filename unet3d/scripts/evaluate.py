@@ -35,7 +35,7 @@ def evaluate_filenames(filename1, filename2, labels):
     data1 = get_nibabel_data(image1)
     image2 = load_single_image(filename2, reorder=False)
     data2 = get_nibabel_data(image2)
-    assert np.all(image1.affine == image2.affine)
+    np.testing.assert_allclose(image1.affine, image2.affine)
     return evaluate_image_data(data1, data2, labels)
 
 
