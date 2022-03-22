@@ -5,8 +5,8 @@ import pandas as pd
 from nilearn.image import new_img_like
 
 from unet3d.predict.volumetric import load_volumetric_model_and_dataset, load_images_from_dataset, \
-    get_feature_filename_and_subject_id, prediction_to_image, write_prediction_image_to_file, \
-    pytorch_predict_batch_array
+    prediction_to_image, write_prediction_image_to_file
+from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
 from unet3d.utils.utils import (load_json, get_nibabel_data, break_down_volume_into_half_size_volumes, combine_half_size_volumes)
 from unet3d.utils.sequences import SubjectPredictionSequence
 from unet3d.utils.pytorch.dataset import HCPSubjectDataset

@@ -2,8 +2,7 @@ import os
 
 import numpy as np
 from nilearn.image import new_img_like, resample_to_img
-
-from unet3d.predict.predict import pytorch_predict_batch
+from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
 from unet3d.utils.utils import one_hot_image_to_label_map, get_nibabel_data
 
 
@@ -50,15 +49,6 @@ def load_images_from_dataset(dataset, idx, resample_predictions):
     return x_image, ref_image
 
 
-def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
-    epoch_filenames = dataset.epoch_filenames[idx]
-    x_filename = epoch_filenames[dataset.feature_index]
-    if verbose:
-        print("Reading:", x_filename)
-    subject_id = epoch_filenames[-1]
-    return x_filename, subject_id
-
-
 def prediction_to_image(data, input_image, reference_image=None, interpolation="linear", segmentation=False,
                         segmentation_labels=None, threshold=0.5, sum_then_threshold=False, label_hierarchy=False):
     if data.dtype == np.float16:
@@ -91,13 +81,6 @@ def write_prediction_image_to_file(pred_image, output_template, subject_id, x_fi
     if verbose:
         print("Writing:", pred_filename)
     pred_image.to_filename(pred_filename)
-
-
-def pytorch_predict_batch_array(model, batch, n_gpus=1):
-    import torch
-    batch_x = torch.tensor(np.moveaxis(np.asarray(batch), -1, 1)).float()
-    pred_x = pytorch_predict_batch(batch_x, model, n_gpus)
-    return np.moveaxis(pred_x.numpy(), 1, -1)
 
 
 def predict_volumetric_batch(model, batch, batch_references, batch_subjects, batch_filenames,
