@@ -68,9 +68,9 @@ def main():
     scores = list()
     for i, filename in enumerate(filenames):
         target_filename = orig_filenames[i][2][0]
-        scores.append(evaluate_filenames(filename, target_filename, labels=config["labels"]))
+        scores.append(evaluate_filenames(filename, target_filename, labels=labels))
 
-    df = pd.DataFrame(scores, columns=config["labels"], index=subject_ids)
+    df = pd.DataFrame(scores, columns=labels, index=subject_ids)
     df.to_csv(namespace.output_filename)
 
 
