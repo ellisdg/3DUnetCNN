@@ -6,7 +6,7 @@ from nilearn.image import new_img_like
 
 from unet3d.predict.volumetric import load_volumetric_model_and_dataset, load_images_from_dataset, \
     prediction_to_image, write_prediction_image_to_file
-from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
+from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id, pytorch_predict_batch
 from unet3d.utils.utils import (load_json, get_nibabel_data, break_down_volume_into_half_size_volumes, combine_half_size_volumes)
 from unet3d.utils.sequences import SubjectPredictionSequence
 from unet3d.utils.pytorch.dataset import HCPSubjectDataset
@@ -258,16 +258,6 @@ def pytorch_whole_brain_scalar_predictions(model_filename, model_name, n_outputs
         if reference is not None:
             columns.append("reference_" + criterion_name)
         pd.DataFrame(results, columns=columns).to_csv(output_csv)
-
-
-def pytorch_predict_batch(batch_x, model, n_gpus):
-    if n_gpus > 0:
-        batch_x = batch_x.cuda()
-    if hasattr(model, "test"):
-        pred_x = model.test(batch_x)
-    else:
-        pred_x = model(batch_x)
-    return pred_x.cpu()
 
 
 def save_predictions(prediction, args, basename, metric_names, surface_names, prediction_dir):

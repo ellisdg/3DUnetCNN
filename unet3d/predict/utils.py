@@ -1,7 +1,5 @@
 import numpy as np
 
-from unet3d.predict import pytorch_predict_batch
-
 
 def pytorch_predict_batch_array(model, batch, n_gpus=1):
     import torch
@@ -17,3 +15,13 @@ def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
         print("Reading:", x_filename)
     subject_id = epoch_filenames[-1]
     return x_filename, subject_id
+
+
+def pytorch_predict_batch(batch_x, model, n_gpus):
+    if n_gpus > 0:
+        batch_x = batch_x.cuda()
+    if hasattr(model, "test"):
+        pred_x = model.test(batch_x)
+    else:
+        pred_x = model(batch_x)
+    return pred_x.cpu()
