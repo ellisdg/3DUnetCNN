@@ -14,7 +14,7 @@ def parse_args():
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument("--filenames", nargs="*",
                              help="Assumes filenames start with 'subjectid_' and are labelmaps.")
-    input_group.add_argument("--direcotry",
+    input_group.add_argument("--directory",
                              help="Directory where all files in the directory will be evaluated. Assumes the files "
                                   "start with 'subject_id' and are labelmaps.")
     parser.add_argument("--config_filename", required=True)
