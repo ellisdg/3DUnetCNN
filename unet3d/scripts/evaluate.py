@@ -53,6 +53,9 @@ def compute_dice(pred, truth):
 def main():
     namespace = parse_args()
     config = load_json(namespace.config_filename)
+    labels = config["labels"]
+    if labels is None:
+        labels = [1]
     filenames = get_filenames(namespace)
     subject_ids = list()
     for filename in filenames:
