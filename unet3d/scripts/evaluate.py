@@ -38,7 +38,7 @@ def evaluate_filenames(filename1, filename2, labels):
     data2 = get_nibabel_data(image2)
     return evaluate_image_data(data1, data2, labels)
 
-def _evaluate_filenames(args):
+def _evaluate_filenames(args, orig_filenames, labels):
     i, filename = args
     target_filename = orig_filenames[i][2][0]
     if os.path.exists(target_filename):
@@ -72,7 +72,13 @@ def main():
     orig_filenames = generate_filenames_from_templates(subject_ids, skip_targets=False, raise_if_not_exists=False,
                                                        **config["generate_filenames_kwargs"])
 
+
+
     from multiprocessing import Pool
+    from functools import partial
+
+    func = partial(_evaluate_filenames, orig_filenames=orig_filenames, labels=labels)
+
     with Pool(namespace.n_threads) as pool:
         _scores = pool.map(_evaluate_filenames, zip(range(len(filenames)), filenames))
 
