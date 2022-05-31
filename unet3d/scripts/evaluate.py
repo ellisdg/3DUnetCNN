@@ -38,6 +38,13 @@ def evaluate_filenames(filename1, filename2, labels):
     data2 = get_nibabel_data(image2)
     return evaluate_image_data(data1, data2, labels)
 
+def _evaluate_filenames(args):
+    i, filename = args
+    target_filename = orig_filenames[i][2][0]
+    if os.path.exists(target_filename):
+        return evaluate_filenames(filename, target_filename, labels=labels)
+    else:
+        warnings.warn("Target filename:", target_filename, "does not exist.")
 
 def evaluate_image_data(data1, data2, labels):
     scores = list()
@@ -65,19 +72,14 @@ def main():
     orig_filenames = generate_filenames_from_templates(subject_ids, skip_targets=False, raise_if_not_exists=False,
                                                        **config["generate_filenames_kwargs"])
 
-    scores = list()
-
-    def _evaluate_filenames(args):
-        i, filename = args
-        target_filename = orig_filenames[i][2][0]
-        if os.path.exists(target_filename):
-            scores.append(evaluate_filenames(filename, target_filename, labels=labels))
-        else:
-            warnings.warn("Target filename:", target_filename, "does not exist.")
-
     from multiprocessing import Pool
     with Pool(namespace.n_threads) as pool:
-        pool.map(_evaluate_filenames, zip(range(len(filenames)), filenames))
+        _scores = pool.map(_evaluate_filenames, zip(range(len(filenames)), filenames))
+
+    scores = list()
+    for score in _scores:
+        if not score is None:
+            scores.append(score)
 
     df = pd.DataFrame(scores, columns=labels, index=subject_ids)
     df.to_csv(namespace.output_filename)
