@@ -50,6 +50,7 @@ def _evaluate_filenames(args, orig_filenames, labels):
             warnings.warn(" ".join(["Skipping", filename, "due to the following error", str(error)]))
     else:
         warnings.warn("Target filename:", target_filename, "does not exist.")
+    return [np.nan] + len(labels)
 
 def evaluate_image_data(data1, data2, labels):
     scores = list()
@@ -80,12 +81,7 @@ def main():
     func = partial(_evaluate_filenames, orig_filenames=orig_filenames, labels=labels)
 
     with Pool(namespace.n_threads) as pool:
-        _scores = pool.map(func, zip(range(len(filenames)), filenames))
-
-    scores = list()
-    for score in _scores:
-        if not score is None:
-            scores.append(score)
+        scores = pool.map(func, zip(range(len(filenames)), filenames))
 
     df = pd.DataFrame(scores, columns=labels, index=subject_ids)
     df.to_csv(namespace.output_filename)
