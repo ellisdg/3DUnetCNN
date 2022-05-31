@@ -5,7 +5,9 @@ from unet3d.utils.filenames import generate_filenames_from_templates
 from unet3d.utils.utils import load_json, load_single_image, get_nibabel_data
 import numpy as np
 import pandas as pd
-
+from multiprocessing import Pool
+from functools import partial
+import warnings
 
 def parse_args():
     parser = ArgumentParser(description="Evaluates labelmap volumes against the ground truth. "
@@ -74,11 +76,6 @@ def main():
 
     orig_filenames = generate_filenames_from_templates(subject_ids, skip_targets=False, raise_if_not_exists=False,
                                                        **config["generate_filenames_kwargs"])
-
-
-
-    from multiprocessing import Pool
-    from functools import partial
 
     func = partial(_evaluate_filenames, orig_filenames=orig_filenames, labels=labels)
 
