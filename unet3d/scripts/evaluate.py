@@ -20,6 +20,7 @@ def parse_args():
     parser.add_argument("--config_filename", required=True)
     parser.add_argument("--output_filename", required=True,
                         help=".csv file to save the results.")
+    parser.add_argument("--n_threads", default=1, type=int)
     return parser.parse_args()
 
 
@@ -35,7 +36,6 @@ def evaluate_filenames(filename1, filename2, labels):
     data1 = get_nibabel_data(image1)
     image2 = load_single_image(filename2, reorder=False)
     data2 = get_nibabel_data(image2)
-    np.testing.assert_allclose(image1.affine, image2.affine, rtol=1e-3)
     return evaluate_image_data(data1, data2, labels)
 
 
@@ -62,13 +62,22 @@ def main():
         subject_id = os.path.basename(filename).split("_")[0]
         subject_ids.append(subject_id)
 
-    orig_filenames = generate_filenames_from_templates(subject_ids, skip_targets=False, raise_if_not_exists=True,
+    orig_filenames = generate_filenames_from_templates(subject_ids, skip_targets=False, raise_if_not_exists=False,
                                                        **config["generate_filenames_kwargs"])
 
     scores = list()
-    for i, filename in enumerate(filenames):
+
+    def _evaluate_filenames(args):
+        i, filename = args
         target_filename = orig_filenames[i][2][0]
-        scores.append(evaluate_filenames(filename, target_filename, labels=labels))
+        if os.path.exists(target_filename):
+            scores.append(evaluate_filenames(filename, target_filename, labels=labels))
+        else:
+            warnings.warn("Target filename:", target_filename, "does not exist.")
+
+    from multiprocessing import Pool
+    with Pool(namespace.n_threads) as pool:
+        pool.map(evaluate_filenames(enumerate(filenames)))
 
     df = pd.DataFrame(scores, columns=labels, index=subject_ids)
     df.to_csv(namespace.output_filename)
