@@ -77,7 +77,7 @@ def main():
 
     from multiprocessing import Pool
     with Pool(namespace.n_threads) as pool:
-        pool.map(_evaluate_filenames(enumerate(filenames)))
+        pool.map(_evaluate_filenames(zip(arange(len(filenames)), filenames)))
 
     df = pd.DataFrame(scores, columns=labels, index=subject_ids)
     df.to_csv(namespace.output_filename)
