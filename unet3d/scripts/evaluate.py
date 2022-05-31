@@ -50,7 +50,7 @@ def _evaluate_filenames(args, orig_filenames, labels):
             warnings.warn(" ".join(["Skipping", filename, "due to the following error", str(error)]))
     else:
         warnings.warn("Target filename:", target_filename, "does not exist.")
-    return [np.nan] + len(labels)
+    return [np.nan] * len(labels)
 
 def evaluate_image_data(data1, data2, labels):
     scores = list()
