@@ -80,7 +80,7 @@ def main():
     func = partial(_evaluate_filenames, orig_filenames=orig_filenames, labels=labels)
 
     with Pool(namespace.n_threads) as pool:
-        _scores = pool.map(_evaluate_filenames, zip(range(len(filenames)), filenames))
+        _scores = pool.map(func, zip(range(len(filenames)), filenames))
 
     scores = list()
     for score in _scores:
