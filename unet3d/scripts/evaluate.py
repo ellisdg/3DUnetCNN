@@ -47,7 +47,7 @@ def _evaluate_filenames(args, orig_filenames, labels):
         try:
             return evaluate_filenames(filename, target_filename, labels=labels)
         except ValueError as error:
-            warnings.warn("Skipping", filename, "due to the following error", str(error))
+            warnings.warn(" ".join(["Skipping", filename, "due to the following error", str(error)]))
     else:
         warnings.warn("Target filename:", target_filename, "does not exist.")
 
