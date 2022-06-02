@@ -9,6 +9,7 @@ from multiprocessing import Pool
 from functools import partial
 import warnings
 
+
 def parse_args():
     parser = ArgumentParser(description="Evaluates labelmap volumes against the ground truth. "
                                         "Hierarchical evaluation is not yet supported. "
@@ -40,6 +41,7 @@ def evaluate_filenames(filename1, filename2, labels):
     data2 = get_nibabel_data(image2)
     return evaluate_image_data(data1, data2, labels)
 
+
 def _evaluate_filenames(args, orig_filenames, labels):
     i, filename = args
     target_filename = orig_filenames[i][2][0]
@@ -51,6 +53,7 @@ def _evaluate_filenames(args, orig_filenames, labels):
     else:
         warnings.warn("Target filename:", target_filename, "does not exist.")
     return [np.nan] * len(labels)
+
 
 def evaluate_image_data(data1, data2, labels):
     scores = list()
@@ -78,10 +81,21 @@ def main():
     orig_filenames = generate_filenames_from_templates(subject_ids, skip_targets=False, raise_if_not_exists=False,
                                                        **config["generate_filenames_kwargs"])
 
-    func = partial(_evaluate_filenames, orig_filenames=orig_filenames, labels=labels)
+    _filenames = list()
+    _orig_subjects = np.asarray(orig_filenames)[:, 0]
+    _orig_filenames = list()
+    for filename in filenames:
+        subject_id = os.path.basename(filename).split("_")[0]
+        if subject_id in _orig_subjects:
+            _filenames.append(filename)
+            _orig_filenames.append(orig_filenames[int(np.squeeze(np.where(_orig_subjects == subject_id)))])
+        else:
+            print("Matching target filename was not found for", filename)
+
+    func = partial(_evaluate_filenames, orig_filenames=_orig_filenames, labels=labels)
 
     with Pool(namespace.n_threads) as pool:
-        scores = pool.map(func, zip(range(len(filenames)), filenames))
+        scores = pool.map(func, zip(range(len(_filenames)), _filenames))
 
     df = pd.DataFrame(scores, columns=labels, index=subject_ids)
     df.to_csv(namespace.output_filename)
