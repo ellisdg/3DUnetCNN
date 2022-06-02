@@ -42,16 +42,15 @@ def evaluate_filenames(filename1, filename2, labels):
     return evaluate_image_data(data1, data2, labels)
 
 
-def _evaluate_filenames(args, orig_filenames, labels):
-    i, filename = args
-    target_filename = orig_filenames[i][2][0]
+def _evaluate_filenames(args, labels):
+    filename, target_filename = args
     if os.path.exists(target_filename):
         try:
             return evaluate_filenames(filename, target_filename, labels=labels)
         except ValueError as error:
-            warnings.warn(" ".join(["Skipping", filename, "due to the following error", str(error)]))
+            warnings.warn(" ".join(("Skipping", filename, "due to the following error", str(error))))
     else:
-        warnings.warn("Target filename:", target_filename, "does not exist.")
+        warnings.warn(" ".join(("Target filename:", target_filename, "does not exist.")))
     return [np.nan] * len(labels)
 
 
@@ -73,29 +72,17 @@ def main():
     if labels is None:
         labels = [1]
     filenames = get_filenames(namespace)
+    target_filenames = list()
     subject_ids = list()
     for filename in filenames:
         subject_id = os.path.basename(filename).split("_")[0]
         subject_ids.append(subject_id)
+        target_filenames.append(config["generate_filenames_kwargs"]["target_templates"][0].format(subject=subject_id))
 
-    orig_filenames = generate_filenames_from_templates(subject_ids, skip_targets=False, raise_if_not_exists=False,
-                                                       **config["generate_filenames_kwargs"])
-
-    _filenames = list()
-    _orig_subjects = np.asarray(orig_filenames)[:, 0]
-    _orig_filenames = list()
-    for filename in filenames:
-        subject_id = os.path.basename(filename).split("_")[0]
-        if subject_id in _orig_subjects:
-            _filenames.append(filename)
-            _orig_filenames.append(orig_filenames[int(np.squeeze(np.where(_orig_subjects == subject_id)))])
-        else:
-            print("Matching target filename was not found for", filename)
-
-    func = partial(_evaluate_filenames, orig_filenames=_orig_filenames, labels=labels)
+    func = partial(_evaluate_filenames, labels=labels)
 
     with Pool(namespace.n_threads) as pool:
-        scores = pool.map(func, zip(range(len(_filenames)), _filenames))
+        scores = pool.map(func, zip(filenames, target_filenames))
 
     df = pd.DataFrame(scores, columns=labels, index=subject_ids)
     df.to_csv(namespace.output_filename)
