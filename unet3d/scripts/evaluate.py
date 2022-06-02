@@ -77,7 +77,9 @@ def main():
     for filename in filenames:
         subject_id = os.path.basename(filename).split("_")[0]
         subject_ids.append(subject_id)
-        target_filenames.append(config["generate_filenames_kwargs"]["target_templates"][0].format(subject=subject_id))
+        target_filenames.append(os.path.join(config["generate_filenames_kwargs"]["directory"],
+                                             config["generate_filenames_kwargs"]["target_templates"][0].format(
+                                                 subject=subject_id)))
 
     func = partial(_evaluate_filenames, labels=labels)
 
