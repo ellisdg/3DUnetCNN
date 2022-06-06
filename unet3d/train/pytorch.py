@@ -222,6 +222,11 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         except AttributeError:
             warnings.warn("'on_epoch_end' method not implemented for the {} dataset.".format(
                 type(training_loader.dataset)))
+
+        # Clear the cache from the GPUs
+        if n_gpus:
+            torch.cuda.empty_cache()
+
         # predict validation data
         if validation_loader:
             val_loss = epoch_validatation(validation_loader, model, criterion, n_gpus=n_gpus, regularized=regularized,

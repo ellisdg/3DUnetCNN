@@ -138,6 +138,9 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regul
             if i % print_freq == 0:
                 progress.display(i)
 
+            if n_gpus:
+                torch.cuda.empty_cache()
+
     return losses.avg
 
 
