@@ -36,7 +36,10 @@ def build_or_load_model(model_name, model_filename, n_features, n_outputs, n_gpu
     elif n_gpus > 0:
         model = model.cuda()
     if os.path.exists(model_filename):
-        state_dict = torch.load(model_filename)
+        if n_gpus > 0:
+            state_dict = torch.load(model_filename)
+        else:
+            state_dict = torch.load(model_filename, map_location=torch.device('cpu'))
         model = load_state_dict(model, state_dict, n_gpus=n_gpus, strict=strict)
     return model
 
