@@ -1,6 +1,7 @@
 import os
 from functools import partial
 import numpy as np
+import torch
 import nibabel as nib
 from nilearn.image import new_img_like, resample_to_img, reorder_img
 import random
@@ -92,14 +93,14 @@ def normalize_data_with_multiple_functions(data, normalization_names, channels_a
         else:
             _data = data
         normalized_data.append(func(_data, **_kwargs))
-    return np.concatenate(normalized_data, axis=channels_axis)
+    return torch.cat(normalized_data, dim=channels_axis)
 
 
 def augment_affine(affine, shape, augment_scale_std=None, augment_scale_probability=1,
                    flip_left_right_probability=0, augment_translation_std=None, augment_translation_probability=1,
                    flip_front_back_probability=0):
     if augment_scale_std and decision(augment_scale_probability):
-        scale = np.random.normal(1, augment_scale_std, 3)
+        scale = torch.normal(1, augment_scale_std, (3,))
         affine = scale_affine(affine, shape, scale)
     if decision(flip_left_right_probability):  # flips the left and right sides of the image randomly
         affine = affine_swap_axis(affine, shape=shape, axis=0)
@@ -107,7 +108,7 @@ def augment_affine(affine, shape, augment_scale_std=None, augment_scale_probabil
         affine = affine_swap_axis(affine, shape=shape, axis=1)
     if augment_translation_std and decision(augment_translation_probability):
         affine = translate_affine(affine, shape,
-                                  translation_scales=np.random.normal(loc=0, scale=augment_translation_std, size=3))
+                                  translation_scales=torch.normal(0, augment_translation_std, (3,)))
     return affine
 
 
@@ -164,7 +165,7 @@ def decision(probability):
 class BaseSequence(Sequence):
     def __init__(self, filenames, batch_size, target_labels, window, spacing, classification='binary', shuffle=True,
                  points_per_subject=1, flip=False, reorder=False, iterations_per_epoch=1, deformation_augmentation=None,
-                 base_directory=None, subject_ids=None, inputs_per_epoch=None, channel_axis=3,
+                 base_directory=None, subject_ids=None, inputs_per_epoch=None, channel_axis=0,
                  verbose=False):
         self.deformation_augmentation = deformation_augmentation
         self.base_directory = base_directory
@@ -249,7 +250,7 @@ class BaseSequence(Sequence):
                                         classify=self._classify)):
                 batch_x.append(x)
                 batch_y.append(y)
-        return np.asarray(batch_x), np.asarray(batch_y)
+        return torch.tensor(batch_x), torch.tensor(batch_y)
 
     def on_epoch_end(self):
         self.generate_epoch_filenames()
@@ -285,7 +286,7 @@ class HCPParent(object):
             vertices_index = get_vertices_from_scalar(metrics[0], brain_structure_name=surface_name)
             surface_vertices = extract_gifti_surface_vertices(surface, primary_anatomical_structure=surface_name)
             vertices.extend(surface_vertices[vertices_index])
-        return np.asarray(vertices)
+        return torch.tensor(vertices)
 
 
 class HCPRegressionSequence(BaseSequence, HCPParent):
@@ -314,7 +315,7 @@ class HCPRegressionSequence(BaseSequence, HCPParent):
             _x, _y = self.fetch_hcp_subject_batch(*args)
             batch_x.extend(_x)
             batch_y.extend(_y)
-        return np.asarray(batch_x), np.asarray(batch_y)
+        return torch.tensor(batch_x), torch.tensor(batch_y)
 
     def load_metric_data(self, metric_filenames, subject_id):
         metrics = nib_load_files(metric_filenames)
@@ -373,7 +374,7 @@ class ParcelBasedSequence(HCPRegressionSequence):
 
     def load_parcellation(self, subject_id):
         parcellation_filename = self.parcellation_template.format(subject_id)
-        parcellation = np.squeeze(get_metric_data(metrics=nib_load_files([parcellation_filename]),
+        parcellation = torch.squeeze(get_metric_data(metrics=nib_load_files([parcellation_filename]),
                                                   metric_names=[[self.parcellation_name]],
                                                   surface_names=self.surface_names,
                                                   subject_id=subject_id))
@@ -399,7 +400,7 @@ class SubjectPredictionSequence(HCPParent, Sequence):
                                       window=self.window,
                                       flip=self.flip,
                                       spacing=self.spacing) for vertex in batch_vertices]
-        return np.asarray(batch)
+        return torch.Tensor(batch)
 
 
 class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
@@ -459,7 +460,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
             metrics = nib_load_files(metric_filenames)
             x.append(self.resample_input(feature_filename))
             y.append(get_metric_data(metrics, self.metric_names, self.surface_names, subject_id).T.ravel())
-        return np.asarray(x), np.asarray(y)
+        return torch.Tensor(x), torch.Tensor(y)
 
     def resample_input(self, feature_filename):
         feature_image = load_image(feature_filename, reorder=False, verbose=self.verbose)
@@ -515,7 +516,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
             x, y = self.resample_input(item)
             x_batch.append(x)
             y_batch.append(y)
-        return np.asarray(x_batch), np.asarray(y_batch)
+        return torch.tensor(x_batch), torch.tensor(y_batch)
 
     def resample_input(self, input_filenames):
         input_image, target_image = self.resample_image(input_filenames)
@@ -539,10 +540,10 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
                                       augment_blur_probability=self.augment_blur_probability)
         return feature_image, target_image
 
-    def load_image(self, filenames, index, force_4d=True, interpolation="linear", sub_volume_indices=None):
+    def load_image(self, filenames, index, interpolation="linear", sub_volume_indices=None):
         filename = filenames[index]
         # Reordering is done when the image is formatted
-        image = load_image(filename, force_4d=force_4d, reorder=False, interpolation=interpolation, dtype=self.dtype,
+        image = load_image(filename, reorder=False, dtype=self.dtype,
                            verbose=self.verbose)
         if sub_volume_indices:
             image = extract_sub_volumes(image, sub_volume_indices)
@@ -553,7 +554,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
             sub_volume_indices = input_filenames[self.feature_sub_volumes_index]
         else:
             sub_volume_indices = None
-        return self.load_image(input_filenames, self.feature_index, force_4d=True, interpolation=self.interpolation,
+        return self.load_image(input_filenames, self.feature_index, interpolation=self.interpolation,
                                sub_volume_indices=sub_volume_indices)
 
     def format_feature_image(self, input_filenames, return_unmodified=False):
@@ -587,7 +588,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
                 sub_volume_indices = input_filenames[self.target_sub_volumes_index]
             else:
                 sub_volume_indices = None
-            target_image = self.load_image(input_filenames, self.target_index, force_4d=True,
+            target_image = self.load_image(input_filenames, self.target_index,
                                            sub_volume_indices=sub_volume_indices,
                                            interpolation=self.target_interpolation)
         return target_image
@@ -617,29 +618,27 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         input_image, target_image = self.resample_image(input_filenames)
         target_data = get_nibabel_data(target_image)
         assert len(target_data.shape) == 4
-        if target_data.shape[3] == 1:
+        if target_data.shape[0] == 1:
             if self.labels is None:
                 self.labels = np.asarray(np.unique(target_data)[1:], dtype=int)
-            target_data = np.moveaxis(
-                compile_one_hot_encoding(np.moveaxis(target_data, 3, 0),
-                                         n_labels=len(self.labels),
-                                         labels=self.labels,
-                                         return_4d=True), 0, 3)
+            target_data = compile_one_hot_encoding(target_data,
+                                                   n_labels=len(self.labels),
+                                                   labels=self.labels,
+                                                   return_4d=True)
         else:
             if self.labels is None:
-                self.labels = np.asarray([np.unique(target_data[:, :, :, channel])[1:]
-                                          for channel in np.arange(target_data.shape[self.channel_axis])],
-                                         dtype=int)
+                self.labels = torch.tensor([np.unique(target_data[:, :, :, channel])[1:]
+                                            for channel in np.arange(target_data.shape[self.channel_axis])]).to(
+                    dtype=int)
             _target_data = list()
             for channel, labels in zip(range(target_data.shape[self.channel_axis]), self.labels):
                 if type(labels) != list:
                     labels = [labels]
-                _target_data.append(np.moveaxis(
-                    compile_one_hot_encoding(np.moveaxis(target_data[..., channel, None], self.channel_axis, 0),
-                                             n_labels=len(labels),
-                                             labels=labels,
-                                             return_4d=True), 0, self.channel_axis))
-            target_data = np.concatenate(_target_data, axis=self.channel_axis)
+                _target_data.append(compile_one_hot_encoding(target_data[..., channel, None],
+                                                             n_labels=len(labels),
+                                                             labels=labels,
+                                                             return_4d=True))
+            target_data = torch.cat(_target_data, dim=self.channel_axis)
         if self.add_contours:
             target_data = add_one_hot_encoding_contours(target_data)
         return self.permute_inputs(get_nibabel_data(input_image), target_data)
@@ -662,7 +661,7 @@ class WindowedAutoEncoderSequence(HCPRegressionSequence):
     def load_feature_data_without_metrics(self, feature_filename, random_vertices):
         batch_x = list()
         batch_y = list()
-        feature_image = load_single_image(feature_filename, resample=self.resample, reorder=self.reorder)
+        feature_image = load_single_image(feature_filename, reorder=self.reorder)
         normalized_image = self.normalize_image(feature_image)
         for vertex in random_vertices:
             x = fetch_data_for_point(vertex, normalized_image, window=self.window, flip=self.flip, spacing=self.spacing,
