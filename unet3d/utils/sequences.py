@@ -13,7 +13,7 @@ from .hcp import (extract_gifti_surface_vertices, get_vertices_from_scalar, get_
                   extract_cifti_volumetric_data)
 from .utils import (copy_image, extract_sub_volumes, mask,
                     compile_one_hot_encoding,
-                    nib_load_files, load_image, load_single_image,
+                    load_image, load_single_image,
                     get_nibabel_data, add_one_hot_encoding_contours)
 from .normalize import zero_mean_normalize_image_data, foreground_zero_mean_normalize_image_data, \
     zero_floor_normalize_image_data, zero_one_window
@@ -280,7 +280,7 @@ class HCPParent(object):
 
     def extract_vertices(self, surface_filenames, metrics):
         # extract the vertices
-        surfaces = nib_load_files(surface_filenames)
+        surfaces = load_image(surface_filenames)
         vertices = list()
         for surface, surface_name in zip(surfaces, self.surface_names):
             vertices_index = get_vertices_from_scalar(metrics[0], brain_structure_name=surface_name)
@@ -318,7 +318,7 @@ class HCPRegressionSequence(BaseSequence, HCPParent):
         return torch.tensor(batch_x), torch.tensor(batch_y)
 
     def load_metric_data(self, metric_filenames, subject_id):
-        metrics = nib_load_files(metric_filenames)
+        metrics = load_image(metric_filenames)
         all_metric_data = get_metric_data(metrics, self.metric_names, self.surface_names, subject_id)
         return metrics, all_metric_data
 
@@ -374,7 +374,7 @@ class ParcelBasedSequence(HCPRegressionSequence):
 
     def load_parcellation(self, subject_id):
         parcellation_filename = self.parcellation_template.format(subject_id)
-        parcellation = torch.squeeze(get_metric_data(metrics=nib_load_files([parcellation_filename]),
+        parcellation = torch.squeeze(get_metric_data(metrics=load_image([parcellation_filename]),
                                                   metric_names=[[self.parcellation_name]],
                                                   surface_names=self.surface_names,
                                                   subject_id=subject_id))
@@ -457,7 +457,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
         for feature_filename, surface_filenames, metric_filenames, subject_id in batch_filenames:
             if self.deformation_augmentation:
                 feature_filename = self.switch_to_augmented_filename(subject_id=subject_id, filename=feature_filename)
-            metrics = nib_load_files(metric_filenames)
+            metrics = load_image(metric_filenames)
             x.append(self.resample_input(feature_filename))
             y.append(get_metric_data(metrics, self.metric_names, self.surface_names, subject_id).T.ravel())
         return torch.Tensor(x), torch.Tensor(y)
@@ -651,7 +651,7 @@ class WindowedAutoEncoderSequence(HCPRegressionSequence):
         self.resample = resample
 
     def fetch_hcp_subject_batch(self, feature_filename, surface_filenames, metric_filenames, subject_id):
-        surfaces = nib_load_files(surface_filenames)
+        surfaces = load_image(surface_filenames)
         vertices = list()
         for surface, surface_name in zip(surfaces, self.surface_names):
             vertices.extend(extract_gifti_surface_vertices(surface, primary_anatomical_structure=surface_name))
