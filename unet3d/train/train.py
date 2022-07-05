@@ -8,9 +8,8 @@ def run_training_with_package(package="keras", *args, **kwargs):
     :param kwargs:
     :return:
     """
-    if package == "keras":
-        from .keras import run_keras_training as run_training
-    elif package == "pytorch":
+
+    if package == "pytorch":
         from .pytorch import run_pytorch_training as run_training
     else:
         raise RuntimeError("{} package is not supported".format(package))
