@@ -1,7 +1,7 @@
 import argparse
 import os
 import nibabel as nib
-from unet3d.utils.utils import one_hot_image_to_label_map
+from unet3d.utils.utils import one_hot_image_to_label_map, load_image
 
 
 def parse_args():
@@ -50,7 +50,7 @@ def main():
                 print(fn, "-->", ofn)
             if not os.path.exists(os.path.dirname(ofn)):
                 os.makedirs(os.path.dirname(ofn))
-            image = nib.load(fn)
+            image = load_image(fn, force_4d=True)
             label_map = one_hot_image_to_label_map(image,
                                                    labels=namespace.labels,
                                                    threshold=namespace.threshold,

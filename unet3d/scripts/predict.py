@@ -1,7 +1,7 @@
 import os
 import argparse
 from unet3d.utils.utils import load_json, in_config
-from unet3d.predict import volumetric_predictions
+from unet3d.predict.volumetric import volumetric_predictions
 from unet3d.utils.filenames import generate_filenames, load_subject_ids, load_sequence
 from unet3d.scripts.segment import format_parser as format_segmentation_parser
 from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser

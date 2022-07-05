@@ -38,7 +38,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
         data_time.update(time.time() - end)
 
         if n_gpus:
-            # torch.cuda.empty_cache()
+            torch.cuda.empty_cache()
             if print_gpu_memory:
                 for i_gpu in range(n_gpus):
                     print("Memory allocated (device {}):".format(i_gpu),
@@ -81,6 +81,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
 def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, use_amp=None):
     if n_gpus is not None:
+        torch.cuda.empty_cache()
         images = images.cuda()
         target = target.cuda()
     # compute output
@@ -137,6 +138,9 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regul
 
             if i % print_freq == 0:
                 progress.display(i)
+
+            if n_gpus:
+                torch.cuda.empty_cache()
 
     return losses.avg
 
