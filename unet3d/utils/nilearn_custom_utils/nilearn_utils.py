@@ -1,5 +1,5 @@
 import numpy as np
-from nilearn.image.image import check_niimg
+# from nilearn.image.image import check_niimg
 from nilearn.image.resampling import get_bounds
 from nilearn.image.image import _crop_img_to as crop_img_to
 
@@ -34,7 +34,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         Cropped version of the input image
     """
 
-    img = check_niimg(img)
+    # img = check_niimg(img)
     data = img.get_data()
     if percentile is not None:
         passes_threshold = data > np.percentile(data, percentile)

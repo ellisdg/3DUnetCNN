@@ -3,8 +3,13 @@ import sys
 import nibabel as nib
 import numpy as np
 import json
-from nilearn.image import resample_to_img, reorder_img, new_img_like
 from scipy.ndimage import binary_erosion
+
+import torch
+
+from monai.transforms import Orientation
+
+from .image import Image
 
 
 def load_json(filename):
@@ -57,7 +62,6 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=np.uint8, return
     :param dtype: output type of the array
     :return: binary numpy array of shape: (n_samples, n_labels, ...)
     """
-    data = np.asarray(data)
     while len(data.shape) < 5:
         data = data[None]
     assert data.shape[1] == 1
@@ -169,11 +173,11 @@ def one_hot_image_to_label_map(one_hot_image, labels, axis=3, threshold=0.5, sum
     label_map = convert_one_hot_to_label_map(get_nibabel_data(one_hot_image), labels=labels, axis=axis,
                                              threshold=threshold, sum_then_threshold=sum_then_threshold,
                                              dtype=dtype, label_hierarchy=label_hierarchy)
-    return new_img_like(one_hot_image, label_map)
+    return one_hot_image.make_similar(label_map)
 
 
 def copy_image(image):
-    return image.__class__(np.copy(image.dataobj), image.affine)
+    return image.copy()
 
 
 def update_progress(progress, bar_length=30, message=""):
@@ -195,85 +199,68 @@ def update_progress(progress, bar_length=30, message=""):
     sys.stdout.flush()
 
 
-def combine_images(images, axis=0, resample_unequal_affines=False, interpolation="linear"):
+def combine_images(images, axis=0):
     base_image = images[0]
-    data = list()
-    max_dim = len(base_image.shape)
-    for image in images:
-        try:
-            np.testing.assert_array_equal(image.affine, base_image.affine)
-        except AssertionError as error:
-            if resample_unequal_affines:
-                image = resample_to_img(image, base_image, interpolation=interpolation)
-            else:
-                raise error
-        image_data = image.get_data()
-        dim = len(image.shape)
-        if dim < max_dim:
-            image_data = np.expand_dims(image_data, axis=axis)
-        elif dim > max_dim:
-            max_dim = max(max_dim, dim)
-            data = [np.expand_dims(x, axis=axis) for x in data]
-        data.append(image_data)
-    if len(data[0].shape) > 3:
-        array = np.concatenate(data, axis=axis)
-    else:
-        array = np.stack(data, axis=axis)
-    return base_image.__class__(array, base_image.affine)
+    if len(images) > 1:
+        data = [image.get_data() for image in images]
+        combined_data = torch.cat(data, axis)
+        return base_image.make_similar(combined_data)
+    return base_image
 
 
 def move_channels_last(data):
-    return np.moveaxis(data, 0, -1)
+    return torch.moveaxis(data, 0, -1)
 
 
 def move_channels_first(data):
-    return np.moveaxis(data, -1, 0)
+    return torch.moveaxis(data, -1, 0)
 
 
-def nib_load_files(filenames, reorder=False, interpolation="linear", dtype=None, verbose=False):
-    if type(filenames) != list:
-        filenames = [filenames]
-    return [load_image(filename, reorder=reorder, interpolation=interpolation, force_4d=False, dtype=dtype,
-                       verbose=verbose)
-            for filename in filenames]
-
-
-def load_image(filename, feature_axis=3, resample_unequal_affines=True, interpolation="linear", force_4d=False,
-               reorder=False, dtype=None, verbose=False):
+def load_image(filename, feature_axis=0, reorder=True, dtype=None, verbose=False):
     """
     :param feature_axis: axis along which to combine the images, if necessary.
+    (for now, anything other than 0, probably won't work).
     :param filename: can be either string path to the file or a list of paths.
     :return: image containing either the 1 image in the filename or a combined image based on multiple filenames.
     """
-
-    if type(filename) != list:
-        if not force_4d:
-            return load_single_image(filename=filename, resample=interpolation, reorder=reorder, dtype=dtype,
-                                     verbose=verbose)
-        else:
-            filename = [filename]
-    return combine_images(nib_load_files(filename, reorder=reorder, interpolation=interpolation, dtype=dtype,
-                                         verbose=verbose),
-                          axis=feature_axis, resample_unequal_affines=resample_unequal_affines,
-                          interpolation=interpolation)
+    if type(filename) == list:
+        return combine_images([load_single_image(fn, reorder=reorder, dtype=dtype, verbose=verbose)
+                               for fn in filename], axis=feature_axis)
+    else:
+        return load_single_image(filename, reorder=reorder, dtype=dtype, verbose=verbose)
 
 
-def load_single_image(filename, resample=None, reorder=True, dtype=None, verbose=False):
+def load_single_image(filename, reorder=True, dtype=None, verbose=False):
     if verbose:
         print("Loading", filename)
-    image = nib.load(filename)
+    nib_image = nib.load(filename)
+    nib_data = torch.from_numpy(np.asarray(nib_image.dataobj))
+    if len(nib_data.shape) > 3:
+        # nibabel loads 4d data with channels in last dimension
+        # change that to the first dimension
+        data = torch.moveaxis(nib_data, -1, 0)
+    else:
+        data = nib_data[None]  # Set channels shape to 1
+    image = Image(data, torch.from_numpy(nib_image.affine))
     if verbose:
         print("Finished loading", filename, "Shape:", image.shape)
     if dtype is not None:
-        image = new_img_like(image, np.asarray(image.dataobj, dtype))
+        image.set_dtype(dtype)
     if reorder:
-        return reorder_img(image, resample=resample)
+        return reorder(image)
+    return image
+
+
+def reorder(image, axcodes="RAS"):
+    array, _, affine = Orientation(axcodes=axcodes)(image.get_data(),
+                                                    image.affine)
+    image.update(array, affine)
     return image
 
 
 def extract_sub_volumes(image, sub_volume_indices):
     data = image.dataobj[..., sub_volume_indices]
-    return new_img_like(ref_niimg=image, data=data)
+    return image.make_similar(data)
 
 
 def mask(data, threshold=0, dtype=np.float):

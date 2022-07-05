@@ -1,27 +1,24 @@
 import numpy as np
-import nibabel as nib
-from nilearn.image import new_img_like, resample_to_img, smooth_img
-from nilearn.image.resampling import BoundingBoxError
+from monai.transforms import GaussianSmooth
 import random
 import itertools
 from collections.abc import Iterable
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.ndimage.filters import gaussian_filter
 
+import torch
+
 from .affine import get_extent_from_image, get_spacing_from_affine, assert_affine_is_diagonal
-from .resample import resample
+from .image import get_image
+from .resample import resample, resample_to_img
 from .nilearn_custom_utils.nilearn_utils import get_background_values
 from .utils import copy_image
 
 
 def flip_image(image, axis):
-    try:
-        new_data = np.copy(image.get_data())
-        for axis_index in axis:
-            new_data = np.flip(new_data, axis=axis_index)
-    except TypeError:
-        new_data = np.flip(image.get_data(), axis=axis)
-    return new_img_like(image, data=new_data)
+    new_data = image.get_data().detach().clone()
+    new_data = torch.flip(new_data, dims=axis)
+    return image.make_similar(data=new_data)
 
 
 def random_flip_dimensions(n_dimensions):
@@ -74,12 +71,9 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
         copied_image = copy_image(image)
         distorted_image = distort_image(copied_image, flip_axis=flip_axis, scale_factor=scale_factor,
                                         translation_scale=translation_scale)
-        try:
-            resampled_image = resample_to_img(source_img=distorted_image, target_img=image, interpolation=interpolation)
-        except BoundingBoxError:
-            resampled_image = distorted_image
+        resampled_image = resample_to_img(source_image=distorted_image, target_image=image, interpolation=interpolation)
         data_list.append(resampled_image.get_data())
-    data = np.asarray(data_list)
+    data = torch.tensor(data_list)
     if background_correction:
         data[:] += background
     if noise_factor is not None:
@@ -88,16 +82,9 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
     copied_truth_image = copy_image(truth_image)
     distorted_truth = distort_image(copied_truth_image, flip_axis=flip_axis, scale_factor=scale_factor,
                                     translation_scale=translation_scale)
-    try:
-        resampled_truth = resample_to_img(distorted_truth, truth_image, interpolation="nearest")
-    except BoundingBoxError:
-        resampled_truth = distorted_truth
+    resampled_truth = resample_to_img(distorted_truth, truth_image, interpolation="nearest")
     truth_data = resampled_truth.get_data()
     return data, truth_data
-
-
-def get_image(data, affine, nib_class=nib.Nifti1Image):
-    return nib_class(dataobj=data, affine=affine)
 
 
 def generate_permutation_keys():
@@ -138,13 +125,13 @@ def permute_data(data, key):
     rotated 90 degrees around the z-axis, then reversed on the y-axis, and then
     transposed.
     """
-    data = np.copy(data)
+    data = data.detach().clone()
     (rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose = key
 
     if rotate_y != 0:
-        data = np.rot90(data, rotate_y, axes=(1, 3))
+        data = torch.rot90(data, rotate_y, dims=(1, 3))
     if rotate_z != 0:
-        data = np.rot90(data, rotate_z, axes=(2, 3))
+        data = torch.rot90(data, rotate_z, dims=(2, 3))
     if flip_x:
         data = data[:, ::-1]
     if flip_y:
@@ -168,7 +155,7 @@ def random_permutation_x_y(x_data, y_data, channel_axis=0):
     """
     key = random_permutation_key()
     if channel_axis != 0:
-        return [np.moveaxis(permute_data(np.moveaxis(data, channel_axis, 0), key), 0, channel_axis)
+        return [torch.moveaxis(permute_data(torch.moveaxis(data, channel_axis, 0), key), 0, channel_axis)
                 for data in (x_data, y_data)]
     else:
         return permute_data(x_data, key), permute_data(y_data, key)
@@ -176,7 +163,7 @@ def random_permutation_x_y(x_data, y_data, channel_axis=0):
 
 def reverse_permute_data(data, key):
     key = reverse_permutation_key(key)
-    data = np.copy(data)
+    data = data.detach().clone()
     (rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose = key
 
     if transpose:
@@ -189,9 +176,9 @@ def reverse_permute_data(data, key):
     if flip_x:
         data = data[:, ::-1]
     if rotate_z != 0:
-        data = np.rot90(data, rotate_z, axes=(2, 3))
+        data = torch.rot90(data, rotate_z, dims=(2, 3))
     if rotate_y != 0:
-        data = np.rot90(data, rotate_y, axes=(1, 3))
+        data = torch.rot90(data, rotate_y, dims=(1, 3))
     return data
 
 
@@ -209,9 +196,9 @@ def add_noise(data, mean=0., sigma_factor=0.1):
     deviation of the additive noise. Assumes standard deviation is the same for all channels.
     :return:
     """
-    sigma = np.std(data) * sigma_factor
-    noise = np.random.normal(mean, sigma, data.shape)
-    return np.add(data, noise)
+    sigma = torch.std(data) * sigma_factor
+    noise = torch.normal(mean, sigma, data.shape)
+    return torch.add(data, noise)
 
 
 def translate_affine(affine, shape, translation_scales, copy=True):
@@ -346,6 +333,12 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
     distored_image = map_coordinates(image, indices, order=1, mode='reflect')
     distored_target_image = map_coordinates(target_image, indices, order=1, mode='reflect')
     return distored_image.reshape(image.shape), distored_target_image.reshape(image.shape)
+
+
+def smooth_img(image, fwhm):
+    sigma = fwhm / get_spacing_from_affine(image.affine)
+    array = GaussianSmooth(sigma=sigma)(image.get_data())
+    return image.make_similar(array)
 
 
 def random_blur(image, mean, std):
