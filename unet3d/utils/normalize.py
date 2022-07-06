@@ -1,7 +1,7 @@
 import torch
 
 
-def zero_mean_normalize_image_data(data, axis=(0, 1, 2)):
+def zero_mean_normalize_image_data(data, axis=(1, 2, 3)):
     return torch.divide(torch.subtract(data, data.mean(dim=axis)), data.std(dim=axis))
 
 
@@ -28,7 +28,7 @@ def foreground_zero_mean_normalize_image_data(data, channel_dim=0, background_va
         return data
 
 
-def zero_floor_normalize_image_data(data, axis=(0, 1, 2), floor_percentile=1, floor=0):
+def zero_floor_normalize_image_data(data, axis=(1, 2, 3), floor_percentile=1, floor=0):
     floor_threshold = torch.percentile(data, floor_percentile, axis=axis)
     if data.ndim != len(axis):
         floor_threshold_shape = torch.as_tensor(floor_threshold.shape * data.ndim)
@@ -43,7 +43,7 @@ def zero_floor_normalize_image_data(data, axis=(0, 1, 2), floor_percentile=1, fl
     return torch.divide(data, std)
 
 
-def zero_one_window(data, axis=(0, 1, 2), ceiling_percentile=99, floor_percentile=1, floor=0, ceiling=1,
+def zero_one_window(data, axis=(1, 2, 3), ceiling_percentile=99, floor_percentile=1, floor=0, ceiling=1,
                     channels_axis=None):
     """
 
