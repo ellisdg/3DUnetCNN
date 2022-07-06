@@ -134,7 +134,7 @@ def format_feature_image(feature_image, window, crop=False, cropping_kwargs=None
         affine, shape = crop_img(feature_image, return_affine=True, **cropping_kwargs)
     else:
         affine = feature_image.affine.detach().clone()
-        shape = feature_image.shape
+        shape = feature_image.shape[1:]
     affine = augment_affine(affine, shape,
                             augment_scale_std=augment_scale_std,
                             augment_scale_probability=augment_scale_probability,
