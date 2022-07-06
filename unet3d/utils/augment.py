@@ -75,7 +75,7 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
         data_list.append(resampled_image.get_data())
     data = torch.tensor(data_list)
     if background_correction:
-        data[:] += background
+        data = data + background
     if noise_factor is not None:
         data = add_noise(data, sigma_factor=noise_factor)
     truth_image = get_image(truth, affine)
@@ -216,7 +216,7 @@ def translate_affine(affine, shape, translation_scales, copy=True):
     spacing = get_spacing_from_affine(affine)
     extent = np.multiply(shape, spacing)
     translation = np.multiply(translation_scales, extent)
-    affine[:3, 3] += translation
+    affine[:3, 3] = affine[:3, 3] + translation
     return affine
 
 
@@ -233,7 +233,7 @@ def translate_image(image, translation_scales, interpolation="linear"):
     """
     affine = np.copy(image.affine)
     translation = np.multiply(translation_scales, get_extent_from_image(image))
-    affine[:3, 3] += translation
+    affine[:3, 3] = affine[:3, 3] + translation
     return resample(image, target_affine=affine, target_shape=image.shape, interpolation=interpolation)
 
 
