@@ -68,7 +68,7 @@ class AEDataset(WholeVolumeAutoEncoderSequence, Dataset):
     def __getitem__(self, idx):
         item = self.epoch_filenames[idx]
         x, y = self.resample_input(item)
-        return x.float(), x.float()
+        return x.float(), y.float()
 
 
 class WholeVolumeSegmentationDataset(WholeVolumeSegmentationSequence, Dataset):
@@ -81,7 +81,7 @@ class WholeVolumeSegmentationDataset(WholeVolumeSegmentationSequence, Dataset):
     def __getitem__(self, idx):
         item = self.epoch_filenames[idx]
         x, y = self.resample_input(item)
-        return x.float(), x.byte()
+        return x.float(), y.byte()
 
 
 class WholeVolumeSupervisedRegressionDataset(WholeVolumeSupervisedRegressionSequence, Dataset):
