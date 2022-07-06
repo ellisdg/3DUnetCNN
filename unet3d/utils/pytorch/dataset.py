@@ -7,7 +7,7 @@ from ..sequences import (WholeVolumeToSurfaceSequence, HCPRegressionSequence, ge
                          WholeVolumeAutoEncoderSequence, WholeVolumeSegmentationSequence, WindowedAutoEncoderSequence,
                          SubjectPredictionSequence, fetch_data_for_point, WholeVolumeCiftiSupervisedRegressionSequence,
                          WholeVolumeSupervisedRegressionSequence)
-from ..utils import nib_load_files
+from ..utils import load_image
 
 
 class WholeBrainCIFTI2DenseScalarDataset(WholeVolumeToSurfaceSequence, Dataset):
@@ -19,7 +19,7 @@ class WholeBrainCIFTI2DenseScalarDataset(WholeVolumeToSurfaceSequence, Dataset):
 
     def __getitem__(self, idx):
         feature_filename, surface_filenames, metric_filenames, subject_id = self.epoch_filenames[idx]
-        metrics = nib_load_files(metric_filenames)
+        metrics = load_image(metric_filenames)
         x = self.resample_input(feature_filename)
         y = self.get_metric_data(metrics, subject_id)
         return torch.from_numpy(x).float().permute(3, 0, 1, 2), torch.from_numpy(y).float()
