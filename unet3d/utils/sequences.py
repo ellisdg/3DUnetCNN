@@ -620,14 +620,16 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         if target_data.shape[0] == 1:
             if self.labels is None:
                 self.labels = torch.as_tensor(np.unique(target_data)[1:], dtype=int)
+            print(target_data)
             target_data = compile_one_hot_encoding(target_data,
                                                    n_labels=len(self.labels),
                                                    labels=self.labels,
                                                    return_4d=True)
+            print(target_data)
         else:
             if self.labels is None:
                 self.labels = torch.as_tensor([np.unique(target_data[:, :, :, channel])[1:]
-                                            for channel in np.arange(target_data.shape[self.channel_axis])]).to(
+                                               for channel in np.arange(target_data.shape[self.channel_axis])]).to(
                     dtype=int)
             _target_data = list()
             for channel, labels in zip(range(target_data.shape[self.channel_axis]), self.labels):
