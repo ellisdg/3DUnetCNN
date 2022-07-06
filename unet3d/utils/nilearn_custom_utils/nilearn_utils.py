@@ -54,7 +54,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         pad_width = int(pad)
         # pad with one voxel to avoid resampling problems
         start = torch.maximum(start - pad_width, torch.zeros(start.shape))
-        end = torch.minimum(end + pad_width, torch.as_tensor(data.shape[:3]))
+        end = torch.minimum(end + pad_width, torch.as_tensor(data.shape[1:]))
     print(start, end)
     slices = [slice(s, e) for s, e in zip(start, end)]
 
@@ -75,6 +75,7 @@ def image_slices_to_affine(image, slices):
     print("old origin", old_origin)
     new_origin_voxel = torch.as_tensor([s.start for s in slices])
     print("new_origin voxel", new_origin_voxel)
+    print("dot", linear_part.dot(new_origin_voxel))
     new_origin = old_origin + linear_part.dot(new_origin_voxel)
 
     new_affine = torch.eye(4)
