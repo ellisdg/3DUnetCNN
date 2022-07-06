@@ -120,13 +120,11 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                 y = y.numpy()
             x = np.moveaxis(x, 0, -1)
             x_image = nib.Nifti1Image(x.squeeze(), affine=np.diag(np.ones(4)))
-            x_image.to_filename(model_filename.replace(".h5",
-                                                       "_input_test_{}.nii.gz".format(index)))
+            x_image.to_filename(model_filename.split(".")[0] + "_input_test_{}.nii.gz".format(index))
             if len(y.shape) >= 3:
                 y = np.moveaxis(y, 0, -1)
                 y_image = nib.Nifti1Image(y.squeeze(), affine=np.diag(np.ones(4)))
-                y_image.to_filename(model_filename.replace(".h5",
-                                                           "_target_test_{}.nii.gz".format(index)))
+                y_image.to_filename(model_filename.split(".")[0] + "_target_test_{}.nii.gz".format(index))
 
     if 'skip_validation' in config and config['skip_validation']:
         validation_loader = None
