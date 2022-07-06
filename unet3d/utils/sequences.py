@@ -468,6 +468,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
         return torch.as_tensor(x), torch.as_tensor(y)
 
     def resample_input(self, feature_filename):
+        print(feature_filename)
         feature_image = load_image(feature_filename, reorder=False, verbose=self.verbose)
         print("Load:", feature_image.dataobj.mean())
         feature_image, affine = format_feature_image(feature_image=feature_image, window=self.window, crop=self.crop,
