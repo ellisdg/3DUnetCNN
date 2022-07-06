@@ -3,7 +3,6 @@ from functools import partial
 import numpy as np
 import torch
 import nibabel as nib
-from nilearn.image import new_img_like, resample_to_img, reorder_img
 import random
 import warnings
 
@@ -14,11 +13,11 @@ from .hcp import (extract_gifti_surface_vertices, get_vertices_from_scalar, get_
 from .utils import (copy_image, extract_sub_volumes, mask,
                     compile_one_hot_encoding,
                     load_image, load_single_image,
-                    get_nibabel_data, add_one_hot_encoding_contours)
+                    get_nibabel_data, add_one_hot_encoding_contours, reorder)
 from .normalize import zero_mean_normalize_image_data, foreground_zero_mean_normalize_image_data, \
     zero_floor_normalize_image_data, zero_one_window
 from . import normalize
-from .resample import resample
+from .resample import resample, resample_to_img
 from .augment import scale_affine, add_noise, affine_swap_axis, translate_affine, random_blur, random_permutation_x_y
 from .affine import resize_affine
 
@@ -70,7 +69,7 @@ def normalize_image_with_function(image, function, volume_indices=None, **kwargs
         data[..., volume_indices] = function(data[..., volume_indices], **kwargs)
     else:
         data = function(data, **kwargs)
-    return new_img_like(image, data=data, affine=image.affine)
+    return image.make_similar(data=data, affine=image.affine)
 
 
 def normalize_data_with_multiple_functions(data, normalization_names, channels_axis=3, **kwargs):
@@ -128,7 +127,7 @@ def format_feature_image(feature_image, window, crop=False, cropping_kwargs=None
                          augment_blur_probability=0, flip_front_back_probability=0, reorder=False,
                          interpolation="linear"):
     if reorder:
-        feature_image = reorder_img(feature_image, resample=interpolation)
+        feature_image = reorder(feature_image, resample=interpolation)
     if crop:
         if cropping_kwargs is None:
             cropping_kwargs = dict()
@@ -686,8 +685,8 @@ class WholeVolumeSupervisedRegressionSequence(WholeVolumeAutoEncoderSequence):
         target_image = super().load_target_image(feature_image, input_filenames)
         if self.normalize_target:
             image_data = self.target_normalization_func(target_image.get_fdata())
-            return new_img_like(ref_niimg=feature_image, data=image_data,
-                                affine=target_image.header.affine)
+            return feature_image.make_similar(data=image_data,
+                                              affine=target_image.header.affine)
         else:
             return target_image
 
@@ -706,5 +705,5 @@ class WholeVolumeCiftiSupervisedRegressionSequence(WholeVolumeSupervisedRegressi
                                                    map_names=self.metric_names,
                                                    subject_id=input_filenames[self.subject_id_index])
         image_data = self.target_normalization_func(image_data)
-        return new_img_like(ref_niimg=feature_image, data=image_data,
-                            affine=cifti_target_image.header.get_axis(1).affine)
+        return feature_image.make_similar(data=image_data,
+                                          affine=cifti_target_image.header.get_axis(1).affine)
