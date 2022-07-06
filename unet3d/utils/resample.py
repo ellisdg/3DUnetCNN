@@ -49,5 +49,5 @@ def monai_interpolation_mode(interpolation):
 
 
 def resample_to_img(source_image, target_image, interpolation='linear', align_corners=True):
-    return resample(source_image, target_image.affine, target_image.shape, interpolation=interpolation,
+    return resample(source_image, target_image.affine, target_image.shape[1:], interpolation=interpolation,
                     align_corners=align_corners, pad=False)
