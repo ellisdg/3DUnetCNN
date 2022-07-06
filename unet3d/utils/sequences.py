@@ -605,7 +605,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
 
 class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
-    def __init__(self, *args, target_interpolation="nearest", target_index=2, labels=None, add_contours=False,
+    def __init__(self, *args, target_interpolation="nearest", target_index=1, labels=None, add_contours=False,
                  **kwargs):
         super().__init__(*args, **kwargs)
         self.target_interpolation = target_interpolation
