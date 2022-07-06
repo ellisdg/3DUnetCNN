@@ -3,6 +3,7 @@ import torch
 # from nilearn.image.image import check_niimg
 from nilearn.image.resampling import get_bounds
 from nilearn.image.image import _crop_img_to as crop_img_to
+import warnings
 
 
 def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None, return_affine=False):
@@ -48,6 +49,15 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         passes_threshold = torch.any(passes_threshold, dim=0)
     coords = torch.stack(torch.where(passes_threshold))
 
+    if len(coords) == 0:
+        warnings.warn("No foreground detected. No cropping will be performed.")
+        if return_affine:
+            return img.affine, img.shape
+        elif return_slices:
+            return
+        else:
+            return img
+
     start = coords.min(dim=1).values
     end = coords.max(dim=1).values + 1
     if int(pad) > 0:
@@ -55,6 +65,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         # pad with one voxel to avoid resampling problems
         start = torch.maximum(start - pad_width, torch.zeros(start.shape))
         end = torch.minimum(end + pad_width, torch.as_tensor(data.shape[1:]))
+
     slices = [slice(s, e) for s, e in zip(start, end)]
 
     if return_slices:
