@@ -270,8 +270,9 @@ def find_image_center(image, ndim=3):
 
 
 def find_center(affine, shape, ndim=3):
-    return torch.matmul(affine,
-                        torch.cat((torch.divide(shape[:ndim], 2)), torch.ones(1)))[:ndim]
+    center_voxel = torch.divide(shape[:ndim], 2)
+    print(center_voxel)
+    return torch.matmul(affine, torch.cat((center_voxel, torch.ones(1))))[:ndim]
 
 
 def scale_image(image, scale, ndim=3, interpolation='linear'):
