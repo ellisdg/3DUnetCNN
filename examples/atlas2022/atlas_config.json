@@ -56,15 +56,6 @@
     "add_contours": false
   },
   "additional_training_args": {
-    "augment_scale_std": 0.1,
-    "augment_scale_probability": 0.25,
-    "additive_noise_std": 0.1,
-    "additive_noise_probability": 0.25,
-    "augment_blur_mean": 1.5,
-    "augment_blur_std": 0.5,
-    "augment_blur_probability": 0.25,
-    "augment_translation_std": 0.05,
-    "augment_translation_probability": 0.1,
     "flip_left_right_probability": 0.5,
     "random_permutation_probability": null
   },
