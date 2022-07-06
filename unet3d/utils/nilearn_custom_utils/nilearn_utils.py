@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 # from nilearn.image.image import check_niimg
 from nilearn.image.resampling import get_bounds
 from nilearn.image.image import _crop_img_to as crop_img_to
@@ -37,23 +38,23 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
     # img = check_niimg(img)
     data = img.get_data()
     if percentile is not None:
-        passes_threshold = data > np.percentile(data, percentile)
+        passes_threshold = data > torch.quantile(data, percentile)
     else:
         infinity_norm = max(-data.min(), data.max())
-        passes_threshold = np.logical_or(data < -rtol * infinity_norm,
-                                         data > rtol * infinity_norm)
+        passes_threshold = torch.logical_or(data < -rtol * infinity_norm,
+                                            data > rtol * infinity_norm)
 
     if data.ndim == 4:
-        passes_threshold = np.any(passes_threshold, axis=-1)
-    coords = np.array(np.where(passes_threshold))
-    start = coords.min(axis=1)
-    end = coords.max(axis=1) + 1
+        passes_threshold = torch.any(passes_threshold, dim=-1)
+    coords = torch.where(passes_threshold)
+    start = coords.min(dim=1)
+    end = coords.max(dim=1) + 1
 
     if int(pad) > 0:
         pad_width = int(pad)
         # pad with one voxel to avoid resampling problems
-        start = np.maximum(start - pad_width, 0)
-        end = np.minimum(end + pad_width, data.shape[:3])
+        start = torch.maximum(start - pad_width, torch.zeros(start.shape))
+        end = torch.minimum(end + pad_width, data.shape[:3])
 
     slices = [slice(s, e) for s, e in zip(start, end)]
 
@@ -71,10 +72,10 @@ def image_slices_to_affine(image, slices):
 
     linear_part = affine[:3, :3]
     old_origin = affine[:3, 3]
-    new_origin_voxel = np.array([s.start for s in slices])
+    new_origin_voxel = torch.Tensor([s.start for s in slices])
     new_origin = old_origin + linear_part.dot(new_origin_voxel)
 
-    new_affine = np.eye(4)
+    new_affine = torch.eye(4)
     new_affine[:3, :3] = linear_part
     new_affine[:3, 3] = new_origin
     return new_affine
