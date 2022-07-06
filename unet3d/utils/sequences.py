@@ -619,7 +619,7 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         assert len(target_data.shape) == 4
         if target_data.shape[0] == 1:
             if self.labels is None:
-                self.labels = np.asarray(np.unique(target_data)[1:], dtype=int)
+                self.labels = torch.as_tensor(np.unique(target_data)[1:], dtype=int)
             target_data = compile_one_hot_encoding(target_data,
                                                    n_labels=len(self.labels),
                                                    labels=self.labels,
@@ -654,7 +654,7 @@ class WindowedAutoEncoderSequence(HCPRegressionSequence):
         vertices = list()
         for surface, surface_name in zip(surfaces, self.surface_names):
             vertices.extend(extract_gifti_surface_vertices(surface, primary_anatomical_structure=surface_name))
-        random_vertices, _ = self.select_random_vertices(np.asarray(vertices))
+        random_vertices, _ = self.select_random_vertices(torch.as_tensor(vertices))
         return self.load_feature_data_without_metrics(feature_filename, random_vertices)
 
     def load_feature_data_without_metrics(self, feature_filename, random_vertices):
