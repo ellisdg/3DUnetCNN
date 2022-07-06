@@ -17,7 +17,7 @@ def get_spacing_from_affine(affine):
 def set_affine_spacing(affine, spacing):
     scale = torch.divide(spacing, get_spacing_from_affine(affine))
     affine_transform = torch.diag(torch.ones(4))
-    affine_transform.fill_diagonal_(torch.cat((scale, torch.ones(1))))
+    affine_transform.diagonal().copy_(torch.cat((scale, torch.ones(1))))
     return torch.matmul(affine, affine_transform)
 
 
