@@ -49,6 +49,8 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         passes_threshold = torch.any(passes_threshold, dim=0)
     coords = torch.stack(torch.where(passes_threshold))
 
+    print(coords.shape)
+
     if len(coords) == 0:
         warnings.warn("No foreground detected. No cropping will be performed.")
         if return_affine:
