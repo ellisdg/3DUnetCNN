@@ -468,9 +468,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
         return torch.as_tensor(x), torch.as_tensor(y)
 
     def resample_input(self, feature_filename):
-        print(feature_filename)
         feature_image = load_image(feature_filename, reorder=False, verbose=self.verbose)
-        print("Load:", feature_image.dataobj.mean())
         feature_image, affine = format_feature_image(feature_image=feature_image, window=self.window, crop=self.crop,
                                                      cropping_kwargs=self.cropping_kwargs,
                                                      augment_scale_std=self.augment_scale_std,
@@ -537,6 +535,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
     def resample_image(self, input_filenames):
         feature_image = self.format_feature_image(input_filenames=input_filenames)
+        print("feature_image:", feature_image.mean())
         target_image = self.load_target_image(feature_image, input_filenames)
         target_image = self.resample_target(target_image, feature_image)
         feature_image = augment_image(feature_image,
@@ -566,6 +565,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
     def format_feature_image(self, input_filenames, return_unmodified=False):
         unmodified_image = self.load_feature_image(input_filenames)
+        print("unmodified_image", unmodified_image.dataobj.mean())
         image, affine = format_feature_image(feature_image=self.normalize_image(unmodified_image),
                                              crop=self.crop,
                                              cropping_kwargs=self.cropping_kwargs,
@@ -581,7 +581,9 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
                                              augment_translation_probability=self.augment_translation_probability,
                                              reorder=self.reorder,
                                              interpolation=self.interpolation)
+        print("post format", image.dataobj.mean())
         resampled = resample(image, affine, self.window, interpolation=self.interpolation)
+        print("resampled", resampled.dataobj.mean())
         if return_unmodified:
             return resampled, unmodified_image
         else:
@@ -622,7 +624,9 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         self.add_contours = add_contours
 
     def resample_input(self, input_filenames):
+        print(input_filenames)
         input_image, target_image = self.resample_image(input_filenames)
+        print("input_image", input_image.dataobj.mean())
         target_data = get_nibabel_data(target_image)
         assert len(target_data.shape) == 4
         if target_data.shape[0] == 1:
