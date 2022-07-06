@@ -127,7 +127,7 @@ def format_feature_image(feature_image, window, crop=False, cropping_kwargs=None
                          augment_blur_probability=0, flip_front_back_probability=0, reorder=False,
                          interpolation="linear"):
     if reorder:
-        feature_image = reorder(feature_image, resample=interpolation)
+        feature_image = reorder_image(feature_image, resample=interpolation)
     if crop:
         if cropping_kwargs is None:
             cropping_kwargs = dict()

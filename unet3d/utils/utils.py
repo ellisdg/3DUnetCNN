@@ -247,7 +247,7 @@ def load_single_image(filename, reorder=True, dtype=None, verbose=False):
     if dtype is not None:
         image.set_dtype(dtype)
     if reorder:
-        return reorder(image)
+        return reorder_image(image)
     return image
 
 
