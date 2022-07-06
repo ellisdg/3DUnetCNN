@@ -46,7 +46,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
 
     if data.ndim == 4:
         passes_threshold = torch.any(passes_threshold, dim=-1)
-    coords = torch.where(passes_threshold)
+    coords = torch.Tensor(torch.where(passes_threshold))
     start = coords.min(dim=1)
     end = coords.max(dim=1) + 1
 
