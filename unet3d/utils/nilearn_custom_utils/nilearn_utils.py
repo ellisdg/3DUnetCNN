@@ -6,7 +6,8 @@ from nilearn.image.image import _crop_img_to as crop_img_to
 import warnings
 
 
-def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None, return_affine=False):
+def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None, return_affine=False,
+             warn=False):
     """Crops img as much as possible
     Will crop img, removing as many zero entries as possible
     without touching non-zero entries. Will leave one voxel of
@@ -50,7 +51,8 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
     coords = torch.stack(torch.where(passes_threshold))
 
     if coords.shape[1] == 0:
-        warnings.warn("No foreground detected. No cropping will be performed.")
+        if warn:
+            warnings.warn("No foreground detected. No cropping will be performed.")
         if return_affine:
             return img.affine, img.shape[1:]
         elif return_slices:
