@@ -13,7 +13,7 @@ from .hcp import (extract_gifti_surface_vertices, get_vertices_from_scalar, get_
 from .utils import (copy_image, extract_sub_volumes, mask,
                     compile_one_hot_encoding,
                     load_image, load_single_image,
-                    get_nibabel_data, add_one_hot_encoding_contours, reorder)
+                    get_nibabel_data, add_one_hot_encoding_contours, reorder_image)
 from .normalize import zero_mean_normalize_image_data, foreground_zero_mean_normalize_image_data, \
     zero_floor_normalize_image_data, zero_one_window
 from . import normalize

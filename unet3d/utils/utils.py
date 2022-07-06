@@ -251,7 +251,7 @@ def load_single_image(filename, reorder=True, dtype=None, verbose=False):
     return image
 
 
-def reorder(image, axcodes="RAS"):
+def reorder_image(image, axcodes="RAS"):
     array, _, affine = Orientation(axcodes=axcodes)(image.get_data(),
                                                     image.affine)
     image.update(array, affine)
