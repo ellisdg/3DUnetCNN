@@ -120,7 +120,6 @@ def augment_image(image, augment_blur_mean=None, augment_blur_std=None, augment_
     if additive_noise_std and decision(additive_noise_probability):
         image.dataobj = add_noise(image.dataobj, sigma_factor=additive_noise_std)
     augment3 = image.dataobj.mean()
-    print("Augment:", augment1, augment2, augment3)
     return image
 
 
@@ -130,10 +129,8 @@ def format_feature_image(feature_image, window, crop=False, cropping_kwargs=None
                          augment_translation_probability=0, augment_blur_mean=None, augment_blur_std=None,
                          augment_blur_probability=0, flip_front_back_probability=0, reorder=False,
                          interpolation="linear"):
-    print("Format:", feature_image.dataobj.mean())
     if reorder:
         feature_image = reorder_image(feature_image)
-        print("Reorder:", feature_image.dataobj.mean())
     if crop:
         if cropping_kwargs is None:
             cropping_kwargs = dict()
@@ -357,7 +354,6 @@ class HCPRegressionSequence(BaseSequence, HCPParent):
 
     def normalize_image(self, image):
         if self.normalize:
-            print(self.normalization_func, self.normalization_kwargs)
             return normalize_image_with_function(image, self.normalization_func, **self.normalization_kwargs)
         return image
 
@@ -536,7 +532,6 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
     def resample_image(self, input_filenames):
         feature_image = self.format_feature_image(input_filenames=input_filenames)
-        print("feature_image:", feature_image.dataobj.mean())
         target_image = self.load_target_image(feature_image, input_filenames)
         target_image = self.resample_target(target_image, feature_image)
         feature_image = augment_image(feature_image,
@@ -566,7 +561,6 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
     def format_feature_image(self, input_filenames, return_unmodified=False):
         unmodified_image = self.load_feature_image(input_filenames)
-        print("unmodified_image", unmodified_image.dataobj.mean())
         image, affine = format_feature_image(feature_image=self.normalize_image(unmodified_image),
                                              crop=self.crop,
                                              cropping_kwargs=self.cropping_kwargs,
@@ -582,9 +576,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
                                              augment_translation_probability=self.augment_translation_probability,
                                              reorder=self.reorder,
                                              interpolation=self.interpolation)
-        print("post format", image.dataobj.mean())
         resampled = resample(image, affine, self.window, interpolation=self.interpolation)
-        print("resampled", resampled.dataobj.mean())
         if return_unmodified:
             return resampled, unmodified_image
         else:
@@ -625,9 +617,7 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         self.add_contours = add_contours
 
     def resample_input(self, input_filenames):
-        print(input_filenames)
         input_image, target_image = self.resample_image(input_filenames)
-        print("input_image", input_image.dataobj.mean())
         target_data = get_nibabel_data(target_image)
         assert len(target_data.shape) == 4
         if target_data.shape[0] == 1:
