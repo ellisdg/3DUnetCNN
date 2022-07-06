@@ -1,8 +1,3 @@
-import nibabel as nib
-import torch
-import numpy as np
-
-from nilearn.image import new_img_like
 
 
 class Image(object):
