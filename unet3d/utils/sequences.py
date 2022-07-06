@@ -249,7 +249,7 @@ class BaseSequence(Sequence):
                                         classify=self._classify)):
                 batch_x.append(x)
                 batch_y.append(y)
-        return torch.tensor(batch_x), torch.tensor(batch_y)
+        return torch.as_tensor(batch_x), torch.as_tensor(batch_y)
 
     def on_epoch_end(self):
         self.generate_epoch_filenames()
@@ -285,7 +285,7 @@ class HCPParent(object):
             vertices_index = get_vertices_from_scalar(metrics[0], brain_structure_name=surface_name)
             surface_vertices = extract_gifti_surface_vertices(surface, primary_anatomical_structure=surface_name)
             vertices.extend(surface_vertices[vertices_index])
-        return torch.tensor(vertices)
+        return torch.as_tensor(vertices)
 
 
 class HCPRegressionSequence(BaseSequence, HCPParent):
@@ -314,7 +314,7 @@ class HCPRegressionSequence(BaseSequence, HCPParent):
             _x, _y = self.fetch_hcp_subject_batch(*args)
             batch_x.extend(_x)
             batch_y.extend(_y)
-        return torch.tensor(batch_x), torch.tensor(batch_y)
+        return torch.as_tensor(batch_x), torch.as_tensor(batch_y)
 
     def load_metric_data(self, metric_filenames, subject_id):
         metrics = load_image(metric_filenames)
@@ -399,7 +399,7 @@ class SubjectPredictionSequence(HCPParent, Sequence):
                                       window=self.window,
                                       flip=self.flip,
                                       spacing=self.spacing) for vertex in batch_vertices]
-        return torch.Tensor(batch)
+        return torch.as_tensor(batch)
 
 
 class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
@@ -459,7 +459,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
             metrics = load_image(metric_filenames)
             x.append(self.resample_input(feature_filename))
             y.append(get_metric_data(metrics, self.metric_names, self.surface_names, subject_id).T.ravel())
-        return torch.Tensor(x), torch.Tensor(y)
+        return torch.as_tensor(x), torch.as_tensor(y)
 
     def resample_input(self, feature_filename):
         feature_image = load_image(feature_filename, reorder=False, verbose=self.verbose)
@@ -515,7 +515,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
             x, y = self.resample_input(item)
             x_batch.append(x)
             y_batch.append(y)
-        return torch.tensor(x_batch), torch.tensor(y_batch)
+        return torch.as_tensor(x_batch), torch.as_tensor(y_batch)
 
     def resample_input(self, input_filenames):
         input_image, target_image = self.resample_image(input_filenames)
@@ -626,7 +626,7 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
                                                    return_4d=True)
         else:
             if self.labels is None:
-                self.labels = torch.tensor([np.unique(target_data[:, :, :, channel])[1:]
+                self.labels = torch.as_tensor([np.unique(target_data[:, :, :, channel])[1:]
                                             for channel in np.arange(target_data.shape[self.channel_axis])]).to(
                     dtype=int)
             _target_data = list()

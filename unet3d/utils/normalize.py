@@ -31,8 +31,8 @@ def foreground_zero_mean_normalize_image_data(data, channel_dim=4, background_va
 def zero_floor_normalize_image_data(data, axis=(0, 1, 2), floor_percentile=1, floor=0):
     floor_threshold = torch.percentile(data, floor_percentile, axis=axis)
     if data.ndim != len(axis):
-        floor_threshold_shape = torch.Tensor(floor_threshold.shape * data.ndim)
-        floor_threshold_shape[torch.Tensor(axis)] = 1
+        floor_threshold_shape = torch.as_tensor(floor_threshold.shape * data.ndim)
+        floor_threshold_shape[torch.as_tensor(axis)] = 1
         floor_threshold = floor_threshold.reshape(floor_threshold_shape)
     background = data <= floor_threshold
     data = data - floor_threshold
