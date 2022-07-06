@@ -31,8 +31,6 @@ def resample_image(source_image, target_image, interpolation="linear", pad=False
 
 def resample(image, target_affine, target_shape, interpolation='linear', pad=False, dtype=None, align_corners=True):
     resampler = SpatialResample(mode=monai_interpolation_mode(interpolation), align_corners=align_corners)
-    if pad:
-        image = pad_image(image, int(pad))
 
     data = image.get_data()
 
