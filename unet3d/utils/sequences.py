@@ -529,8 +529,10 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
     def resample_image(self, input_filenames):
         feature_image = self.format_feature_image(input_filenames=input_filenames)
-        target_image = self.resample_target(self.load_target_image(feature_image, input_filenames),
-                                            feature_image)
+        target_image = self.load_target_image(feature_image, input_filenames),
+        print("resample_image 1", target_image.shape)
+        target_image = self.resample_target(target_image, feature_image)
+        print("resample_image 2", target_image.shape)
         feature_image = augment_image(feature_image,
                                       additive_noise_std=self.additive_noise_std,
                                       additive_noise_probability=self.additive_noise_probability,
@@ -620,12 +622,10 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         if target_data.shape[0] == 1:
             if self.labels is None:
                 self.labels = torch.as_tensor(np.unique(target_data)[1:], dtype=int)
-            print(target_data.shape)
             target_data = compile_one_hot_encoding(target_data,
                                                    n_labels=len(self.labels),
                                                    labels=self.labels,
                                                    return_4d=True)
-            print(target_data.shape)
         else:
             if self.labels is None:
                 self.labels = torch.as_tensor([np.unique(target_data[:, :, :, channel])[1:]
