@@ -196,7 +196,7 @@ def add_noise(data, mean=0., sigma_factor=0.1):
     deviation of the additive noise. Assumes standard deviation is the same for all channels.
     :return:
     """
-    sigma = torch.std(data) * sigma_factor
+    sigma = torch.multiply(torch.std(data), sigma_factor)
     print(sigma_factor, sigma)
     noise = torch.normal(mean, sigma, size=data.shape)
     return torch.add(data, noise)
