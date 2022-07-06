@@ -40,7 +40,7 @@ def adjust_affine_spacing(affine, new_spacing, spacing=None):
 def resize_affine(affine, shape, target_shape, copy=True):
     if copy:
         affine = affine.detach().clone()
-    scale = torch.divide(shape, target_shape)
+    scale = torch.divide(torch.as_tensor(shape), torch.as_tensor(target_shape))
     spacing = get_spacing_from_affine(affine)
     target_spacing = torch.multiply(spacing, scale)
     affine = adjust_affine_spacing(affine, target_spacing)
