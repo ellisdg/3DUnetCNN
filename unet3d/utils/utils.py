@@ -53,7 +53,7 @@ def extract_polydata_vertices(polydata):
     return np.asarray([polydata.GetPoint(index) for index in range(polydata.GetNumberOfPoints())])
 
 
-def compile_one_hot_encoding(data, n_labels, labels=None, dtype=np.uint8, return_4d=True):
+def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, return_4d=True):
     """
     Translates a label map into a set of binary labels.
     :param data: numpy array containing the label map with shape: (n_samples, 1, ...).
