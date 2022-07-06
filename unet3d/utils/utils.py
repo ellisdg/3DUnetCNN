@@ -66,7 +66,7 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=np.uint8, return
         data = data[None]
     assert data.shape[1] == 1
     new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
-    y = np.zeros(new_shape, dtype=dtype)
+    y = torch.zeros(new_shape, dtype=dtype)
     for label_index in range(n_labels):
         if labels is not None:
             if type(labels[label_index]) == list:
