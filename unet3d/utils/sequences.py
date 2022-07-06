@@ -677,7 +677,7 @@ class WindowedAutoEncoderSequence(HCPRegressionSequence):
 
 
 class WholeVolumeSupervisedRegressionSequence(WholeVolumeAutoEncoderSequence):
-    def __init__(self, *args, target_normalization=None, target_interpolation=None, target_index=2, **kwargs):
+    def __init__(self, *args, target_normalization=None, target_interpolation=None, target_index=1, **kwargs):
         super().__init__(*args, target_index=target_index, target_interpolation=target_interpolation, **kwargs)
         self.normalize_target = target_normalization is not None
         self.target_normalization_func = normalization_name_to_function(target_normalization)

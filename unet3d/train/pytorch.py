@@ -100,7 +100,6 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                                       surface_names=in_config('surface_names', config, None),
                                       metric_names=in_config('metric_names', config, None),
                                       base_directory=directory,
-                                      subject_ids=config["training"],
                                       iterations_per_epoch=in_config("iterations_per_epoch", config, 1),
                                       **in_config("additional_training_args", config, dict()),
                                       **sequence_kwargs)

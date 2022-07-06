@@ -1,15 +1,8 @@
-import os
 import argparse
-import pandas as pd
 import numpy as np
 from unet3d.train import run_training
-from unet3d.utils.filenames import wrapped_partial, generate_filenames, load_bias, load_sequence
-from unet3d.utils.sequences import (WholeVolumeToSurfaceSequence, HCPRegressionSequence, ParcelBasedSequence,
-                                    WindowedAutoEncoderSequence)
-from unet3d.utils.pytorch.dataset import (WholeBrainCIFTI2DenseScalarDataset, HCPRegressionDataset, AEDataset,
-                                          WholeVolumeSegmentationDataset, WindowedAEDataset)
+from unet3d.utils.filenames import generate_filenames, load_bias, load_sequence
 from unet3d.utils.utils import load_json, in_config, dump_json
-from unet3d.utils.custom import get_metric_data_from_config
 from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
 from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
@@ -33,7 +26,6 @@ def parse_args():
                              " The new image size will be written to a new config file ending named "
                              "'<original_config>_auto.json'. This option is experimental and only works with the UNet "
                              "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
-    parser.add_argument("--group_average_filenames")
     parser.add_argument("--batch_size", help="Override the batch size from the config file.", type=int)
     parser.add_argument("--debug", action="store_true", default=False,
                         help="Raises an error if a training file is not found. The default is to silently skip"
@@ -97,18 +89,10 @@ def update_config_to_fit_gpu_memory(config, n_gpus, gpu_memory, output_filename,
 
 
 def main():
-    import nibabel as nib
-    nib.imageglobals.logger.level = 40
-
     namespace = parse_args()
 
     print("Config: ", namespace.config_filename)
     config = load_json(namespace.config_filename)
-
-    if "package" in config:
-        package = config["package"]
-    else:
-        package = "keras"
 
     if "metric_names" in config and not config["n_outputs"] == len(config["metric_names"]):
         raise ValueError("n_outputs set to {}, but number of metrics is {}.".format(config["n_outputs"],
@@ -133,17 +117,11 @@ def main():
         update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,
                                         output_filename=namespace.config_filename.replace(".json", "_auto.json"))
 
-    if namespace.group_average_filenames is not None:
-        group_average = get_metric_data_from_config(namespace.group_average_filenames, namespace.config_filename)
-        from unet3d.models.keras.resnet.resnet import compare_scores
-        model_metrics = [wrapped_partial(compare_scores, comparison=group_average)]
-        metric_to_monitor = "compare_scores"
+    model_metrics = []
+    if config['skip_validation']:
+        metric_to_monitor = "loss"
     else:
-        model_metrics = []
-        if config['skip_validation']:
-            metric_to_monitor = "loss"
-        else:
-            metric_to_monitor = "val_loss"
+        metric_to_monitor = "val_loss"
 
     if config["skip_validation"]:
         groups = ("training",)
@@ -162,31 +140,7 @@ def main():
         if key not in config:
             config[key] = generate_filenames(config, name, directory,
                                              raise_if_not_exists=namespace.debug)
-    if "sequence" in config:
-        sequence_class = load_sequence(config["sequence"])
-    elif "_wb_" in os.path.basename(namespace.config_filename):
-        if "package" in config and config["package"] == "pytorch":
-            if config["sequence"] == "AEDataset":
-                sequence_class = AEDataset
-            elif config["sequence"] == "WholeVolumeSegmentationDataset":
-                sequence_class = WholeVolumeSegmentationDataset
-            else:
-                sequence_class = WholeBrainCIFTI2DenseScalarDataset
-        else:
-            sequence_class = WholeVolumeToSurfaceSequence
-    elif config["sequence"] == "WindowedAutoEncoderSequence":
-        sequence_class = WindowedAutoEncoderSequence
-    elif config["sequence"] == "WindowedAEDataset":
-        sequence_class = WindowedAEDataset
-    elif "_pb_" in os.path.basename(namespace.config_filename):
-        sequence_class = ParcelBasedSequence
-        config["sequence_kwargs"]["parcellation_template"] = os.path.join(
-            directory, config["sequence_kwargs"]["parcellation_template"])
-    else:
-        if config["package"] == "pytorch":
-            sequence_class = HCPRegressionDataset
-        else:
-            sequence_class = HCPRegressionSequence
+    sequence_class = load_sequence(config["sequence"])
 
     if "bias_filename" in config and config["bias_filename"] is not None:
         bias = load_bias(config["bias_filename"])
@@ -198,40 +152,13 @@ def main():
     if in_config("add_contours", config["sequence_kwargs"], False):
         config["n_outputs"] = config["n_outputs"] * 2
 
-    if sequence_class == ParcelBasedSequence:
-        target_parcels = config["sequence_kwargs"].pop("target_parcels")
-        for target_parcel in target_parcels:
-            config["sequence_kwargs"]["target_parcel"] = target_parcel
-            print("Training on parcel: {}".format(target_parcel))
-            if type(target_parcel) == list:
-                parcel_id = "-".join([str(i) for i in target_parcel])
-            else:
-                parcel_id = str(target_parcel)
-            _training_log_filename = namespace.training_log_filename.replace(".csv", "_{}.csv".format(parcel_id))
-            if os.path.exists(_training_log_filename):
-                _training_log = pd.read_csv(_training_log_filename)
-                if (_training_log[metric_to_monitor].values.argmin()
-                        <= len(_training_log) - int(config["early_stopping_patience"])):
-                    print("Already trained")
-                    continue
-            run_training(package,
-                         config,
-                         namespace.model_filename.replace(".h5", "_{}.h5".format(parcel_id)),
-                         _training_log_filename,
-                         sequence_class=sequence_class,
-                         model_metrics=model_metrics,
-                         metric_to_monitor=metric_to_monitor,
-                         **training_function_kwargs,
-                         **system_config)
-
-    else:
-        run_training(package, config, namespace.model_filename, namespace.training_log_filename,
-                     sequence_class=sequence_class,
-                     model_metrics=model_metrics,
-                     metric_to_monitor=metric_to_monitor,
-                     bias=bias,
-                     **training_function_kwargs,
-                     **system_config)
+    run_training(config, namespace.model_filename, namespace.training_log_filename,
+                 sequence_class=sequence_class,
+                 model_metrics=model_metrics,
+                 metric_to_monitor=metric_to_monitor,
+                 bias=bias,
+                 **training_function_kwargs,
+                 **system_config)
 
     if namespace.sub_command == "predict":
         run_inference(namespace)
