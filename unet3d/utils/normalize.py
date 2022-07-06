@@ -5,7 +5,7 @@ def zero_mean_normalize_image_data(data, axis=(0, 1, 2)):
     return torch.divide(data - data.mean(axis=axis), data.std(axis=axis))
 
 
-def foreground_zero_mean_normalize_image_data(data, channel_dim=4, background_value=0, tolerance=1e-5):
+def foreground_zero_mean_normalize_image_data(data, channel_dim=0, background_value=0, tolerance=1e-5):
     data = data.detach().clone()
     if data.ndim == channel_dim or data.shape[channel_dim] == 1:
         # only 1 channel, so the std and mean calculations are straight forward
