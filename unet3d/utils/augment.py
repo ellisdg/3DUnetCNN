@@ -30,7 +30,7 @@ def random_flip_dimensions(n_dimensions):
 
 
 def random_scale_factor(n_dim=3, mean=1., std=0.25):
-    return np.random.normal(mean, std, n_dim)
+    return torch.normal(mean, std, n_dim)
 
 
 def random_boolean():
@@ -39,7 +39,7 @@ def random_boolean():
 
 def distort_image(image, flip_axis=None, scale_factor=None, translation_scale=None):
     if translation_scale is not None:
-        image = translate_image(image, translation_scale, copy=False)
+        image = translate_image(image, translation_scale)
     if flip_axis:
         image = flip_image(image, flip_axis)
     if scale_factor is not None:
@@ -212,10 +212,10 @@ def translate_affine(affine, shape, translation_scales, copy=True):
     :return: affine
     """
     if copy:
-        affine = np.copy(affine)
+        affine = affine.detach().clone()
     spacing = get_spacing_from_affine(affine)
-    extent = np.multiply(shape, spacing)
-    translation = np.multiply(translation_scales, extent)
+    extent = torch.multiply(shape, spacing)
+    translation = torch.multiply(translation_scales, extent)
     affine[:3, 3] = affine[:3, 3] + translation
     return affine
 
@@ -231,8 +231,8 @@ def translate_image(image, translation_scales, interpolation="linear"):
     randomly translated on average (0.05 for example).
     :return: translated image
     """
-    affine = np.copy(image.affine)
-    translation = np.multiply(translation_scales, get_extent_from_image(image))
+    affine = image.affine.detach().clone()
+    translation = torch.multiply(translation_scales, get_extent_from_image(image))
     affine[:3, 3] = affine[:3, 3] + translation
     return resample(image, target_affine=affine, target_shape=image.shape, interpolation=interpolation)
 
@@ -247,20 +247,20 @@ def _rotate_affine(affine, shape, rotation):
     """
     assert_affine_is_diagonal(affine)
     # center the image on (0, 0, 0)
-    temp_origin = (affine.diagonal()[:3] * np.asarray(shape)) / 2
-    temp_affine = np.copy(affine)
+    temp_origin = (affine.diagonal()[:3] * torch.asarray(shape)) / 2
+    temp_affine = affine.detach().clone()
     temp_affine[:, :3] = temp_origin
 
-    rotation_affine = np.diag(np.ones(4))
+    rotation_affine = torch.diag(torch.ones(4))
     theta_x, theta_y, theta_z = rotation
-    affine_x = np.copy(rotation_affine)
-    affine_x[1, 1] = np.cos(theta_x)
-    affine_x[1, 2] = -np.sin(theta_x)
-    affine_x[2, 1] = np.sin(theta_x)
-    affine_x[2, 2] = np.cos(theta_x)
+    affine_x = rotation_affine.detach().clone()
+    affine_x[1, 1] = torch.cos(theta_x)
+    affine_x[1, 2] = -torch.sin(theta_x)
+    affine_x[2, 1] = torch.sin(theta_x)
+    affine_x[2, 2] = torch.cos(theta_x)
     print(affine_x)
-    x_rotated_affine = np.dot(affine, affine_x)
-    new_affine = np.copy(x_rotated_affine)
+    x_rotated_affine = torch.matmul(affine, affine_x)
+    new_affine = x_rotated_affine.detach().clone()
     new_affine[:, :3] = affine[:, :3]
     return new_affine
 
@@ -270,8 +270,8 @@ def find_image_center(image, ndim=3):
 
 
 def find_center(affine, shape, ndim=3):
-    return np.matmul(affine,
-                     list(np.divide(shape[:ndim], 2)) + [1])[:ndim]
+    return torch.matmul(affine,
+                        torch.cat((torch.divide(shape[:ndim], 2)), torch.ones(1)))[:ndim]
 
 
 def scale_image(image, scale, ndim=3, interpolation='linear'):
@@ -291,9 +291,9 @@ def scale_affine(affine, shape, scale, ndim=3):
     :return:
     """
     if not isinstance(scale, Iterable):
-        scale = np.ones(ndim) * scale
+        scale = torch.ones(ndim) * scale
     else:
-        scale = np.asarray(scale)
+        scale = torch.asarray(scale)
 
     # 1. find the image center
     center = find_center(affine, shape, ndim=ndim)
@@ -301,13 +301,13 @@ def scale_affine(affine, shape, scale, ndim=3):
     # 2. translate the affine
     affine = affine.detach().clone()
     origin = affine[:ndim, ndim]
-    t = np.diag(np.ones(ndim + 1))
+    t = torch.diag(torch.ones(ndim + 1))
     t[:ndim, ndim] = (center - origin) * (1 - 1 / scale)
-    affine = np.matmul(t, affine)
+    affine = torch.matmul(t, affine)
 
     # 3. scale the affine
-    s = np.diag(list(1 / scale) + [1])
-    affine = np.matmul(affine, s)
+    s = torch.diag(np.cat(((1 / scale), torch.ones(1))))
+    affine = torch.matmul(affine, s)
     return affine
 
 
@@ -326,9 +326,9 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
     dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
     dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
     dz = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
-    x, y, z, c = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]), np.arange(shape[2]), np.arange(shape[3]),
+    x, y, z, c = torch.meshgrid(torch.arange(shape[0]), torch.arange(shape[1]), torch.arange(shape[2]), torch.arange(shape[3]),
                              indexing="ij")
-    indices = np.reshape(x+dx, (-1, 1)), np.reshape(y+dy, (-1, 1)), np.reshape(z+dz, (-1, 1)), np.reshape(c, (-1, 1))
+    indices = torch.reshape(x+dx, (-1, 1)), torch.reshape(y+dy, (-1, 1)), torch.reshape(z+dz, (-1, 1)), torch.reshape(c, (-1, 1))
 
     distored_image = map_coordinates(image, indices, order=1, mode='reflect')
     distored_target_image = map_coordinates(target_image, indices, order=1, mode='reflect')
@@ -336,7 +336,7 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
 
 
 def smooth_img(image, fwhm):
-    sigma = fwhm / get_spacing_from_affine(image.affine)
+    sigma = torch.divide(fwhm, get_spacing_from_affine(image.affine))
     array = GaussianSmooth(sigma=sigma)(image.get_data())
     return image.make_similar(array)
 
@@ -346,12 +346,12 @@ def random_blur(image, mean, std):
     mean: mean fwhm in millimeters.
     std: standard deviation of fwhm in millimeters.
     """
-    return smooth_img(image, fwhm=np.abs(np.random.normal(mean, std, 3)).tolist())
+    return smooth_img(image, fwhm=torch.abs(torch.normal(mean, std, 3)))
 
 
 def affine_swap_axis(affine, shape, axis=0):
     assert_affine_is_diagonal(affine)
-    new_affine = np.copy(affine)
+    new_affine = affine.detach().clone()
     origin = affine[axis, 3]
     new_affine[axis, 3] = origin + shape[axis] * affine[axis, axis]
     new_affine[axis, axis] = -affine[axis, axis]
