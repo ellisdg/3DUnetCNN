@@ -53,8 +53,6 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
         optimizer.zero_grad()
         loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
                                       vae=vae, use_amp=use_amp)
-        if n_gpus:
-            torch.cuda.empty_cache()
 
         # measure accuracy and record loss
         losses.update(loss.item(), batch_size)
@@ -81,7 +79,6 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
 def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, use_amp=None):
     if n_gpus is not None:
-        torch.cuda.empty_cache()
         images = images.cuda()
         target = target.cuda()
     # compute output
