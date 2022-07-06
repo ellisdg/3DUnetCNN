@@ -535,7 +535,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
     def resample_image(self, input_filenames):
         feature_image = self.format_feature_image(input_filenames=input_filenames)
-        print("feature_image:", feature_image.mean())
+        print("feature_image:", feature_image.dataobj.mean())
         target_image = self.load_target_image(feature_image, input_filenames)
         target_image = self.resample_target(target_image, feature_image)
         feature_image = augment_image(feature_image,
