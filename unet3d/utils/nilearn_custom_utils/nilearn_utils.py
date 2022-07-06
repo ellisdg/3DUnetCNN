@@ -47,6 +47,10 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
     if data.ndim == 4:
         passes_threshold = torch.any(passes_threshold, dim=0)
     coords = torch.stack(torch.where(passes_threshold))
+    print(coords)
+    print(coords.shape)
+    print(data.shape)
+    print(passes_threshold.sum())
     start = coords.min(dim=1).values
     end = coords.max(dim=1).values + 1
     if int(pad) > 0:
