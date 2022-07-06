@@ -68,8 +68,7 @@ class AEDataset(WholeVolumeAutoEncoderSequence, Dataset):
     def __getitem__(self, idx):
         item = self.epoch_filenames[idx]
         x, y = self.resample_input(item)
-        return (torch.from_numpy(np.moveaxis(np.asarray(x), -1, 0)).float(),
-                torch.from_numpy(np.moveaxis(np.asarray(y), -1, 0)).float())
+        return x.float(), x.float()
 
 
 class WholeVolumeSegmentationDataset(WholeVolumeSegmentationSequence, Dataset):
@@ -82,8 +81,7 @@ class WholeVolumeSegmentationDataset(WholeVolumeSegmentationSequence, Dataset):
     def __getitem__(self, idx):
         item = self.epoch_filenames[idx]
         x, y = self.resample_input(item)
-        return (torch.from_numpy(np.moveaxis(np.copy(x), -1, 0)).float(),
-                torch.from_numpy(np.moveaxis(np.copy(y), -1, 0)).byte())
+        return x.float(), x.byte()
 
 
 class WholeVolumeSupervisedRegressionDataset(WholeVolumeSupervisedRegressionSequence, Dataset):
@@ -96,8 +94,7 @@ class WholeVolumeSupervisedRegressionDataset(WholeVolumeSupervisedRegressionSequ
     def __getitem__(self, idx):
         item = self.epoch_filenames[idx]
         x, y = self.resample_input(item)
-        return (torch.from_numpy(np.moveaxis(np.asarray(x), -1, 0)).float(),
-                torch.from_numpy(np.moveaxis(np.asarray(y), -1, 0)).float())
+        return x.float(), y.float()
 
 
 class WholeVolumeCiftiSupervisedRegressionDataset(WholeVolumeCiftiSupervisedRegressionSequence,
@@ -114,5 +111,4 @@ class WindowedAEDataset(WindowedAutoEncoderSequence, Dataset):
 
     def __getitem__(self, idx):
         x, y = self.fetch_hcp_subject_batch(*self.epoch_filenames[idx])
-        return (torch.from_numpy(np.moveaxis(np.asarray(x), -1, 1)).float(),
-                torch.from_numpy(np.moveaxis(np.asarray(y), -1, 1)).float())
+        return x.float(), y.float()
