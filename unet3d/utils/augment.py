@@ -258,7 +258,6 @@ def _rotate_affine(affine, shape, rotation):
     affine_x[1, 2] = -torch.sin(theta_x)
     affine_x[2, 1] = torch.sin(theta_x)
     affine_x[2, 2] = torch.cos(theta_x)
-    print(affine_x)
     x_rotated_affine = torch.matmul(affine, affine_x)
     new_affine = x_rotated_affine.detach().clone()
     new_affine[:, :3] = affine[:, :3]
@@ -271,7 +270,6 @@ def find_image_center(image, ndim=3):
 
 def find_center(affine, shape, ndim=3):
     center_voxel = torch.divide(shape[:ndim], 2)
-    print(center_voxel)
     return torch.matmul(affine, torch.cat((center_voxel, torch.ones(1))))[:ndim]
 
 
