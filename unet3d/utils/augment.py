@@ -307,7 +307,7 @@ def scale_affine(affine, shape, scale, ndim=3):
     affine = torch.matmul(t, affine)
 
     # 3. scale the affine
-    s = torch.diag(np.cat(((1 / scale), torch.ones(1))))
+    s = torch.diag(torch.cat(((1 / scale), torch.ones(1))))
     affine = torch.matmul(affine, s)
     return affine
 
