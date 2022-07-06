@@ -2,7 +2,7 @@ import torch
 
 
 def zero_mean_normalize_image_data(data, axis=(0, 1, 2)):
-    return torch.divide(data - data.mean(axis=axis), data.std(axis=axis))
+    return torch.divide(torch.subtract(data, data.mean(dim=axis)), data.std(dim=axis))
 
 
 def foreground_zero_mean_normalize_image_data(data, channel_dim=0, background_value=0, tolerance=1e-5):
