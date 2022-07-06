@@ -54,7 +54,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         if warn:
             warnings.warn("No foreground detected. No cropping will be performed.")
         if return_affine:
-            return img.affine, img.shape[1:]
+            return img.affine, torch.as_tensor(img.shape[1:])
         elif return_slices:
             return
         else:
