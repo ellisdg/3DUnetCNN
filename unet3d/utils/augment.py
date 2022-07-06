@@ -299,7 +299,7 @@ def scale_affine(affine, shape, scale, ndim=3):
     center = find_center(affine, shape, ndim=ndim)
 
     # 2. translate the affine
-    affine = affine.copy()
+    affine = affine.detach().clone()
     origin = affine[:ndim, ndim]
     t = np.diag(np.ones(ndim + 1))
     t[:ndim, ndim] = (center - origin) * (1 - 1 / scale)
