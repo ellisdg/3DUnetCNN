@@ -30,7 +30,7 @@ def random_flip_dimensions(n_dimensions):
 
 
 def random_scale_factor(n_dim=3, mean=1., std=0.25):
-    return torch.normal(mean, std, n_dim)
+    return torch.normal(mean, std, size=(n_dim,))
 
 
 def random_boolean():
@@ -347,7 +347,7 @@ def random_blur(image, mean, std):
     mean: mean fwhm in millimeters.
     std: standard deviation of fwhm in millimeters.
     """
-    return smooth_img(image, fwhm=torch.abs(torch.normal(mean, std, 3)))
+    return smooth_img(image, fwhm=torch.abs(torch.normal(mean, std, size=(3,))))
 
 
 def affine_swap_axis(affine, shape, axis=0):
