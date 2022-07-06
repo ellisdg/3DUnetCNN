@@ -113,10 +113,13 @@ def augment_affine(affine, shape, augment_scale_std=None, augment_scale_probabil
 
 def augment_image(image, augment_blur_mean=None, augment_blur_std=None, augment_blur_probability=1,
                   additive_noise_std=None, additive_noise_probability=1):
+    print("augment 1", image.dataobj.mean())
     if not (augment_blur_mean is None or augment_blur_std is None) and decision(augment_blur_probability):
         image = random_blur(image, mean=augment_blur_mean, std=augment_blur_std)
+    print("augment 2", image.dataobj.mean())
     if additive_noise_std and decision(additive_noise_probability):
-        image.dataobj[:] = add_noise(image.dataobj, sigma_factor=additive_noise_std)
+        image.dataobj = add_noise(image.dataobj, sigma_factor=additive_noise_std)
+    print("augment 3", image.dataobj.mean())
     return image
 
 
