@@ -1,2 +1,2 @@
 from .losses import *
-from pt3dunet import PerChannelDiceLoss
+from .pt3dunet import PerChannelDiceLoss
