@@ -281,14 +281,16 @@ def get_lr(optimizer):
     return np.squeeze(np.unique(lrs))
 
 
-def load_criterion(criterion_name, n_gpus=0):
+def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
     try:
         criterion = getattr(functions, criterion_name)
     except AttributeError:
+        if loss_kwargs is None:
+            loss_kwargs = dict()
         try:
-            criterion = getattr(monai.losses, criterion_name)
+            criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
         except AttributeError:
-            criterion = getattr(torch.nn, criterion_name)()
+            criterion = getattr(torch.nn, criterion_name)(**loss_kwargs)
         if n_gpus > 0:
             criterion.cuda()
     return criterion
