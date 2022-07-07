@@ -7,7 +7,7 @@
   "n_features": 4,
   "optimizer": "Adam",
   "package": "pytorch",
-  "loss": "per_channel_dice_loss",
+  "loss": "CrossEntropyLoss",
   "evaluation_metric": "per_channel_dice_loss",
   "weights": null,
   "regularized": false,
