@@ -2,7 +2,6 @@ from torch.nn.functional import l1_loss, mse_loss
 import torch
 from torch.nn.modules.loss import _Loss
 from monai.losses import DiceLoss as _DiceLoss
-from .pt3dunet import PerChannelDiceLoss
 
 
 def per_channel_dice_loss(x, y, **kwargs):

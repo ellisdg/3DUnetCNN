@@ -4,7 +4,7 @@ from torch.nn.modules.loss import _Loss
 
 class PerChannelDiceLoss(_Loss):
     def __init__(self, epsilon=1e-6, weight=None):
-        super().__init__()
+        super().__init__(reduction="mean")
         self.epsilon = epsilon
         self.weight = weight
 
