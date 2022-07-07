@@ -4,7 +4,7 @@ from torch.nn.modules.loss import _Loss
 
 class PerChannelDiceLoss(_Loss):
     def __init__(self, epsilon=1e-6, weight=None):
-        super().__init__(reduction="mean")
+        super().__init__()
         self.epsilon = epsilon
         self.weight = weight
 
@@ -34,7 +34,8 @@ class PerChannelDiceLoss(_Loss):
 
         # here we can use standard dice (input + target).sum(-1) or extension (see V-Net) (input^2 + target^2).sum(-1)
         denominator = (input * input).sum(-1) + (target * target).sum(-1)
-        return 2 * (intersect / denominator.clamp(min=self.epsilon))
+        dice = 2 * (intersect / denominator.clamp(min=self.epsilon))
+        return torch.subtract(torch.as_tensor(1), dice.mean())
 
     def flatten(self, tensor):
         """Flattens a given tensor such that the channel axis is first.
