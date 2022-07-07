@@ -94,10 +94,6 @@ def main():
     print("Config: ", namespace.config_filename)
     config = load_json(namespace.config_filename)
 
-    if "metric_names" in config and not config["n_outputs"] == len(config["metric_names"]):
-        raise ValueError("n_outputs set to {}, but number of metrics is {}.".format(config["n_outputs"],
-                                                                                    len(config["metric_names"])))
-
     print("Model: ", namespace.model_filename)
     print("Log: ", namespace.training_log_filename)
     system_config = get_machine_config(namespace)
@@ -119,13 +115,13 @@ def main():
 
     model_metrics = []
     if config['skip_validation']:
+        # if skipping the validation, the loss function will be montiored.
         metric_to_monitor = "loss"
-    else:
-        metric_to_monitor = "val_loss"
-
-    if config["skip_validation"]:
         groups = ("training",)
+
     else:
+        # when the validation is not skipped, the validation loss will be monitored.
+        metric_to_monitor = "val_loss"
         groups = ("training", "validation")
 
     if "directory" in system_config:
@@ -138,6 +134,8 @@ def main():
     for name in groups:
         key = name + "_filenames"
         if key not in config:
+            # If training or validation filenames are not listed in the config
+            # try to generate the filenames
             config[key] = generate_filenames(config, name, directory,
                                              raise_if_not_exists=namespace.debug)
     sequence_class = load_sequence(config["sequence"])

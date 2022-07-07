@@ -92,6 +92,8 @@ def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, va
 
 def _batch_loss(model, images, target, criterion, regularized=False, vae=False):
     output = model(images)
+    print("_batch_loss", output.shape, output.sum(dim=(2, 3, 4)),
+          target.shape, target.sum(dim=(2, 3, 4)))
     batch_size = images.size(0)
     if regularized:
         try:
