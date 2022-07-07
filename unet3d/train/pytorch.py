@@ -282,11 +282,11 @@ def get_lr(optimizer):
 
 
 def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
+    if loss_kwargs is None:
+        loss_kwargs = dict()
     try:
         criterion = getattr(losses, criterion_name)(**loss_kwargs)
     except AttributeError:
-        if loss_kwargs is None:
-            loss_kwargs = dict()
         try:
             criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
         except AttributeError:
