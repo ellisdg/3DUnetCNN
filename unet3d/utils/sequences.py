@@ -621,8 +621,11 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         target_data = get_nibabel_data(target_image)
         assert len(target_data.shape) == 4
         if target_data.shape[0] == 1:
+            # only a single channel exists
             if self.labels is None:
+                # no labels were given, so use all non-zero values
                 self.labels = torch.as_tensor(np.unique(target_data)[1:], dtype=int)
+            # convert the labelmap into a one hot encoded image
             target_data = compile_one_hot_encoding(target_data,
                                                    n_labels=len(self.labels),
                                                    labels=self.labels,

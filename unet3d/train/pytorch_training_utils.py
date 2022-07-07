@@ -17,8 +17,8 @@ except ModuleNotFoundError:
     from torch.utils.data.dataloader import default_collate
 
 
-def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None, print_frequency=1, regularized=False,
-                   print_gpu_memory=False, vae=False, scaler=None):
+def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None, print_frequency=1,
+                   print_gpu_memory=False, scaler=None):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -51,8 +51,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
                           human_readable_size(torch.cuda.max_memory_cached(i_gpu)))
 
         optimizer.zero_grad()
-        loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
-                                      vae=vae, use_amp=use_amp)
+        loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, use_amp=use_amp)
 
         # measure accuracy and record loss
         losses.update(loss.item(), batch_size)
@@ -77,7 +76,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
     return losses.avg
 
 
-def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, vae=False, use_amp=None):
+def batch_loss(model, images, target, criterion, n_gpus=0, use_amp=None):
     if n_gpus is not None:
         images = images.cuda()
         target = target.cuda()
@@ -85,28 +84,21 @@ def batch_loss(model, images, target, criterion, n_gpus=0, regularized=False, va
     if use_amp:
         from torch.cuda.amp import autocast
         with autocast():
-            return _batch_loss(model, images, target, criterion, regularized=regularized, vae=vae)
+            return _batch_loss(model, images, target, criterion)
     else:
-        return _batch_loss(model, images, target, criterion, regularized=regularized, vae=vae)
+        return _batch_loss(model, images, target, criterion)
 
 
-def _batch_loss(model, images, target, criterion, regularized=False, vae=False):
+def _batch_loss(model, images, target, criterion):
     output = model(images)
-    print("_batch_loss", output.shape, output.sum(dim=(2, 3, 4)),
-          target.shape, target.sum(dim=(2, 3, 4)))
+    print("_batch_loss", "\n\n\n",
+          "images:", images.shape, "\n", images.mean(dim=(2, 3, 4)),
+          "\n\n\n",
+          "output:", output.shape, "\n", output.sum(dim=(2, 3, 4)),
+          "\n\n\n",
+          "target:", target.shape, "\n", target.sum(dim=(2, 3, 4)))
     batch_size = images.size(0)
-    if regularized:
-        try:
-            output, output_vae, mu, logvar = output
-            loss = criterion(output, output_vae, mu, logvar, images, target)
-        except ValueError:
-            pred_y, pred_x = output
-            loss = criterion(pred_y, pred_x, images, target)
-    elif vae:
-        pred_x, mu, logvar = output
-        loss = criterion(pred_x, mu, logvar, target)
-    else:
-        loss = criterion(output, target)
+    loss = criterion(output, target)
     return loss, batch_size
 
 

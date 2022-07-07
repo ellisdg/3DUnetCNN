@@ -22,7 +22,7 @@ def build_optimizer(optimizer_name, model_parameters, learning_rate=1e-4):
 
 
 def run_pytorch_training(config, model_filename, training_log_filename, verbose=1, use_multiprocessing=False,
-                         n_workers=1, max_queue_size=5, model_name='resnet_34', n_gpus=1, regularized=False,
+                         n_workers=1, max_queue_size=5, model_name='resnet_34', n_gpus=1,
                          sequence_class=WholeBrainCIFTI2DenseScalarDataset, directory=None, test_input=1,
                          metric_to_monitor="loss", model_metrics=(), bias=None, pin_memory=False, amp=False,
                          prefetch_factor=1, **unused_args):
@@ -72,7 +72,7 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
     criterion = load_criterion(config['loss'], n_gpus=n_gpus)
 
     if "weights" in config and config["weights"] is not None:
-        criterion = losses.WeightedLoss(torch.tensor(config["weights"]), criterion)
+        raise NotImplementedError("Custom weighted loss functions are not currently implemented")
 
     optimizer_kwargs = dict()
     if "initial_learning_rate" in config:
@@ -158,9 +158,7 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
           early_stopping_patience=in_config("early_stopping_patience", config),
           save_best=in_config("save_best", config, False),
           learning_rate_decay_patience=in_config("decay_patience", config),
-          regularized=in_config("regularized", config, regularized),
           n_gpus=n_gpus,
-          vae=in_config("vae", config, False),
           decay_factor=in_config("decay_factor", config),
           min_lr=in_config("min_learning_rate", config),
           learning_rate_decay_step_size=in_config("decay_step_size", config),
@@ -171,8 +169,8 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
 
 def train(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
           model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
-          learning_rate_decay_patience=None, save_best=False, n_gpus=1, verbose=True, regularized=False,
-          vae=False, decay_factor=0.1, min_lr=0., learning_rate_decay_step_size=None, save_every_n_epochs=None,
+          learning_rate_decay_patience=None, save_best=False, n_gpus=1, verbose=True,
+          decay_factor=0.1, min_lr=0., learning_rate_decay_step_size=None, save_every_n_epochs=None,
           save_last_n_models=None, amp=False):
     training_log = list()
     if os.path.exists(training_log_filename):
@@ -215,7 +213,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
         # train the model
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
-                              regularized=regularized, vae=vae, scaler=scaler)
+                              scaler=scaler)
         try:
             training_loader.dataset.on_epoch_end()
         except AttributeError:
@@ -228,8 +226,8 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
         # predict validation data
         if validation_loader:
-            val_loss = epoch_validatation(validation_loader, model, criterion, n_gpus=n_gpus, regularized=regularized,
-                                          vae=vae, use_amp=scaler is not None)
+            val_loss = epoch_validatation(validation_loader, model, criterion, n_gpus=n_gpus,
+                                          use_amp=scaler is not None)
         else:
             val_loss = None
 

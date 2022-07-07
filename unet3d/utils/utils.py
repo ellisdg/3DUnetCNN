@@ -72,6 +72,7 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, ret
             if type(labels[label_index]) == list:
                 # lists of labels will group together multiple labels from the label map into a single one-hot channel.
                 for label in labels[label_index]:
+                    # iterate through each of the labels in the sub list
                     y[:, label_index][data[:, 0] == label] = 1
             else:
                 y[:, label_index][data[:, 0] == labels[label_index]] = 1
