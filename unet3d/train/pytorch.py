@@ -7,6 +7,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 import torch.nn
+import torch.nn.functional
 
 from ..models.pytorch.build import build_or_load_model
 from ..utils.pytorch import WholeBrainCIFTI2DenseScalarDataset
@@ -283,7 +284,7 @@ def load_criterion(criterion_name, n_gpus=0):
     try:
         criterion = getattr(functions, criterion_name)
     except AttributeError:
-        criterion = getattr(torch.nn, criterion_name)()
+        criterion = getattr(torch.nn.functional, criterion_name)()
         if n_gpus > 0:
             criterion.cuda()
     return criterion
