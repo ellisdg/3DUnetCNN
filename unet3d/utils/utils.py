@@ -234,7 +234,10 @@ def load_single_image(filename, reorder=True, dtype=None, verbose=False):
     if verbose:
         print("Loading", filename)
     nib_image = nib.load(filename)
-    nib_data = torch.from_numpy(np.asarray(nib_image.dataobj))
+    np_data = np.asarray(nib_image.dataobj)
+    if np_data.dtype == np.uint16:
+        np_data = np.asarray(np_data, dtype=np.int16)
+    nib_data = torch.from_numpy(np_data)
     if len(nib_data.shape) > 3:
         # nibabel loads 4d data with channels in last dimension
         # change that to the first dimension
