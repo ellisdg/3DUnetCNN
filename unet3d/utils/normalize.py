@@ -2,6 +2,7 @@ import torch
 
 
 def zero_mean_normalize_image_data(data, axis=(1, 2, 3)):
+    print(data.shape, data.mean(dim=axis), data.std(dim=axis))
     return torch.divide(torch.subtract(data, data.mean(dim=axis)), data.std(dim=axis))
 
 
