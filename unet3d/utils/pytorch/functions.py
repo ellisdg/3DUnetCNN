@@ -4,7 +4,7 @@ from .pt3dunet import compute_per_channel_dice
 
 
 def per_channel_dice_loss(x, y, **kwargs):
-    return 1 - compute_per_channel_dice(x, y, **kwargs).mean()
+    return torch.subtract(torch.as_tensor(1), compute_per_channel_dice(x, y, **kwargs).mean())
 
 
 def variational_regularized_loss(predicted, vae_x, mu, logvar, x, y, pred_loss=l1_loss, decoder_loss=mse_loss,
