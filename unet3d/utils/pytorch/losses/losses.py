@@ -1,6 +1,8 @@
 from torch.nn.functional import l1_loss, mse_loss
 import torch
-from .pt3dunet import compute_per_channel_dice
+from torch.nn.modules.loss import _Loss
+from monai.losses import DiceLoss as _DiceLoss
+from .pt3dunet import PerChannelDiceLoss
 
 
 def per_channel_dice_loss(x, y, **kwargs):
@@ -57,12 +59,13 @@ def weighted_loss(input, target, weights, loss_func, weighted_dimension=1):
     return torch.mean(weights * losses)
 
 
-class WeightedLoss(object):
+class WeightedLoss(_Loss):
     def __init__(self, weights, loss_func, weighted_dimension=1):
+        super().__init__()
         self.weights = weights
         self.loss_func = loss_func
         self.weighted_dimension = weighted_dimension
 
-    def __call__(self, input, target):
+    def forward(self, input, target):
         return weighted_loss(input=input, target=target, weights=self.weights, loss_func=self.loss_func,
                              weighted_dimension=self.weighted_dimension)

@@ -13,7 +13,7 @@ import monai.losses
 from ..models.pytorch.build import build_or_load_model
 from ..utils.pytorch import WholeBrainCIFTI2DenseScalarDataset
 from .pytorch_training_utils import epoch_training, epoch_validatation, collate_flatten, collate_5d_flatten
-from ..utils.pytorch import functions
+from ..utils.pytorch import losses
 from ..utils.utils import in_config
 
 
@@ -72,7 +72,7 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
     criterion = load_criterion(config['loss'], n_gpus=n_gpus)
 
     if "weights" in config and config["weights"] is not None:
-        criterion = functions.WeightedLoss(torch.tensor(config["weights"]), criterion)
+        criterion = losses.WeightedLoss(torch.tensor(config["weights"]), criterion)
 
     optimizer_kwargs = dict()
     if "initial_learning_rate" in config:
@@ -283,7 +283,7 @@ def get_lr(optimizer):
 
 def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
     try:
-        criterion = getattr(functions, criterion_name)
+        criterion = getattr(losses, criterion_name)(**loss_kwargs)
     except AttributeError:
         if loss_kwargs is None:
             loss_kwargs = dict()
@@ -291,6 +291,6 @@ def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
             criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
         except AttributeError:
             criterion = getattr(torch.nn, criterion_name)(**loss_kwargs)
-        if n_gpus > 0:
-            criterion.cuda()
+    if n_gpus > 0:
+        criterion.cuda()
     return criterion
