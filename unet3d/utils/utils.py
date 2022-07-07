@@ -204,6 +204,7 @@ def combine_images(images, axis=0):
     if len(images) > 1:
         data = [image.get_data() for image in images]
         combined_data = torch.cat(data, axis)
+        print(combined_data.shape)
         return base_image.make_similar(combined_data)
     return base_image
 

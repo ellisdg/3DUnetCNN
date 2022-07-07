@@ -23,7 +23,7 @@ def foreground_zero_mean_normalize_image_data(data, channel_dim=0, background_va
             channel_foreground = channel_data[channel_mask]
             channel_mean = channel_foreground.mean()
             channel_std = channel_foreground.std()
-            channel_data[channel_mask] = torch.divide(channel_foreground - channel_mean, channel_std)
+            channel_data[channel_mask] = torch.divide(torch.subtract(channel_foreground, channel_mean), channel_std)
             data[..., channel] = channel_data
         return data
 
