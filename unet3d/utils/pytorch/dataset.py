@@ -81,7 +81,7 @@ class WholeVolumeSegmentationDataset(WholeVolumeSegmentationSequence, Dataset):
     def __getitem__(self, idx):
         item = self.epoch_filenames[idx]
         x, y = self.resample_input(item)
-        return x.float(), y.byte()
+        return x.float(), y.float()
 
 
 class WholeVolumeSupervisedRegressionDataset(WholeVolumeSupervisedRegressionSequence, Dataset):
