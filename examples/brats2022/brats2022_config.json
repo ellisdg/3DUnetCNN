@@ -7,7 +7,7 @@
   "n_features": 4,
   "optimizer": "Adam",
   "package": "pytorch",
-  "loss": "per_channel_dice_loss",
+  "loss": "DiceLoss",
   "evaluation_metric": "per_channel_dice_loss",
   "weights": null,
   "regularized": false,
@@ -23,7 +23,7 @@
   "save_last_n_models": 10,
   "batch_size": 2,
   "validation_batch_size": 2,
-  "model_name": "UNet",
+  "model_name": "AutocastUNet",
   "model_kwargs": {
     "base_width": 32,
     "encoder_blocks": [
@@ -65,7 +65,7 @@
     "random_permutation_probability": null
   },
   "training_function_kwargs": {
-    "amp": false
+    "amp": true
   },
   "training_filenames": [
     [

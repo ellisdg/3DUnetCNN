@@ -8,6 +8,8 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn
 
+import monai.losses
+
 from ..models.pytorch.build import build_or_load_model
 from ..utils.pytorch import WholeBrainCIFTI2DenseScalarDataset
 from .pytorch_training_utils import epoch_training, epoch_validatation, collate_flatten, collate_5d_flatten
@@ -283,7 +285,10 @@ def load_criterion(criterion_name, n_gpus=0):
     try:
         criterion = getattr(functions, criterion_name)
     except AttributeError:
-        criterion = getattr(torch.nn, criterion_name)()
+        try:
+            criterion = getattr(monai.losses, criterion_name)
+        except AttributeError:
+            criterion = getattr(torch.nn, criterion_name)()
         if n_gpus > 0:
             criterion.cuda()
     return criterion
