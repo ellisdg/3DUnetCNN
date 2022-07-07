@@ -1,5 +1,6 @@
 # from wolny's GitHub project: https://github.com/wolny/pytorch-3dunet
 from torch.nn.modules.loss import _Loss
+import torch
 
 
 class PerChannelDiceLoss(_Loss):
