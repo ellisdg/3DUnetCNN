@@ -151,17 +151,13 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                                        pin_memory=pin_memory,
                                        prefetch_factor=prefetch_factor)
 
-    train(model=model, optimizer=optimizer, criterion=criterion, n_epochs=config["n_epochs"], verbose=bool(verbose),
+    train(model=model, optimizer=optimizer, criterion=criterion, n_epochs=config["n_epochs"],
           training_loader=training_loader, validation_loader=validation_loader, model_filename=model_filename,
           training_log_filename=training_log_filename,
           metric_to_monitor=metric_to_monitor,
           early_stopping_patience=in_config("early_stopping_patience", config),
           save_best=in_config("save_best", config, False),
-          learning_rate_decay_patience=in_config("decay_patience", config),
           n_gpus=n_gpus,
-          decay_factor=in_config("decay_factor", config),
-          min_lr=in_config("min_learning_rate", config),
-          learning_rate_decay_step_size=in_config("decay_step_size", config),
           save_every_n_epochs=in_config("save_every_n_epochs", config),
           save_last_n_models=in_config("save_last_n_models", config),
           amp=amp)
@@ -169,9 +165,8 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
 
 def train(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
           model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
-          learning_rate_decay_patience=None, save_best=False, n_gpus=1, verbose=True,
-          decay_factor=0.1, min_lr=0., learning_rate_decay_step_size=None, save_every_n_epochs=None,
-          save_last_n_models=None, amp=False):
+          save_best=False, n_gpus=1, save_every_n_epochs=None,
+          save_last_n_models=None, amp=False, scheduler_name=None, scheduler_kwargs=None):
     training_log = list()
     if os.path.exists(training_log_filename):
         training_log.extend(pd.read_csv(training_log_filename).values)
@@ -180,20 +175,20 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         start_epoch = 0
     training_log_header = ["epoch", "loss", "lr", "val_loss"]
 
-    if learning_rate_decay_patience:
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=learning_rate_decay_patience,
-                                                               verbose=verbose, factor=decay_factor, min_lr=min_lr)
-    elif learning_rate_decay_step_size:
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer=optimizer, step_size=learning_rate_decay_step_size,
-                                                    gamma=decay_factor, last_epoch=-1)
-        # Setting the last epoch to anything other than -1 requires the optimizer that was previously used.
-        # Since I don't save the optimizer, I have to manually step the scheduler the number of epochs that have already
-        # been completed. Stepping the scheduler before the optimizer raises a warning, so I have added the below
-        # code to step the scheduler and catch the UserWarning that would normally be thrown.
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            for i in range(start_epoch):
-                scheduler.step()
+    if scheduler_name is not None:
+        scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_name)
+        if scheduler_class == torch.optim.lr_scheduler.StepLR:
+            scheduler = scheduler_class(last_epoch=-1, **scheduler_kwargs)
+            # Setting the last epoch to anything other than -1 requires the optimizer that was previously used.
+            # Since I don't save the optimizer, I have to manually step the scheduler the number of epochs that have
+            # already been completed. Stepping the scheduler before the optimizer raises a warning, so I have added the
+            # below code to step the scheduler and catch the UserWarning that would normally be thrown.
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                for i in range(start_epoch):
+                    scheduler.step()
+        else:
+            scheduler = scheduler_class(**scheduler_kwargs)
     else:
         scheduler = None
 
