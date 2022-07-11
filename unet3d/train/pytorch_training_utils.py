@@ -102,7 +102,7 @@ def _batch_loss(model, images, target, criterion):
     return loss, batch_size
 
 
-def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regularized=False, vae=False, use_amp=False):
+def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, use_amp=False):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     progress = ProgressMeter(
@@ -117,8 +117,7 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, regul
         end = time.time()
         for i, (images, target) in enumerate(val_loader):
 
-            loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus, regularized=regularized,
-                                          vae=vae, use_amp=use_amp)
+            loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus,  use_amp=use_amp)
 
             # measure accuracy and record loss
             losses.update(loss.item(), batch_size)
