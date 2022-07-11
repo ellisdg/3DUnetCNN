@@ -596,6 +596,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         return target_image
 
     def resample_target(self, target_image, feature_image):
+        print(feature_image.affine, target_image.affine)
         target_image = resample_to_img(target_image, feature_image, interpolation=self.target_interpolation)
         return target_image
 
@@ -646,7 +647,6 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
             target_data = torch.cat(_target_data, dim=self.channel_axis)
         if self.add_contours:
             target_data = add_one_hot_encoding_contours(target_data)
-        print("One hot:", target_data.sum(dim=(1, 2, 3)))
         return self.permute_inputs(get_nibabel_data(input_image), target_data)
 
 
