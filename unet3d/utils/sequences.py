@@ -620,9 +620,6 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         input_image, target_image = self.resample_image(input_filenames)
         target_data = get_nibabel_data(target_image)
         assert len(target_data.shape) == 4
-        print(input_filenames)
-        print("Labels:", self.labels)
-        print("Target data:", target_data.max(), target_data.min())
         if target_data.shape[0] == 1:
             # only a single channel exists
             if self.labels is None:
