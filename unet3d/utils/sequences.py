@@ -596,7 +596,6 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         return target_image
 
     def resample_target(self, target_image, feature_image):
-        print(feature_image.affine, target_image.affine)
         target_image = resample_to_img(target_image, feature_image, interpolation=self.target_interpolation)
         return target_image
 
