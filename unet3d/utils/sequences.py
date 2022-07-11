@@ -620,6 +620,8 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
         input_image, target_image = self.resample_image(input_filenames)
         target_data = get_nibabel_data(target_image)
         assert len(target_data.shape) == 4
+        print("Labels:", self.labels)
+        print("Target data:", target_data.max(), target_data.min())
         if target_data.shape[0] == 1:
             # only a single channel exists
             if self.labels is None:
@@ -646,6 +648,7 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
             target_data = torch.cat(_target_data, dim=self.channel_axis)
         if self.add_contours:
             target_data = add_one_hot_encoding_contours(target_data)
+        print("One hot:", target_data.sum(dim=(1, 2, 3)))
         return self.permute_inputs(get_nibabel_data(input_image), target_data)
 
 
