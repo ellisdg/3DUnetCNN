@@ -25,7 +25,7 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                          n_workers=1, max_queue_size=5, model_name='resnet_34', n_gpus=1,
                          sequence_class=WholeBrainCIFTI2DenseScalarDataset, directory=None, test_input=1,
                          metric_to_monitor="loss", model_metrics=(), bias=None, pin_memory=False, amp=False,
-                         prefetch_factor=1, **unused_args):
+                         prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None):
     """
     :param test_input: integer with the number of inputs from the generator to write to file. 0, False, or None will
     write no inputs to file.
@@ -46,8 +46,6 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
     multiprocessing optimization should be arguments to this function, as these arguments affect the computation time,
     but the results should not vary based on whether multiprocessing is used or not.
     """
-    if verbose:
-        print("Discarded settings:", unused_args)
     window = np.asarray(config['window'])
     spacing = np.asarray(config['spacing']) if 'spacing' in config else None
     if 'model_name' in config:
@@ -162,7 +160,9 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
           n_gpus=n_gpus,
           save_every_n_epochs=in_config("save_every_n_epochs", config),
           save_last_n_models=in_config("save_last_n_models", config),
-          amp=amp)
+          amp=amp,
+          scheduler_name=scheduler_name,
+          scheduler_kwargs=scheduler_kwargs)
 
 
 def train(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
