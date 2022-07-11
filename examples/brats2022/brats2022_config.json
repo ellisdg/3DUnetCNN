@@ -53,7 +53,7 @@
     "use_label_hierarchy": true
   },
   "additional_training_args": {
-    "flip_left_right_probability": 1.0,
+    "flip_left_right_probability": 0.5,
     "random_permutation_probability": null
   },
   "additional_validation_args": {
