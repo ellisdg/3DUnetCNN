@@ -140,11 +140,6 @@ def main():
                                              raise_if_not_exists=namespace.debug)
     sequence_class = load_sequence(config["sequence"])
 
-    if "bias_filename" in config and config["bias_filename"] is not None:
-        bias = load_bias(config["bias_filename"])
-    else:
-        bias = None
-
     check_hierarchy(config)
 
     if in_config("add_contours", config["sequence_kwargs"], False):
@@ -154,7 +149,6 @@ def main():
                  sequence_class=sequence_class,
                  model_metrics=model_metrics,
                  metric_to_monitor=metric_to_monitor,
-                 bias=bias,
                  **training_function_kwargs,
                  **system_config)
 
