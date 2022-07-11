@@ -46,6 +46,8 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
     multiprocessing optimization should be arguments to this function, as these arguments affect the computation time,
     but the results should not vary based on whether multiprocessing is used or not.
     """
+    if verbose:
+        print("Discarded settings:", unused_args)
     window = np.asarray(config['window'])
     spacing = np.asarray(config['spacing']) if 'spacing' in config else None
     if 'model_name' in config:
