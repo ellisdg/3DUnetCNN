@@ -1,7 +1,7 @@
 import os
+import torch
 
-import numpy as np
-from nilearn.image import new_img_like, resample_to_img
+from unet3d.utils.resample import resample_to_img
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
 from unet3d.utils.utils import one_hot_image_to_label_map, get_nibabel_data
 
@@ -51,9 +51,9 @@ def load_images_from_dataset(dataset, idx, resample_predictions):
 
 def prediction_to_image(data, input_image, reference_image=None, interpolation="linear", segmentation=False,
                         segmentation_labels=None, threshold=0.5, sum_then_threshold=False, label_hierarchy=False):
-    if data.dtype == np.float16:
-        data = np.asarray(data, dtype=np.float32)
-    pred_image = new_img_like(input_image, data=data)
+    if data.dtype == torch.float16:
+        data = torch.as_tensor(data, dtype=torch.float32)
+    pred_image = input_image.make_similar(data=data)
     if reference_image is not None:
         pred_image = resample_to_img(pred_image, reference_image,
                                      interpolation=interpolation)
