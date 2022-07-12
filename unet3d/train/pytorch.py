@@ -202,11 +202,14 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
     for epoch in range(start_epoch, n_epochs):
         # early stopping
+        metric = np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)]
         if (training_log and early_stopping_patience
-            and np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)].argmin()
-                <= len(training_log) - early_stopping_patience):
+                and metric.argmin() <= len(training_log) - early_stopping_patience):
             print("Early stopping patience {} has been reached.".format(early_stopping_patience))
             break
+
+        if training_log and np.isnan(metric[-1]):
+            print("Stopping as invalid results were returned.")
 
         # train the model
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,

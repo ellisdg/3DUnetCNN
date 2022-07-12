@@ -58,8 +58,11 @@
   },
   "training_function_kwargs": {
     "amp": true,
-      "scheduler_name": "CosineAnnealingLR",
-      "scheduler_kwargs": {"T_max": 100}
+      "scheduler_name": "CyclicLR",
+      "scheduler_kwargs": {"base_lr": 1e-6,
+                           "max_lr": 1e-3,
+                           "step_size_up": 5,
+                           "mode": "exp_range"}
   },
   "training_filenames": [
     [
