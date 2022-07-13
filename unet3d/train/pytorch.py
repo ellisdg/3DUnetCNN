@@ -181,6 +181,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_name)
         scheduler = scheduler_class(optimizer, **scheduler_kwargs)
         if start_epoch > 0:
+            # step the scheduler and optimizer to account for previous epochs
             for i in range(start_epoch):
                 optimizer.step()
                 scheduler.step()
