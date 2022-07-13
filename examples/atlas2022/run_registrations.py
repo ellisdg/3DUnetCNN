@@ -4,7 +4,38 @@ This script registers each of the atlas cases to the template, and then transfor
 
 import glob
 from nipype import Node, Workflow, IdentityInterface, MapNode
-from nipype.interfaces.ants import RegistrationSynQuick
+from nipype.interfaces.ants.registration import RegistrationSynQuick, RegistrationSynQuickInputSpec
+
+
+class _RegistrationSynQuickInputSpec(RegistrationSynQuickInputSpec):
+    transform_type = traits.Enum(
+        "s",
+        "t",
+        "r",
+        "a",
+        "sr",
+        "so",
+        "b",
+        "br",
+        argstr="-t %s",
+        desc="""\
+    Transform type
+
+      * t:  translation
+      * r:  rigid
+      * a:  rigid + affine
+      * s:  rigid + affine + deformable syn (default)
+      * sr: rigid + deformable syn
+      * b:  rigid + affine + deformable b-spline syn
+      * br: rigid + deformable b-spline syn
+
+    """,
+        usedefault=True,
+    )
+
+
+class _RegistrationSynQuick(RegistrationSynQuick):
+    input_spec = _RegistrationSynQuickInputSpec
 
 
 def main():
@@ -30,7 +61,7 @@ def main():
     input_node.inputs.reg_mask_args = reg_mask_args
     input_node.inputs.target = '/lustre/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/tpl-MNI152NLin2009aSym_res-1_T1w.nii.gz'
 
-    reg_node = MapNode(RegistrationSynQuick(transform_type="so"),
+    reg_node = MapNode(_RegistrationSynQuick(transform_type="so"),
                        name="Registration", iterfield=["args", "moving_image"])
     wf.connect(input_node, "target", reg_node, "fixed_image")
     wf.connect(input_node, "t1s", reg_node, "moving_image")
