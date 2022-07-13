@@ -202,7 +202,8 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
     for epoch in range(start_epoch, n_epochs):
         # early stopping
-        metric = np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)]
+        if training_log:
+            metric = np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)]
         if (training_log and early_stopping_patience
                 and metric.argmin() <= len(training_log) - early_stopping_patience):
             print("Early stopping patience {} has been reached.".format(early_stopping_patience))
