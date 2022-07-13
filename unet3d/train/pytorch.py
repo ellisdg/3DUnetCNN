@@ -210,6 +210,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
         if training_log and np.isnan(metric[-1]):
             print("Stopping as invalid results were returned.")
+            break
 
         # train the model
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
