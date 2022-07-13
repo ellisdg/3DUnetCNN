@@ -179,18 +179,11 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
     if scheduler_name is not None:
         scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_name)
-        if scheduler_class == torch.optim.lr_scheduler.StepLR:
-            scheduler = scheduler_class(optimizer, last_epoch=-1, **scheduler_kwargs)
-            # Setting the last epoch to anything other than -1 requires the optimizer that was previously used.
-            # Since I don't save the optimizer, I have to manually step the scheduler the number of epochs that have
-            # already been completed. Stepping the scheduler before the optimizer raises a warning, so I have added the
-            # below code to step the scheduler and catch the UserWarning that would normally be thrown.
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                for i in range(start_epoch):
-                    scheduler.step()
-        else:
-            scheduler = scheduler_class(optimizer, **scheduler_kwargs)
+        scheduler = scheduler_class(optimizer, **scheduler_kwargs)
+        if start_epoch > 0:
+            for i in range(start_epoch):
+                optimizer.step()
+                scheduler.step()
     else:
         scheduler = None
 
