@@ -108,7 +108,7 @@ def main():
     wf.connect(input_node, "t1s", reg_node, "moving_image")
     wf.connect(input_node, "reg_mask_args", reg_node, "args")
 
-    mixer = Node(Function(func=mix_n_match, outputs=["t1_out", "mask_out", "transforms_out", "reference_out"]),
+    mixer = Node(Function(function=mix_n_match, outputs=["t1_out", "mask_out", "transforms_out", "reference_out"]),
                  name="MixNMatch")
     wf.connect(reg_node, "forward_warp_field", mixer, "forward_transforms")
     wf.connect(reg_node, "inverse_warp_field", mixer, "inverse_transforms")
@@ -127,7 +127,7 @@ def main():
     wf.connect(mixer, "reference_out", transform_masks, "reference_image")
     wf.connect(mixer, "transforms_out", transform_masks, "transforms")
 
-    syncer = Node(Function(func=sync_outputs), name="SyncOutputs")
+    syncer = Node(Function(function=sync_outputs), name="SyncOutputs")
     wf.connect(transform_t1s, "output_image", syncer, "warped_t1s")
     wf.connect(transform_masks, "output_image", syncer, "warped_masks")
     wf.connect(mixer, "mask_out", syncer, "mask_files")
