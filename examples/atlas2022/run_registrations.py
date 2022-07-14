@@ -127,6 +127,13 @@ def main():
     wf.connect(mixer, "reference_out", transform_masks, "reference_image")
     wf.connect(mixer, "transforms_out", transform_masks, "transforms")
 
+    syncer = Node(Function(func=sync_outputs), name="SyncOutputs")
+    wf.connect(transform_t1s, "output_image", syncer, "warped_t1s")
+    wf.connect(transform_masks, "output_image", syncer, "warped_masks")
+    wf.connect(mixer, "mask_out", syncer, "mask_files")
+    wf.connect(mixer, "t1_out", syncer, "t1_files")
+    wf.connect(mixer, "reference_out", syncer, "reference_files")
+
     wf.run(plugin="MultiProc", plugin_args={"n_procs": 40})
 
 
