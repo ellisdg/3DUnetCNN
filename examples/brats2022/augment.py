@@ -6,6 +6,7 @@ import glob
 from nipype import Node, Workflow, IdentityInterface, MapNode, Function
 from nipype.interfaces.ants import ApplyTransforms
 from nipype.interfaces.ants.registration import RegistrationSynQuick, RegistrationSynQuickInputSpec, traits
+import os
 
 
 #TODO: add flair, t2, and t1c images
@@ -99,7 +100,8 @@ def main():
     wf = Workflow("RegistrationWF")
     wf.base_dir = "./"
 
-    t1_fns = glob.glob("./RSNA_ASNR_MICCAI_BraTS2021_TrainingData_16July2021/BraTS2021_*/BraTS2021_*_t1.nii.gz'")
+    t1_fns = glob.glob(
+        os.path.abspath("./RSNA_ASNR_MICCAI_BraTS2021_TrainingData_16July2021/BraTS2021_*/BraTS2021_*_t1.nii.gz'"))
     mask_fns = list()
     reg_mask_fns = list()
     reg_mask_args = list()
@@ -126,7 +128,7 @@ def main():
                        name="Registration", iterfield=["args", "moving_image"])
     wf.connect(input_node, "target", reg_node, "fixed_image")
     wf.connect(input_node, "t1s", reg_node, "moving_image")
-    wf.connect(reg_node, "reg_mask_arg", reg_node, "args")
+    wf.connect(reg_masker, "reg_mask_arg", reg_node, "args")
 
     mixer = Node(Function(function=mix_n_match, outputs=["t1_out", "mask_out", "transforms_out", "reference_out"]),
                  name="MixNMatch")
