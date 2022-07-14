@@ -98,6 +98,7 @@ def main():
     wf = Workflow("RegistrationWF")
     wf.base_dir = "./"
 
+    brain_mask_fn = "/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/tpl-MNI152NLin2009aSym_res-1_desc-brain_mask.nii.gz"
     t1_fns = glob.glob(
         "/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/data/train/derivatives/ATLAS/sub-*/ses-*/*/sub-*T1w.nii.gz")
     mask_fns = list()
@@ -108,7 +109,7 @@ def main():
         mask_fns.append(mask_fn)
         reg_mask_fn = t1_fn.replace("T1w.", "label-regmask_mask.")
         reg_mask_fns.append(reg_mask_fn)
-        reg_mask_arg = "-x Null,{}".format(reg_mask_fn)
+        reg_mask_arg = "-x {},{}".format(brain_mask_fn, reg_mask_fn)
         reg_mask_args.append(reg_mask_arg)
 
     input_node = Node(IdentityInterface(["target", "t1s", "masks", "reg_masks", "reg_mask_args"]), name="inputnode")
