@@ -40,7 +40,7 @@ class _RegistrationSynQuick(RegistrationSynQuick):
 
 
 def mix_n_match(t1_file, mask_file, forward_transform, inverse_transforms, reference_files,
-                output_dir="/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/augmented_data")
+                output_dir="/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/augmented_data"):
     """
     Mix and match the transforms to form every combination of transformation possible.
     """
