@@ -184,7 +184,11 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
             # step the scheduler and optimizer to account for previous epochs
             for i in range(start_epoch):
                 optimizer.step()
-                scheduler.step()
+                if scheduler_class == torch.optim.lr_scheduler.ReduceLROnPlateau:
+                    metric = np.asarray(training_log)[i, training_log_header.index(metric_to_monitor)]
+                    scheduler.step(metric)
+                else:
+                    scheduler.step()
     else:
         scheduler = None
 
