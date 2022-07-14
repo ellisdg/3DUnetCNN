@@ -121,7 +121,7 @@ def main():
     input_node = Node(IdentityInterface(["target", "t1s", "masks"]), name="inputnode")
     input_node.inputs.t1s = t1_fns
     input_node.inputs.masks = mask_fns
-    input_node.inputs.target = "./SRI-24-Brain.nii.gz"
+    input_node.inputs.target = os.path.abspath("./SRI-24-Brain.nii.gz")
 
     wf.connect(input_node, "masks", reg_masker, "seg_file")
 
