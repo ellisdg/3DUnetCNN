@@ -101,7 +101,7 @@ def main():
     wf.base_dir = "./"
 
     t1_fns = glob.glob(
-        os.path.abspath("./RSNA_ASNR_MICCAI_BraTS2021_TrainingData_16July2021/BraTS2021_*/BraTS2021_*_t1.nii.gz'"))
+        os.path.abspath("./RSNA_ASNR_MICCAI_BraTS2021_TrainingData_16July2021/BraTS2021_*/BraTS2021_*_t1.nii.gz"))
     print("n:", len(t1_fns))
     mask_fns = list()
     reg_mask_fns = list()
