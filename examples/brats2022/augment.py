@@ -102,6 +102,7 @@ def main():
 
     t1_fns = glob.glob(
         os.path.abspath("./RSNA_ASNR_MICCAI_BraTS2021_TrainingData_16July2021/BraTS2021_*/BraTS2021_*_t1.nii.gz'"))
+    print("n:", len(t1fns))
     mask_fns = list()
     reg_mask_fns = list()
     reg_mask_args = list()
