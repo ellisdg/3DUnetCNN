@@ -4,7 +4,7 @@ This script registers each of the atlas cases to the template, and then transfor
 
 import glob
 from nipype import Node, Workflow, IdentityInterface, MapNode, Function
-from nipype.interfaces.ants import ApplyTransform
+from nipype.interfaces.ants import ApplyTransforms
 from nipype.interfaces.ants.registration import RegistrationSynQuick, RegistrationSynQuickInputSpec, traits
 
 
