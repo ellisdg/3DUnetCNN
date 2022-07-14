@@ -115,13 +115,13 @@ def main():
     wf.connect(input_node, "t1s", mixer, "t1_files")
     wf.connect(input_node, "masks", mixer, "mask_files")
 
-    transform_t1s = MapNode(ApplyTransform(), name="TransformT1s",
+    transform_t1s = MapNode(ApplyTransforms(), name="TransformT1s",
                             iterfield=["reference_image", "input_image", "transforms"])
     wf.connect(mixer, "t1_out", transform_t1s, "input_image")
     wf.connect(mixer, "reference_out", transform_t1s, "reference_image")
     wf.connect(mixer, "transforms_out", transform_t1s, "transforms")
 
-    transform_masks = MapNode(ApplyTransform(interpolation="NearestNeighbor"), name="TransformMasks",
+    transform_masks = MapNode(ApplyTransforms(interpolation="NearestNeighbor"), name="TransformMasks",
                               iterfield=["reference_image", "input_image", "transforms"])
     wf.connect(mixer, "mask_out", transform_masks, "input_image")
     wf.connect(mixer, "reference_out", transform_masks, "reference_image")
