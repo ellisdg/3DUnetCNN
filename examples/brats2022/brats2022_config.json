@@ -60,7 +60,8 @@
     "amp": true,
       "scheduler_name": "ReduceLROnPlateau",
       "scheduler_kwargs": {"patience": 1,
-                           "factor": 0.5}
+                           "factor": 0.5,
+                           "min_lr":  1e-6}
   },
   "training_filenames": [
     [
