@@ -58,9 +58,9 @@
   },
   "training_function_kwargs": {
     "amp": true,
-      "scheduler_name": "CosineAnnealingLR",
-      "scheduler_kwargs": {"T_max": 10,
-                           "eta_min": 1e-6}
+      "scheduler_name": "ReduceLROnPlateau",
+      "scheduler_kwargs": {"patience": 5,
+                           "factor": 0.5}
   },
   "training_filenames": [
     [
