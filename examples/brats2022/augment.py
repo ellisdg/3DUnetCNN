@@ -8,6 +8,9 @@ from nipype.interfaces.ants import ApplyTransforms
 from nipype.interfaces.ants.registration import RegistrationSynQuick, RegistrationSynQuickInputSpec, traits
 
 
+#TODO: add flair, t2, and t1c images
+
+
 class _RegistrationSynQuickInputSpec(RegistrationSynQuickInputSpec):
     transform_type = traits.Enum(
         "s",
@@ -62,8 +65,8 @@ def sync_outputs(t1_files, mask_files, reference_files, warped_t1s, warped_masks
     import os
     os.makedirs(output_dir, exist_ok=True)
     for t1, mask, ref, warped_t1, warped_mask in zip(t1_files, mask_files, reference_files, warped_t1s, warped_masks):
-        t1_sub = t1.split("/")[-4]
-        ref_sub = ref.split("/")[-4]
+        t1_sub = os.path.basename(t1).split("_")[1]
+        ref_sub = os.path.basename(ref).split("_")[1]
         _output_dir = os.path.join(output_dir, "_".join((t1_sub, ref_sub)))
 
         # copy t1
@@ -79,35 +82,51 @@ def sync_outputs(t1_files, mask_files, reference_files, warped_t1s, warped_masks
         shutil.copy(warped_mask, out_mask)
 
 
+def create_reg_mask(seg_file):
+    import nibabel as nib
+    import numpy as np
+    import os
+    image = nib.load(seg_file)
+    mask = np.asarray(np.asarray(image.dataobj) == 0, image.get_data_dtype())
+    new_image = image.__class__(dataobj=mask, affine=image.affine)
+    out_mask = os.path.abspath(os.path.basename(seg_file).replace("seg", "regmask"))
+    new_image.to_filename(out_mask)
+    reg_mask_arg = "-x Null,{}".format(out_mask)
+    return out_mask, reg_mask_arg
+
+
 def main():
     wf = Workflow("RegistrationWF")
     wf.base_dir = "./"
 
-    t1_fns = glob.glob(
-        "/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/data/train/derivatives/ATLAS/sub-*/ses-*/*/sub-*T1w.nii.gz")
+    t1_fns = glob.glob("./RSNA_ASNR_MICCAI_BraTS2021_TrainingData_16July2021/BraTS2021_*/BraTS2021_*_t1.nii.gz'")
     mask_fns = list()
     reg_mask_fns = list()
     reg_mask_args = list()
     for t1_fn in t1_fns:
-        mask_fn = t1_fn.replace("T1w.", "label-L_desc-T1lesion_mask.")
+        mask_fn = t1_fn.replace("t1.", "seg.")
         mask_fns.append(mask_fn)
-        reg_mask_fn = t1_fn.replace("T1w.", "label-regmask_mask.")
-        reg_mask_fns.append(reg_mask_fn)
-        reg_mask_arg = "-x Null,{}".format(reg_mask_fn)
-        reg_mask_args.append(reg_mask_arg)
+    #        reg_mask_arg = "-x Null,{}".format(reg_mask_fn)
+    #        reg_mask_args.append(reg_mask_arg)
 
-    input_node = Node(IdentityInterface(["target", "t1s", "masks", "reg_masks", "reg_mask_args"]), name="inputnode")
+    reg_masker = MapNode(Function(function=create_reg_mask,
+                                  input_names=["seg_file"],
+                                  output_names=["reg_mask", "reg_mask_arg"]),
+                         name="CreateRegMasks",
+                         iterfield=["seg_file"])
+
+    input_node = Node(IdentityInterface(["target", "t1s", "masks"]), name="inputnode")
     input_node.inputs.t1s = t1_fns
     input_node.inputs.masks = mask_fns
-    input_node.inputs.reg_masks = reg_mask_fns
-    input_node.inputs.reg_mask_args = reg_mask_args
-    input_node.inputs.target = '/lustre/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/tpl-MNI152NLin2009aSym_res-1_T1w.nii.gz'
+    input_node.inputs.target = "./SRI-24-Brain.nii.gz"
+
+    wf.connect(input_node, "masks", reg_masker, "seg_file")
 
     reg_node = MapNode(_RegistrationSynQuick(transform_type="so"),
                        name="Registration", iterfield=["args", "moving_image"])
     wf.connect(input_node, "target", reg_node, "fixed_image")
     wf.connect(input_node, "t1s", reg_node, "moving_image")
-    wf.connect(input_node, "reg_mask_args", reg_node, "args")
+    wf.connect(reg_node, "reg_mask_arg", reg_node, "args")
 
     mixer = Node(Function(function=mix_n_match, outputs=["t1_out", "mask_out", "transforms_out", "reference_out"]),
                  name="MixNMatch")
