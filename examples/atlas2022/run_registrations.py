@@ -81,6 +81,7 @@ def sync_outputs(t1_files, mask_files, reference_files, warped_t1s, warped_masks
 
 def main():
     wf = Workflow("RegistrationWF")
+    wf.base_dir = "./"
 
     t1_fns = glob.glob(
         "/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/data/train/derivatives/ATLAS/sub-*/ses-*/*/sub-*T1w.nii.gz")
