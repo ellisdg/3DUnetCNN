@@ -179,18 +179,16 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
     if scheduler_name is not None:
         scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_name)
-        if scheduler_class == torch.optim.lr_scheduler.StepLR:
-            scheduler = scheduler_class(optimizer, last_epoch=-1, **scheduler_kwargs)
-            # Setting the last epoch to anything other than -1 requires the optimizer that was previously used.
-            # Since I don't save the optimizer, I have to manually step the scheduler the number of epochs that have
-            # already been completed. Stepping the scheduler before the optimizer raises a warning, so I have added the
-            # below code to step the scheduler and catch the UserWarning that would normally be thrown.
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                for i in range(start_epoch):
+        scheduler = scheduler_class(optimizer, **scheduler_kwargs)
+        if start_epoch > 0:
+            # step the scheduler and optimizer to account for previous epochs
+            for i in range(start_epoch):
+                optimizer.step()
+                if scheduler_class == torch.optim.lr_scheduler.ReduceLROnPlateau:
+                    metric = np.asarray(training_log)[i, training_log_header.index(metric_to_monitor)]
+                    scheduler.step(metric)
+                else:
                     scheduler.step()
-        else:
-            scheduler = scheduler_class(optimizer, **scheduler_kwargs)
     else:
         scheduler = None
 
@@ -202,7 +200,8 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
     for epoch in range(start_epoch, n_epochs):
         # early stopping
-        metric = np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)]
+        if training_log:
+            metric = np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)]
         if (training_log and early_stopping_patience
                 and metric.argmin() <= len(training_log) - early_stopping_patience):
             print("Early stopping patience {} has been reached.".format(early_stopping_patience))
@@ -210,6 +209,7 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
 
         if training_log and np.isnan(metric[-1]):
             print("Stopping as invalid results were returned.")
+            break
 
         # train the model
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
