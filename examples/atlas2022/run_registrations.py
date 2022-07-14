@@ -39,21 +39,36 @@ class _RegistrationSynQuick(RegistrationSynQuick):
     input_spec = _RegistrationSynQuickInputSpec
 
 
-def mix_n_match(t1_files, mask_files, forward_transforms, inverse_transforms):
+def mix_n_match(t1_file, mask_file, forward_transform, inverse_transforms, reference_files,
+                output_dir="/work/aizenberg/dgellis/MICCAI/2022/isles/isles_2022/augmented_data")
     """
     Mix and match the transforms to form every combination of transformation possible.
     """
+    import os
+    from nipype.interfaces.ants import ApplyTransforms
+    os.makedirs(output_dir, exist_ok=True)
     t1_out = list()
     mask_out = list()
     transforms_out = list()
     reference_out = list()
-    for t1, mask, forward in zip(t1_files, mask_files, forward_transforms):
-        for reference, inverse in zip(t1_files, inverse_transforms):
-            if reference != t1:
-                transforms_out.append([inverse, forward])
-                t1_out.append(t1)
-                mask_out.append(mask)
-                reference_out.append(reference)
+    output_images = list()
+    _sub = t1_file.split("/")[-4]
+    for reference, inverse in zip(reference_files, inverse_transforms):
+        ref_sub = reference.split("/")[-4]
+        _output_dir = os.path.join(output_dir, "_".join((_sub, ref_sub)))
+        if reference != t1_file:
+            os.makedirs(_output_dir, exist_ok=True)
+            for input_image in (t1_file, mask_file):
+                output_image = os.path.join(_output_dir, os.path.basename(input_image))
+                cmd = ApplyTransforms(transforms=[inverse, forward_transform],
+                                      reference_image=reference,
+                                      input_image=t1_file,
+                                      output_image=output_image)
+                if input_image == mask_file:
+                    cmd.inputs.interpolation = "NearestNeighbor"
+                cmd.run()
+                output_images.append(output_image)
+
     return t1_out, mask_out, transforms_out, reference_out
 
 
@@ -109,32 +124,33 @@ def main():
     wf.connect(input_node, "t1s", reg_node, "moving_image")
     wf.connect(input_node, "reg_mask_args", reg_node, "args")
 
-    mixer = Node(Function(function=mix_n_match,
-                          output_names=["t1_out", "mask_out", "transforms_out", "reference_out"]),
-                 name="MixNMatch")
-    wf.connect(reg_node, "forward_warp_field", mixer, "forward_transforms")
+    mixer = MapNode(Function(function=mix_n_match,
+                             output_names=["t1_out", "mask_out", "transforms_out", "reference_out"]),
+                    name="MixNMatch", iterfield=["t1_file", "mask_file", "forward_transform"])
+    wf.connect(reg_node, "forward_warp_field", mixer, "forward_transform")
     wf.connect(reg_node, "inverse_warp_field", mixer, "inverse_transforms")
-    wf.connect(input_node, "t1s", mixer, "t1_files")
-    wf.connect(input_node, "masks", mixer, "mask_files")
+    wf.connect(input_node, "t1s", mixer, "t1_file")
+    wf.connect(input_node, "t1s", mixer, "reference_files")
+    wf.connect(input_node, "masks", mixer, "mask_file")
 
-    transform_t1s = MapNode(ApplyTransforms(), name="TransformT1s",
-                            iterfield=["reference_image", "input_image", "transforms"])
-    wf.connect(mixer, "t1_out", transform_t1s, "input_image")
-    wf.connect(mixer, "reference_out", transform_t1s, "reference_image")
-    wf.connect(mixer, "transforms_out", transform_t1s, "transforms")
+    #transform_t1s = MapNode(ApplyTransforms(), name="TransformT1s",
+    #                        iterfield=["reference_image", "input_image", "transforms"])
+    #wf.connect(mixer, "t1_out", transform_t1s, "input_image")
+    #wf.connect(mixer, "reference_out", transform_t1s, "reference_image")
+    #wf.connect(mixer, "transforms_out", transform_t1s, "transforms")
 
-    transform_masks = MapNode(ApplyTransforms(interpolation="NearestNeighbor"), name="TransformMasks",
-                              iterfield=["reference_image", "input_image", "transforms"])
-    wf.connect(mixer, "mask_out", transform_masks, "input_image")
-    wf.connect(mixer, "reference_out", transform_masks, "reference_image")
-    wf.connect(mixer, "transforms_out", transform_masks, "transforms")
+    #transform_masks = MapNode(ApplyTransforms(interpolation="NearestNeighbor"), name="TransformMasks",
+    #                          iterfield=["reference_image", "input_image", "transforms"])
+    #wf.connect(mixer, "mask_out", transform_masks, "input_image")
+    #wf.connect(mixer, "reference_out", transform_masks, "reference_image")
+    #wf.connect(mixer, "transforms_out", transform_masks, "transforms")
 
-    syncer = Node(Function(function=sync_outputs), name="SyncOutputs")
-    wf.connect(transform_t1s, "output_image", syncer, "warped_t1s")
-    wf.connect(transform_masks, "output_image", syncer, "warped_masks")
-    wf.connect(mixer, "mask_out", syncer, "mask_files")
-    wf.connect(mixer, "t1_out", syncer, "t1_files")
-    wf.connect(mixer, "reference_out", syncer, "reference_files")
+    #syncer = Node(Function(function=sync_outputs), name="SyncOutputs")
+    #wf.connect(transform_t1s, "output_image", syncer, "warped_t1s")
+    #wf.connect(transform_masks, "output_image", syncer, "warped_masks")
+    #wf.connect(mixer, "mask_out", syncer, "mask_files")
+    #wf.connect(mixer, "t1_out", syncer, "t1_files")
+    #wf.connect(mixer, "reference_out", syncer, "reference_files")
 
     wf.run(plugin="MultiProc", plugin_args={"n_procs": 40})
 
