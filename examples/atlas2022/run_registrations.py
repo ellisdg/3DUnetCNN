@@ -62,7 +62,7 @@ def mix_n_match(t1_file, mask_file, forward_transform, inverse_transforms, refer
                 output_image = os.path.join(_output_dir, os.path.basename(input_image))
                 cmd = ApplyTransforms(transforms=[inverse, forward_transform],
                                       reference_image=reference,
-                                      input_image=t1_file,
+                                      input_image=input_image,
                                       output_image=output_image)
                 if input_image == mask_file:
                     cmd.inputs.interpolation = "NearestNeighbor"
