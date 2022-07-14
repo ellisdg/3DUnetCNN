@@ -18,7 +18,7 @@ except ModuleNotFoundError:
 
 
 def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None, print_frequency=1,
-                   print_gpu_memory=False, scaler=None):
+                   print_gpu_memory=False, scaler=None, samples_per_epoch=None):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -73,6 +73,9 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
 
         if i % print_frequency == 0:
             progress.display(i)
+
+        if samples_per_epoch and (i + 1) * batch_size >= samples_per_epoch:
+            break
     return losses.avg
 
 
