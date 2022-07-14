@@ -5,7 +5,7 @@ This script registers each of the atlas cases to the template, and then transfor
 import glob
 from nipype import Node, Workflow, IdentityInterface, MapNode, Function
 from nipype.interfaces.ants import ApplyTransforms
-from nipype.interfaces.ants.registration import RegistrationSynQuick, RegistrationSynQuickInputSpec, traits
+from nipype.interfaces.ants.registration import RegistrationSynQuick, RegistrationSynQuickInputSpec, traits, File
 import os
 
 
@@ -37,6 +37,7 @@ class _RegistrationSynQuickInputSpec(RegistrationSynQuickInputSpec):
     """,
         usedefault=True,
     )
+    moving_mask = File(argstr="-x Null,%s")
 
 
 class _RegistrationSynQuick(RegistrationSynQuick):
@@ -126,10 +127,10 @@ def main():
     wf.connect(input_node, "masks", reg_masker, "seg_file")
 
     reg_node = MapNode(_RegistrationSynQuick(transform_type="so"),
-                       name="Registration", iterfield=["args", "moving_image"])
+                       name="Registration", iterfield=["moving_mask", "moving_image"])
     wf.connect(input_node, "target", reg_node, "fixed_image")
     wf.connect(input_node, "t1s", reg_node, "moving_image")
-    wf.connect(reg_masker, "reg_mask_arg", reg_node, "args")
+    wf.connect(reg_masker, "reg_mask", reg_node, "moving_mask")
 
     mixer = Node(Function(function=mix_n_match, outputs=["t1_out", "mask_out", "transforms_out", "reference_out"]),
                  name="MixNMatch")
