@@ -59,9 +59,10 @@
   "training_function_kwargs": {
     "amp": true,
       "scheduler_name": "ReduceLROnPlateau",
-      "scheduler_kwargs": {"patience": 10,
+      "scheduler_kwargs": {"patience": 0,
+                           "cooldown": 5,
                            "factor": 0.5,
-                           "min_lr":  1e-6}
+                           "min_lr":  1e-8}
   },
   "training_filenames": [
     [
