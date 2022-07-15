@@ -4,7 +4,7 @@
     224,
     144
   ],
-  "n_features": 4,
+  "n_features": 1,
   "optimizer": "Adam",
   "loss": "DiceLoss",
   "reorder": true,
