@@ -50,6 +50,8 @@ def check_hierarchy(config):
             new_labels.append(labels)
             labels = labels[1:]
         config["sequence_kwargs"]["labels"] = new_labels
+    if "use_label_hierarchy" in config["sequence_kwargs"]:
+        config["sequence_kwargs"].pop("use_label_hierarchy")
 
 
 def compute_unet_number_of_voxels(window, channels, n_layers):
