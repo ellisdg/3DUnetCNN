@@ -44,7 +44,8 @@
     "interpolation": "linear",
     "labels": [1
     ],
-    "use_label_hierarchy": false
+    "use_label_hierarchy": false,
+    "cropping_kwargs": {"percentile": 75}
   },
   "additional_training_args": {
     "flip_left_right_probability": 0.5,
