@@ -136,7 +136,8 @@ def main():
 
     mixer = MapNode(Function(function=mix_n_match,
                              output_names=["t1_out", "mask_out", "transforms_out", "reference_out"]),
-                    name="MixNMatch", iterfield=["t1_file", "mask_file", "forward_transform", "forward_matrix"])
+                    name="MixNMatch", iterfield=["t1_file", "mask_file", "forward_transform", "forward_matrix",
+                                                 "t1c_file", "t2_file", "flair_file"])
     wf.connect(reg_node, "forward_warp_field", mixer, "forward_transform")
     wf.connect(reg_node, "inverse_warp_field", mixer, "inverse_transforms")
     wf.connect(reg_node, "out_matrix", mixer, "forward_matrix")
