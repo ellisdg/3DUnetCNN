@@ -6,7 +6,7 @@
   ],
   "n_features": 4,
   "optimizer": "Adam",
-  "loss": "DiceLoss",
+  "loss": "MyDiceLoss",
   "reorder": true,
   "n_epochs": 110,
   "save_every_n_epochs": null,
