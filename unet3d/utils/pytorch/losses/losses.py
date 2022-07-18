@@ -38,7 +38,7 @@ class MyDiceLoss(nn.Module):
 
         # here we can use standard dice (input + target).sum(-1) or extension (see V-Net) (input^2 + target^2).sum(-1)
         denominator = (x * x).sum(-1) + (y * y).sum(-1)
-        return 2 * (intersect / denominator.clamp(min=self.epsilon))
+        return 1 - (2 * (intersect / denominator.clamp(min=self.epsilon))).mean()
 
 
 def flatten(tensor):
