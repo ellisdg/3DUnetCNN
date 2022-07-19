@@ -109,16 +109,16 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                                            verbose=verbose)
 
 
-def pytorch_volumetric_predictions(model_filename, model_name, n_features, filenames, window,
-                                   criterion_name, prediction_dir=None, output_csv=None, reference=None,
-                                   n_gpus=1, n_workers=1, batch_size=1, model_kwargs=None, n_outputs=None,
-                                   sequence_kwargs=None, spacing=None, sequence=None,
-                                   strict_model_loading=True, metric_names=None,
-                                   print_prediction_time=True, verbose=True,
-                                   evaluate_predictions=False, resample_predictions=False, interpolation="linear",
-                                   output_template=None, segmentation=False, segmentation_labels=None,
-                                   sum_then_threshold=True, threshold=0.7, label_hierarchy=None,
-                                   write_input_images=False):
+def volumetric_predictions(model_filename, model_name, n_features, filenames, window,
+                           criterion_name, prediction_dir=None, output_csv=None, reference=None,
+                           n_gpus=1, n_workers=1, batch_size=1, model_kwargs=None, n_outputs=None,
+                           sequence_kwargs=None, spacing=None, sequence=None,
+                           strict_model_loading=True, metric_names=None,
+                           print_prediction_time=True, verbose=True,
+                           evaluate_predictions=False, resample_predictions=False, interpolation="linear",
+                           output_template=None, segmentation=False, segmentation_labels=None,
+                           sum_then_threshold=True, threshold=0.7, label_hierarchy=None,
+                           write_input_images=False):
     import torch
     # from .train.pytorch import load_criterion
 
@@ -156,40 +156,3 @@ def pytorch_volumetric_predictions(model_filename, model_name, n_features, filen
                 batch_references = list()
                 batch_subjects = list()
                 batch_filenames = list()
-
-
-def volumetric_predictions(model_filename, filenames, prediction_dir, model_name, n_features, window,
-                           criterion_name, package="keras", n_gpus=1, n_workers=1, batch_size=1,
-                           model_kwargs=None, n_outputs=None, sequence_kwargs=None, sequence=None,
-                           metric_names=None, evaluate_predictions=False, interpolation="linear",
-                           resample_predictions=True, output_template=None, segmentation=False,
-                           segmentation_labels=None, threshold=0.5, sum_then_threshold=True, label_hierarchy=None,
-                           write_input_images=False):
-    if package == "pytorch":
-        pytorch_volumetric_predictions(model_filename=model_filename,
-                                       model_name=model_name,
-                                       n_outputs=n_outputs,
-                                       n_features=n_features,
-                                       filenames=filenames,
-                                       prediction_dir=prediction_dir,
-                                       window=window,
-                                       criterion_name=criterion_name,
-                                       n_gpus=n_gpus,
-                                       n_workers=n_workers,
-                                       batch_size=batch_size,
-                                       model_kwargs=model_kwargs,
-                                       sequence_kwargs=sequence_kwargs,
-                                       sequence=sequence,
-                                       metric_names=metric_names,
-                                       evaluate_predictions=evaluate_predictions,
-                                       interpolation=interpolation,
-                                       resample_predictions=resample_predictions,
-                                       output_template=output_template,
-                                       segmentation=segmentation,
-                                       segmentation_labels=segmentation_labels,
-                                       threshold=threshold,
-                                       sum_then_threshold=sum_then_threshold,
-                                       label_hierarchy=label_hierarchy,
-                                       write_input_images=write_input_images)
-    else:
-        raise ValueError("Predictions not yet implemented for {}".format(package))

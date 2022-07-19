@@ -182,7 +182,6 @@ def run_inference(namespace):
                 n_features=config["n_features"],
                 window=config["window"],
                 criterion_name=criterion_name,
-                package=config['package'],
                 n_gpus=system_config['n_gpus'],
                 batch_size=config['validation_batch_size'],
                 n_workers=system_config["n_workers"],
