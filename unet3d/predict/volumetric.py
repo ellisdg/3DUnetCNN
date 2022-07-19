@@ -139,7 +139,7 @@ def volumetric_predictions(model_filename, model_name, n_features, filenames, wi
             x_filename, subject_id = get_feature_filename_and_subject_id(dataset, idx, verbose=verbose)
             x_image, ref_image = load_images_from_dataset(dataset, idx, resample_predictions)
 
-            batch.append(get_nibabel_data(x_image))
+            batch.append(x_image.get_fdata())
             batch_references.append((x_image, ref_image))
             batch_subjects.append(subject_id)
             batch_filenames.append(x_filename)
