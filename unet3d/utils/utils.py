@@ -115,9 +115,11 @@ def mask_encoding(one_hot_encoding, n_labels, threshold=0.5, axis=0, sum_then_th
 
 
 def assign_labels(one_hot_encoding, segmentation_mask, labels, label_indices, axis=0, dtype=torch.int16):
-    max_arg_map = torch.zeros(one_hot_encoding.shape[:axis], dtype=dtype)
+    labelmap_shape = list(one_hot_encoding.shape)
+    labelmap_shape.pop(axis)
+    max_arg_map = torch.zeros(labelmap_shape, dtype=dtype)
     label_map = max_arg_map.detach().clone()
-    max_arg_map[segmentation_mask] = (torch.argmax(one_hot_encoding[..., label_indices],
+    max_arg_map[segmentation_mask] = (torch.argmax(one_hot_encoding[label_indices],
                                                    dim=axis) + 1)[segmentation_mask]
     for index, label in enumerate(labels):
         label_map[max_arg_map == (index + 1)] = label
