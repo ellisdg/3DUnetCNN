@@ -109,9 +109,9 @@ def convert_one_hot_to_single_label_map_volume(one_hot_encoding, labels, thresho
 
 def mask_encoding(one_hot_encoding, n_labels, threshold=0.5, axis=0, sum_then_threshold=False):
     if sum_then_threshold:
-        return torch.sum(one_hot_encoding[..., :n_labels], dim=axis) > threshold
+        return torch.sum(one_hot_encoding[:n_labels], dim=axis) > threshold
     else:
-        return torch.any(one_hot_encoding[..., :n_labels] > threshold, dim=axis)
+        return torch.any(one_hot_encoding[:n_labels] > threshold, dim=axis)
 
 
 def assign_labels(one_hot_encoding, segmentation_mask, labels, label_indices, axis=0, dtype=torch.int16):
