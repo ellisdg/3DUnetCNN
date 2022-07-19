@@ -1,3 +1,4 @@
+import torch
 
 
 class Image(object):
@@ -40,6 +41,15 @@ class Image(object):
     def copy(self):
         return self.make_similar(self.get_data().detach().clone(),
                                  self._affine.detach().clone())
+
+    def to_filename(self, filename):
+        import nibabel as nib
+        if len(self.shape) > 3:
+            _data = torch.moveaxis(self.dataobj, 0, -1)
+        else:
+            _data = self.dataobj
+        _image = nib.Nifti1Image(dataobj=_data.squeeze().numpy(), affine=self.affine)
+        _image.to_filename(filename)
 
 
 def get_image(data, affine):
