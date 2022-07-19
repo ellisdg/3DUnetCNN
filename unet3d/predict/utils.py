@@ -3,8 +3,8 @@ import numpy as np
 
 def pytorch_predict_batch_array(model, batch, n_gpus=1):
     import torch
-    print(batch.shape)
     batch_x = torch.as_tensor(batch)
+    print(batch_x.shape)
     pred_x = pytorch_predict_batch(batch_x, model, n_gpus)
     return np.moveaxis(pred_x.numpy(), 1, -1)
 
