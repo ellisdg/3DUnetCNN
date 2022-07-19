@@ -89,7 +89,7 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                              segmentation_labels, sum_then_threshold, label_hierarchy, write_input_image=False):
     pred_x = pytorch_predict_batch_array(model, batch, n_gpus=n_gpus)
     for batch_idx in range(len(batch)):
-        pred_image = prediction_to_image(pred_x[batch_idx].squeeze(), input_image=batch_references[batch_idx][0],
+        pred_image = prediction_to_image(pred_x[batch_idx], input_image=batch_references[batch_idx][0],
                                          reference_image=batch_references[batch_idx][1], interpolation=interpolation,
                                          segmentation=segmentation, segmentation_labels=segmentation_labels,
                                          threshold=threshold, sum_then_threshold=sum_then_threshold,

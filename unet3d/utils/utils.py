@@ -25,14 +25,14 @@ def dump_json(dataobj, filename):
 def logical_and(array_list):
     array = array_list[0]
     for other_array in array_list[1:]:
-        array = np.logical_and(array, other_array)
+        array = torch.logical_and(array, other_array)
     return array
 
 
 def logical_or(array_list):
     array = array_list[0]
     for other_array in array_list[1:]:
-        array = np.logical_or(array, other_array)
+        array = torch.logical_or(array, other_array)
     return array
 
 
@@ -41,16 +41,8 @@ def get_index_value(iterable, index):
         return iterable[index]
 
 
-def read_polydata(filename):
-    import vtk
-    reader = vtk.vtkPolyDataReader()
-    reader.SetFileName(filename)
-    reader.Update()
-    return reader.GetOutput()
-
-
 def extract_polydata_vertices(polydata):
-    return np.asarray([polydata.GetPoint(index) for index in range(polydata.GetNumberOfPoints())])
+    return torch.as_tensor([polydata.GetPoint(index) for index in range(polydata.GetNumberOfPoints())])
 
 
 def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, return_4d=True):
@@ -84,8 +76,8 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, ret
     return y
 
 
-def convert_one_hot_to_label_map(one_hot_encoding, labels, axis=3, threshold=0.5, sum_then_threshold=False,
-                                 dtype=np.int16, label_hierarchy=False):
+def convert_one_hot_to_label_map(one_hot_encoding, labels, axis=0, threshold=0.5, sum_then_threshold=False,
+                                 dtype=torch.int16, label_hierarchy=False):
     if label_hierarchy:
         return convert_one_hot_to_label_map_using_hierarchy(one_hot_encoding, labels, axis=axis, threshold=threshold,
                                                             dtype=dtype)
@@ -99,15 +91,15 @@ def convert_one_hot_to_label_map(one_hot_encoding, labels, axis=3, threshold=0.5
                 label_maps.append(convert_one_hot_to_label_map(_data, labels=_labels, axis=axis, threshold=threshold,
                                                                sum_then_threshold=sum_then_threshold, dtype=dtype))
                 i = i + len(_labels)
-            label_map = np.stack(label_maps, axis=axis)
+            label_map = torch.stack(label_maps, dim=axis)
         else:
             label_map = convert_one_hot_to_single_label_map_volume(one_hot_encoding, labels, threshold, axis,
                                                                    sum_then_threshold, dtype)
         return label_map
 
 
-def convert_one_hot_to_single_label_map_volume(one_hot_encoding, labels, threshold=0.5, axis=3,
-                                               sum_then_threshold=False, dtype=np.int16):
+def convert_one_hot_to_single_label_map_volume(one_hot_encoding, labels, threshold=0.5, axis=0,
+                                               sum_then_threshold=False, dtype=torch.int16):
     # output a single label map volume
     segmentation_mask = mask_encoding(one_hot_encoding, len(labels), threshold=threshold, axis=axis,
                                       sum_then_threshold=sum_then_threshold)
@@ -115,34 +107,34 @@ def convert_one_hot_to_single_label_map_volume(one_hot_encoding, labels, thresho
                          dtype=dtype, label_indices=np.arange(len(labels)))
 
 
-def mask_encoding(one_hot_encoding, n_labels, threshold=0.5, axis=3, sum_then_threshold=False):
+def mask_encoding(one_hot_encoding, n_labels, threshold=0.5, axis=0, sum_then_threshold=False):
     if sum_then_threshold:
-        return np.sum(one_hot_encoding[..., :n_labels], axis=axis) > threshold
+        return torch.sum(one_hot_encoding[..., :n_labels], dim=axis) > threshold
     else:
-        return np.any(one_hot_encoding[..., :n_labels] > threshold, axis=axis)
+        return torch.any(one_hot_encoding[..., :n_labels] > threshold, dim=axis)
 
 
-def assign_labels(one_hot_encoding, segmentation_mask, labels, label_indices, axis=3, dtype=np.int16):
-    max_arg_map = np.zeros(one_hot_encoding.shape[:axis], dtype=dtype)
-    label_map = np.copy(max_arg_map)
-    max_arg_map[segmentation_mask] = (np.argmax(one_hot_encoding[..., label_indices],
-                                                axis=axis) + 1)[segmentation_mask]
+def assign_labels(one_hot_encoding, segmentation_mask, labels, label_indices, axis=0, dtype=torch.int16):
+    max_arg_map = torch.zeros(one_hot_encoding.shape[:axis], dtype=dtype)
+    label_map = max_arg_map.detach().clone()
+    max_arg_map[segmentation_mask] = (torch.argmax(one_hot_encoding[..., label_indices],
+                                                   dim=axis) + 1)[segmentation_mask]
     for index, label in enumerate(labels):
         label_map[max_arg_map == (index + 1)] = label
     return label_map
 
 
-def convert_one_hot_to_label_map_using_hierarchy(one_hot_encoding, labels, threshold=0.5, axis=3, dtype=np.int16):
-    roi = np.ones(one_hot_encoding.shape[:axis], dtype=np.bool)
-    label_map = np.zeros(one_hot_encoding.shape[:axis], dtype=dtype)
+def convert_one_hot_to_label_map_using_hierarchy(one_hot_encoding, labels, threshold=0.5, axis=0, dtype=torch.int16):
+    roi = torch.ones(one_hot_encoding.shape[:axis], dtype=torch.bool)
+    label_map = torch.zeros(one_hot_encoding.shape[:axis], dtype=dtype)
     for index, label in enumerate(labels):
-        roi = np.logical_and(one_hot_encoding[..., index] > threshold, roi)
+        roi = torch.logical_and(one_hot_encoding[..., index] > threshold, roi)
         label_map[roi] = label
     return label_map
 
 
 def _wip_convert_one_hot_to_label_map_with_label_groups(one_hot_encoding, labels, label_hierarchy, threshold=0.5,
-                                                        axis=3):
+                                                        axis=0):
     """
     This might be useful when doing something like brain segmentation where you want to segment the whole brain
     and then divide up that segmentation between white and gray matter, and then divide up the white and gray matter
@@ -169,7 +161,7 @@ def _wip_convert_one_hot_to_label_map_with_label_groups(one_hot_encoding, labels
         # return reconcile_label_group_maps(label_group_maps, label_hierarchy)
 
 
-def one_hot_image_to_label_map(one_hot_image, labels, axis=3, threshold=0.5, sum_then_threshold=True, dtype=np.int16,
+def one_hot_image_to_label_map(one_hot_image, labels, axis=0, threshold=0.5, sum_then_threshold=True, dtype=torch.int16,
                                label_hierarchy=None):
     label_map = convert_one_hot_to_label_map(get_nibabel_data(one_hot_image), labels=labels, axis=axis,
                                              threshold=threshold, sum_then_threshold=sum_then_threshold,
@@ -267,8 +259,8 @@ def extract_sub_volumes(image, sub_volume_indices):
     return image.make_similar(data)
 
 
-def mask(data, threshold=0, dtype=np.float):
-    return np.asarray(data > threshold, dtype=dtype)
+def mask(data, threshold=0, dtype=torch.float):
+    return torch.as_tensor(data > threshold, dtype=dtype)
 
 
 def get_nibabel_data(nibabel_image):
@@ -280,12 +272,12 @@ def in_config(string, dictionary, if_not_in_config_return=None):
 
 
 def estimate_binary_contour(binary):
-    return np.logical_xor(binary, binary_erosion(binary, iterations=1))
+    return torch.logical_xor(binary, binary_erosion(binary, iterations=1))
 
 
 def add_one_hot_encoding_contours(one_hot_encoding):
-    new_encoding = np.zeros(one_hot_encoding.shape[:-1] + (one_hot_encoding.shape[-1] * 2,),
-                            dtype=one_hot_encoding.dtype)
+    new_encoding = torch.zeros(one_hot_encoding.shape[:-1] + (one_hot_encoding.shape[-1] * 2,),
+                               dtype=one_hot_encoding.dtype)
     new_encoding[..., :one_hot_encoding.shape[-1]] = one_hot_encoding
     for index in range(one_hot_encoding.shape[-1]):
         new_encoding[..., one_hot_encoding.shape[-1] + index] = estimate_binary_contour(
