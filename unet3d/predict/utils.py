@@ -12,7 +12,10 @@ def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
     x_filename = epoch_filenames[dataset.feature_index]
     if verbose:
         print("Reading:", x_filename)
-    subject_id = epoch_filenames[-1]
+    if len(epoch_filenames) > 2:
+        subject_id = epoch_filenames[-1]
+    else:
+        subject_id = ""
     return x_filename, subject_id
 
 
