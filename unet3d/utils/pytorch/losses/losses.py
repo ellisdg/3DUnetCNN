@@ -38,4 +38,7 @@ class DiceLoss(nn.Module):
                 fp = fp / vol
             denominator = (2 * tp + fn + fp)
 
-        return 1 - ((2 * tp + self.smooth) / (denominator.clamp(min=self.epsilon) + self.smooth)).mean()
+        return 1 - ((2 * tp + self.smooth) / (denominator + self.smooth)).mean()
+
+
+MyDiceLoss = DiceLoss  # this was the original name for this class
