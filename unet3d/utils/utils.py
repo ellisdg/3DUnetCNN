@@ -87,7 +87,7 @@ def convert_one_hot_to_label_map(one_hot_encoding, labels, axis=0, threshold=0.5
             i = 0
             label_maps = list()
             for _labels in labels:
-                _data = one_hot_encoding[..., i:i+len(_labels)]
+                _data = one_hot_encoding[i:i+len(_labels)]
                 label_maps.append(convert_one_hot_to_label_map(_data, labels=_labels, axis=axis, threshold=threshold,
                                                                sum_then_threshold=sum_then_threshold, dtype=dtype))
                 i = i + len(_labels)
@@ -130,7 +130,7 @@ def convert_one_hot_to_label_map_using_hierarchy(one_hot_encoding, labels, thres
     roi = torch.ones(one_hot_encoding.shape[:axis], dtype=torch.bool)
     label_map = torch.zeros(one_hot_encoding.shape[:axis], dtype=dtype)
     for index, label in enumerate(labels):
-        roi = torch.logical_and(one_hot_encoding[..., index] > threshold, roi)
+        roi = torch.logical_and(one_hot_encoding[index] > threshold, roi)
         label_map[roi] = label
     return label_map
 
@@ -257,7 +257,7 @@ def reorder_image(image, axcodes="RAS"):
 
 
 def extract_sub_volumes(image, sub_volume_indices):
-    data = image.dataobj[..., sub_volume_indices]
+    data = image.dataobj[sub_volume_indices]
     return image.make_similar(data)
 
 
@@ -280,10 +280,10 @@ def estimate_binary_contour(binary):
 def add_one_hot_encoding_contours(one_hot_encoding):
     new_encoding = torch.zeros(one_hot_encoding.shape[:-1] + (one_hot_encoding.shape[-1] * 2,),
                                dtype=one_hot_encoding.dtype)
-    new_encoding[..., :one_hot_encoding.shape[-1]] = one_hot_encoding
+    new_encoding[:one_hot_encoding.shape[-1]] = one_hot_encoding
     for index in range(one_hot_encoding.shape[-1]):
-        new_encoding[..., one_hot_encoding.shape[-1] + index] = estimate_binary_contour(
-            one_hot_encoding[..., index] > 0)
+        new_encoding[one_hot_encoding.shape[-1] + index] = estimate_binary_contour(
+            one_hot_encoding[index] > 0)
     return new_encoding
 
 
