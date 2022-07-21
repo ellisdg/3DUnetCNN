@@ -115,8 +115,7 @@ def mask_encoding(one_hot_encoding, n_labels, threshold=0.5, axis=0, sum_then_th
 
 
 def assign_labels(one_hot_encoding, segmentation_mask, labels, label_indices, axis=0, dtype=torch.int16):
-    labelmap_shape = list(one_hot_encoding.shape)
-    labelmap_shape.pop(axis)
+    labelmap_shape = shape_without_channels(one_hot_encoding, axis)
     max_arg_map = torch.zeros(labelmap_shape, dtype=dtype)
     label_map = max_arg_map.detach().clone()
     max_arg_map[segmentation_mask] = (torch.argmax(one_hot_encoding[label_indices],
@@ -126,9 +125,15 @@ def assign_labels(one_hot_encoding, segmentation_mask, labels, label_indices, ax
     return label_map
 
 
+def shape_without_channels(tensor, dim=0):
+    tensor_shape = list(tensor.shape)
+    tensor_shape.pop(dim)
+    return tensor_shape
+
+
 def convert_one_hot_to_label_map_using_hierarchy(one_hot_encoding, labels, threshold=0.5, axis=0, dtype=torch.int16):
-    roi = torch.ones(one_hot_encoding.shape[:axis], dtype=torch.bool)
-    label_map = torch.zeros(one_hot_encoding.shape[:axis], dtype=dtype)
+    roi = torch.ones(shape_without_channels(one_hot_encoding, axis), dtype=torch.bool)
+    label_map = torch.zeros(roi.shape, dtype=dtype)
     for index, label in enumerate(labels):
         roi = torch.logical_and(one_hot_encoding[index] > threshold, roi)
         label_map[roi] = label
