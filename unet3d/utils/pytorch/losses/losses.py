@@ -6,7 +6,7 @@ from torch import nn
 
 
 class DiceLoss(nn.Module):
-    def __init__(self, weight=None, dim=(0, 2, 3, 4), smooth=1., generalized=True):
+    def __init__(self, weight=None, dim=(0, 2, 3, 4), smooth=1., generalized=False):
         super(DiceLoss, self).__init__()
         self.weight = weight
         self.dim = dim
