@@ -248,7 +248,10 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
                 scheduler.step()
 
         # save model
-        torch.save(model.state_dict(), model_filename)
+        if n_gpus > 1:
+            torch.save(model.module.state_dict(), model_filename)
+        else:
+            torch.save(model.state_dict(), model_filename)
         if save_best and min_epoch == len(training_log) - 1:
             best_filename = model_filename.split(".")[0] + "_best.{}".format(model_filename.split(".")[-1])
             forced_copy(model_filename, best_filename)
