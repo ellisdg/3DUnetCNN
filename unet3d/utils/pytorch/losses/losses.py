@@ -23,14 +23,12 @@ class DiceLoss(nn.Module):
         if self.weight is not None:
             tp = self.weight * tp
 
-        fn = ((1 - x) * y).sum(dim=self.dim)
-        fp = (x * (1 - y)).sum(dim=self.dim)
+        denominator = (x + y).sum(dim=self.dim)
+
         if self.generalized:
             vol = y.sum(dim=self.dim) + self.smooth
             tp = tp / vol
-            fn = fn / vol
-            fp = fp / vol
-        denominator = (2 * tp + fn + fp)
+            denominator = denominator / vol
 
         return 1 - ((2 * tp + self.smooth) / (denominator + self.smooth)).mean()
 
