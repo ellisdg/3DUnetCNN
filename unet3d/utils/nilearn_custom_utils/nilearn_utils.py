@@ -42,7 +42,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
     if percentile is not None:
         passes_threshold = data > torch.as_tensor(np.percentile(data, percentile,
                                                                 axis=(np.arange(1, data.ndim))).reshape(
-            [data.shape[0] + [1 for i in range(len(data.shape) - 1)]]))  # This is terrible
+            [[data.shape[0]] + [1 for i in range(len(data.shape) - 1)]]))  # This is terrible
         # basically it thresholds per channel now, but there is a bunch of hoopla to make sure the shapes work
     else:
         infinity_norm = max(-data.min(), data.max())
