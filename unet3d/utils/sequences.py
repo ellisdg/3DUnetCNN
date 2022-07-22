@@ -44,16 +44,6 @@ class Sequence(object):
 def normalization_name_to_function(normalization_name):
     if type(normalization_name) == list:
         return partial(normalize_data_with_multiple_functions, normalization_names=normalization_name)
-    elif normalization_name == "zero_mean":
-        return zero_mean_normalize_image_data
-    elif normalization_name == "foreground_zero_mean":
-        return foreground_zero_mean_normalize_image_data
-    elif normalization_name == "zero_floor":
-        return zero_floor_normalize_image_data
-    elif normalization_name == "zero_one_window":
-        return zero_one_window
-    elif normalization_name == "mask":
-        return mask
     elif normalization_name is not None:
         try:
             return getattr(normalize, normalization_name)
@@ -127,7 +117,7 @@ def format_feature_image(feature_image, window, crop=False, cropping_kwargs=None
                          augment_scale_probability=1, additive_noise_std=None, additive_noise_probability=0,
                          flip_left_right_probability=0, augment_translation_std=None,
                          augment_translation_probability=0, augment_blur_mean=None, augment_blur_std=None,
-                         augment_blur_probability=0, flip_front_back_probability=0, reorder=False,
+                         augment_blur_probability=0, flip_front_back_probability=0, reorder=True,
                          interpolation="linear"):
     if reorder:
         feature_image = reorder_image(feature_image)
@@ -166,7 +156,7 @@ def decision(probability):
 
 class BaseSequence(Sequence):
     def __init__(self, filenames, batch_size, target_labels, window, spacing, classification='binary', shuffle=True,
-                 points_per_subject=1, flip=False, reorder=False, iterations_per_epoch=1, deformation_augmentation=None,
+                 points_per_subject=1, flip=False, reorder=True, iterations_per_epoch=1, deformation_augmentation=None,
                  base_directory=None, subject_ids=None, inputs_per_epoch=None, channel_axis=0,
                  verbose=False):
         self.deformation_augmentation = deformation_augmentation
@@ -293,7 +283,7 @@ class HCPParent(object):
 
 class HCPRegressionSequence(BaseSequence, HCPParent):
     def __init__(self, filenames, batch_size, window, spacing, metric_names, classification=None,
-                 surface_names=('CortexLeft', 'CortexRight'), normalization="zero_mean", normalization_args=None,
+                 surface_names=('CortexLeft', 'CortexRight'), normalization="zero_mean", normalization_kwargs=None,
                  **kwargs):
         super().__init__(filenames=filenames, batch_size=batch_size, target_labels=tuple(), window=window,
                          spacing=spacing, classification=classification, **kwargs)
@@ -301,8 +291,8 @@ class HCPRegressionSequence(BaseSequence, HCPParent):
         self.surface_names = surface_names
         self.normalize = normalization is not None
         self.normalization_func = normalization_name_to_function(normalization)
-        if normalization_args is not None:
-            self.normalization_kwargs = normalization_args
+        if normalization_kwargs is not None:
+            self.normalization_kwargs = normalization_kwargs
         else:
             self.normalization_kwargs = dict()
 
@@ -385,7 +375,7 @@ class ParcelBasedSequence(HCPRegressionSequence):
 
 class SubjectPredictionSequence(HCPParent, Sequence):
     def __init__(self, feature_filename, surface_filenames, surface_names, reference_metric_filename,
-                 batch_size=50, window=(64, 64, 64), flip=False, spacing=(1, 1, 1), reorder=False):
+                 batch_size=50, window=(64, 64, 64), flip=False, spacing=(1, 1, 1), reorder=True):
         super().__init__(surface_names=surface_names, window=window, flip=flip, reorder=reorder, spacing=spacing)
         self.feature_image = load_single_image(feature_filename, reorder=self.reorder)
         self.reference_metric = nib.load(reference_metric_filename)
