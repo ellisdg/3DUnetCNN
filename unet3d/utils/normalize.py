@@ -12,7 +12,7 @@ def histogram_normalize(data, **kwargs):
     return HistogramNormalize(**kwargs)(data)
 
 
-def percentile_window_data(data, floor_percentile=0.05, ceiling_percentile=0.95):
+def percentile_window(data, floor_percentile=0.05, ceiling_percentile=0.95):
     floor = torch.quantile(data.view(data.shape[0], -1), floor_percentile)
     ceiling = torch.quantile(data.view(data.shape[0], -1), ceiling_percentile)
     return torch.clamp(data, floor, ceiling)
