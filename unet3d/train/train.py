@@ -69,7 +69,7 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                                 bias=bias, n_gpus=n_gpus, **model_kwargs)
     model.train()
 
-    criterion = load_criterion(config['loss'], n_gpus=n_gpus)
+    criterion = load_criterion(config['loss'], n_gpus=n_gpus, **in_config("loss_kwargs", config, dict()))
 
     if "weights" in config and config["weights"] is not None:
         raise NotImplementedError("Custom weighted loss functions are not currently implemented")
@@ -291,9 +291,9 @@ def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
         criterion = getattr(losses, criterion_name)(**loss_kwargs)
     except AttributeError:
         try:
-            criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
-        except AttributeError:
             criterion = getattr(torch.nn, criterion_name)(**loss_kwargs)
+        except AttributeError:
+            criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
     if n_gpus > 0:
         criterion.cuda()
     return criterion
