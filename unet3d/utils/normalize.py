@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from monai.transforms.intensity.array import HistogramNormalize
 
 
@@ -12,10 +13,10 @@ def histogram_normalize(data, **kwargs):
     return HistogramNormalize(**kwargs)(data)
 
 
-def percentile_window(data, floor_percentile=0.05, ceiling_percentile=0.95):
+def percentile_window(data, floor_percentile=5, ceiling_percentile=95):
     flat = data.reshape((data.shape[0], -1))
-    floor = torch.quantile(flat, floor_percentile)
-    ceiling = torch.quantile(flat, ceiling_percentile)
+    floor = torch.as_tensor(np.percentile(flat, floor_percentile, axis=1)).view(data.shape[0], 1, 1, 1)
+    ceiling = torch.as_tensor(np.percentile(flat, ceiling_percentile, axis=1)).view(data.shape[0], 1, 1, 1)
     return torch.clamp(data, floor, ceiling)
 
 
