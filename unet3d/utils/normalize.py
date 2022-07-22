@@ -9,7 +9,7 @@ def zero_mean_normalize_image_data(data, axis=(1, 2, 3)):
 
 
 def histogram_normalize(data, **kwargs):
-    return HistogramNormalize(**kwargs)(data[None])[0]
+    return HistogramNormalize(**kwargs)(data)
 
 
 def foreground_zero_mean_normalize_image_data(data, channel_dim=0, background_value=0, tolerance=1e-5):
