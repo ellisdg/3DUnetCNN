@@ -12,6 +12,12 @@ def histogram_normalize(data, **kwargs):
     return HistogramNormalize(**kwargs)(data)
 
 
+def percentile_window_data(data, floor_percentile=0.05, ceiling_percentile=0.95):
+    floor = torch.quantile(data.view(data.shape[0], -1), floor_percentile)
+    ceiling = torch.quantile(data.view(data.shape[0], -1), ceiling_percentile)
+    return torch.clamp(data, floor, ceiling)
+
+
 def foreground_zero_mean_normalize_image_data(data, channel_dim=0, background_value=0, tolerance=1e-5):
     data = data.detach().clone()
     if data.ndim == channel_dim or data.shape[channel_dim] == 1:
