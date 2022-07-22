@@ -3,7 +3,7 @@ import numpy as np
 from monai.transforms.intensity.array import HistogramNormalize
 
 
-def zero_mean_normalize_image_data(data, axis=(1, 2, 3)):
+def zero_mean(data, axis=(1, 2, 3)):
     return torch.divide(torch.subtract(data,
                                        torch.mean(data, dim=(1, 2, 3)).reshape((data.shape[0], 1, 1, 1))),
                         torch.std(data, dim=axis).reshape((data.shape[0], 1, 1, 1)))
