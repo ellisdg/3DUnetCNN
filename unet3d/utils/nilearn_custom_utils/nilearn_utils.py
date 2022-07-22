@@ -39,6 +39,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
 
     # img = check_niimg(img)
     data = img.get_data()
+    print(data.shape)
     if percentile is not None:
         passes_threshold = data > torch.quantile(data, percentile)
     else:
