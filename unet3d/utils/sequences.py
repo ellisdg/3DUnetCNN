@@ -56,7 +56,7 @@ def normalization_name_to_function(normalization_name):
 def normalize_image_with_function(image, function, volume_indices=None, **kwargs):
     data = get_nibabel_data(image)
     if volume_indices is not None:
-        data[..., volume_indices] = function(data[..., volume_indices], **kwargs)
+        data[volume_indices] = function(data[volume_indices], **kwargs)
     else:
         data = function(data, **kwargs)
     return image.make_similar(data=data, affine=image.affine)
@@ -79,9 +79,9 @@ def normalize_data_with_multiple_functions(data, normalization_names, channels_a
         if _kwargs and "volume_indices" in _kwargs and _kwargs["volume_indices"] is not None:
             # different normalization functions for different volumes
             volume_indices = _kwargs.pop("volume_indices")
-            normalized_data[volume_indices] = func(normalized_data[volume_indices], **kwargs)
+            normalized_data[volume_indices] = func(normalized_data[volume_indices], **_kwargs)
         else:
-            normalized_data = func(normalized_data, **kwargs)
+            normalized_data = func(normalized_data, **_kwargs)
     return normalized_data
 
 
