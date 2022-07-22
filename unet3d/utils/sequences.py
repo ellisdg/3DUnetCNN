@@ -82,7 +82,7 @@ def normalize_data_with_multiple_functions(data, normalization_names, channels_a
     normalization functions.
     :return:
     """
-    normalized_data = data.detch().clone()
+    normalized_data = data.detach().clone()
     for name in normalization_names:
         func = normalization_name_to_function(name)
         _kwargs = dict(kwargs[name]) if name in kwargs else dict()
