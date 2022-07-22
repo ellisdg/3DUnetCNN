@@ -72,7 +72,7 @@ def normalize_image_with_function(image, function, volume_indices=None, **kwargs
     return image.make_similar(data=data, affine=image.affine)
 
 
-def normalize_data_with_multiple_functions(data, normalization_names, channels_axis=3, **kwargs):
+def normalize_data_with_multiple_functions(data, normalization_names, channels_axis=0, **kwargs):
     """
 
     :param data:
@@ -85,10 +85,10 @@ def normalize_data_with_multiple_functions(data, normalization_names, channels_a
     normalized_data = list()
     for name in normalization_names:
         func = normalization_name_to_function(name)
-        _kwargs = dict(kwargs[name]) if name in kwargs else None
+        _kwargs = dict(kwargs[name]) if name in kwargs else dict()
         if _kwargs and "volume_indices" in _kwargs and _kwargs["volume_indices"] is not None:
             volume_indices = _kwargs.pop("volume_indices")
-            _data = data[..., volume_indices]
+            _data = data[volume_indices]
         else:
             _data = data
         normalized_data.append(func(_data, **_kwargs))
