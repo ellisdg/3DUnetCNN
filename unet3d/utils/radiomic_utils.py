@@ -6,7 +6,7 @@ from nilearn.image import reorder_img, resample_to_img
 import nibabel as nib
 
 from .utils import update_progress, move_channels_first, move_channels_last, load_single_image
-from .normalize import zero_mean_normalize_image_data as unet3d_normalize
+from .normalize import zero_mean as unet3d_normalize
 from .resample import resample as unet3d_resample
 from .augment import permute_data, random_permutation_key
 
