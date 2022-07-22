@@ -82,17 +82,17 @@ def normalize_data_with_multiple_functions(data, normalization_names, channels_a
     normalization functions.
     :return:
     """
-    normalized_data = list()
+    normalized_data = data.detch().clone()
     for name in normalization_names:
         func = normalization_name_to_function(name)
         _kwargs = dict(kwargs[name]) if name in kwargs else dict()
         if _kwargs and "volume_indices" in _kwargs and _kwargs["volume_indices"] is not None:
+            # different normalization functions for different volumes
             volume_indices = _kwargs.pop("volume_indices")
-            _data = data[volume_indices]
+            normalized_data[volume_indices] = func(normalized_data[volume_indices], **kwargs)
         else:
-            _data = data
-        normalized_data.append(func(_data, **_kwargs))
-    return torch.cat(normalized_data, dim=channels_axis)
+            normalized_data = func(normalized_data, **kwargs)
+    return normalized_data
 
 
 def augment_affine(affine, shape, augment_scale_std=None, augment_scale_probability=1,
