@@ -69,7 +69,7 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
                                 bias=bias, n_gpus=n_gpus, **model_kwargs)
     model.train()
 
-    criterion = load_criterion(config['loss'], n_gpus=n_gpus, **in_config("loss_kwargs", config, dict()))
+    criterion = load_criterion(config['loss'], n_gpus=n_gpus, loss_kwargs=in_config("loss_kwargs", config, dict()))
 
     if "weights" in config and config["weights"] is not None:
         raise NotImplementedError("Custom weighted loss functions are not currently implemented")
