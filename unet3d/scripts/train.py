@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
 from unet3d.train import run_training
-from unet3d.utils.filenames import generate_filenames, load_bias, load_sequence
+from unet3d.utils.filenames import generate_filenames, load_sequence
 from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
@@ -32,6 +32,9 @@ def parse_args():
                              "any training files that cannot be found. Use this flag to debug the config for finding"
                              "the data.")
     add_machine_config_to_parser(parser)
+    parser.add_argument("--n_examples", type=int, default=0,
+                        help="Number of example input/output pairs to write to file for debugging purposes. "
+                             "(default = 0)")
     subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
     prediction_parser = subparsers.add_parser(name="predict",
                                               help="Run prediction after the model has finished training")
@@ -149,8 +152,8 @@ def main():
 
     run_training(config, namespace.model_filename, namespace.training_log_filename,
                  sequence_class=sequence_class,
-                 model_metrics=model_metrics,
                  metric_to_monitor=metric_to_monitor,
+                 test_input=namespace.n_examples,
                  **training_function_kwargs,
                  **system_config)
 
