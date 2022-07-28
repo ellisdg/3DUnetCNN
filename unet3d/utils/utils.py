@@ -230,7 +230,7 @@ def load_image(filename, feature_axis=0, reorder=True, dtype=None, verbose=False
         return load_single_image(filename, reorder=reorder, dtype=dtype, verbose=verbose)
 
 
-def load_single_image(filename, reorder=True, dtype=None, verbose=False):
+def load_single_image(filename, reorder=True, dtype=None, verbose=False, axcodes="RAS"):
     if verbose:
         print("Loading", filename)
     nib_image = nib.load(filename)
@@ -250,7 +250,7 @@ def load_single_image(filename, reorder=True, dtype=None, verbose=False):
     if dtype is not None:
         image.set_dtype(dtype)
     if reorder:
-        return reorder_image(image)
+        return reorder_image(image, axcodes=axcodes)
     return image
 
 
