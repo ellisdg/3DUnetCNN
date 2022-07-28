@@ -216,7 +216,7 @@ def move_channels_first(data):
     return torch.moveaxis(data, -1, 0)
 
 
-def load_image(filename, feature_axis=0, reorder=True, dtype=None, verbose=False):
+def load_image(filename, feature_axis=0, reorder=True, dtype=None, verbose=False, axcodes="RAS"):
     """
     :param feature_axis: axis along which to combine the images, if necessary.
     (for now, anything other than 0, probably won't work).
@@ -224,10 +224,10 @@ def load_image(filename, feature_axis=0, reorder=True, dtype=None, verbose=False
     :return: image containing either the 1 image in the filename or a combined image based on multiple filenames.
     """
     if type(filename) == list:
-        return combine_images([load_single_image(fn, reorder=reorder, dtype=dtype, verbose=verbose)
+        return combine_images([load_single_image(fn, reorder=reorder, dtype=dtype, verbose=verbose, axcodes=axcodes)
                                for fn in filename], axis=feature_axis)
     else:
-        return load_single_image(filename, reorder=reorder, dtype=dtype, verbose=verbose)
+        return load_single_image(filename, reorder=reorder, dtype=dtype, verbose=verbose, axcodes=axcodes)
 
 
 def load_single_image(filename, reorder=True, dtype=None, verbose=False, axcodes="RAS"):
