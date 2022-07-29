@@ -2,7 +2,7 @@
 ## [Brain Tumor Segmentation (BraTS) Tutorial](examples/brats2020)
 [![Tumor Segmentation Example](legacy/doc/tumor_segmentation_illusatration.gif)](examples/brats2020)
 ## [Automatic Cranial Implant Design (AutoImpant)](examples/autoimplant2020)
-[![ Segmentation Example](doc/AutoImplant-Viz.png)](examples/autoimplant2020)
+[![ Segmentation Example](doc/viz/AutoImplant-Viz.png)](examples/autoimplant2020)
 ## [Anatomical Barriers to Cancer Spread (ABCS)](examples/abcs2020)
 ## Background
 We designed 3DUnetCNN to make it easy to apply and control the training and application of various deep learning models to medical imaging data.

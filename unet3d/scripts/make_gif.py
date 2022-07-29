@@ -122,7 +122,7 @@ def main():
         img = concat_images(img1, img2)
         images.append(img)
 
-    images[0].save("test.gif", save_all=True, append_images=images[1:], duration=1000 / namespace.fps, loop=0)
+    images[0].save(namespace.output, save_all=True, append_images=images[1:], duration=1000 / namespace.fps, loop=0)
 
 
 if __name__ == "__main__":
