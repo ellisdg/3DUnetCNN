@@ -4,7 +4,7 @@ import nibabel as nib
 from unet3d.predict.volumetric import load_volumetric_model_and_dataset, load_images_from_dataset, \
     prediction_to_image, write_prediction_image_to_file
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id, pytorch_predict_batch
-from unet3d.utils.utils import (load_json, get_nibabel_data, break_down_volume_into_half_size_volumes, combine_half_size_volumes)
+from unet3d.utils.utils import (load_json, break_down_volume_into_half_size_volumes, combine_half_size_volumes)
 from unet3d.utils.sequences import SubjectPredictionSequence
 from unet3d.utils.pytorch.dataset import HCPSubjectDataset
 from unet3d.utils.hcp import new_cifti_scalar_like, get_metric_data
@@ -222,7 +222,7 @@ def predictions_with_permutations(model_filename, model_name, n_features, filena
         for idx in range(len(dataset)):
             x_filename, subject_id = get_feature_filename_and_subject_id(dataset, idx, verbose=verbose)
             x_image, ref_image = load_images_from_dataset(dataset, idx, resample_predictions)
-            data = get_nibabel_data(x_image)
+            data = x_image
             prediction_data = predict_with_permutations(model, data, n_outputs, batch_size, n_gpus, permutation_keys,
                                                         permutation_weights)
             pred_image = prediction_to_image(prediction_data.squeeze(),
@@ -282,7 +282,7 @@ def predict_super_resolution(model_filename, model_name, n_features, filenames, 
         for idx in range(len(dataset)):
             x_filename, subject_id = get_feature_filename_and_subject_id(dataset, idx, verbose=verbose)
             x_image, ref_image = load_images_from_dataset(dataset, idx, resample_predictions)
-            data = get_nibabel_data(x_image)
+            data = x_image
             prediction_data = predict_super_resolution_data(model, data, batch_size, n_gpus)
             pred_image = prediction_to_image(prediction_data.squeeze(),
                                              input_image=x_image,
