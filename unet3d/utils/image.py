@@ -10,7 +10,7 @@ class Image(MetaTensor):
                 affine = data.affine
             else:
                 affine = self.affine
-        return Image(x=data, affine=affine, meta=self.meta)
+        return Image(x=data, affine=affine)
 
     def to_filename(self, filename):
         import nibabel as nib
