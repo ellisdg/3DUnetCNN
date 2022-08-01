@@ -110,6 +110,9 @@ def main():
             config["sequence_kwargs"] = dict()
         config["sequence_kwargs"]["verbose"] = namespace.debug
 
+        import warnings
+        warnings.filterwarnings('error')
+
     # Override the batch size from the config file
     if namespace.batch_size:
         config["batch_size"] = namespace.batch_size
