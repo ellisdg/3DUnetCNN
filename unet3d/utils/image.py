@@ -10,6 +10,8 @@ class Image(MetaTensor):
                 affine = data.affine
             else:
                 affine = self.affine
+        if hasattr(data, "array"):
+            data = data.array
         return Image(x=data, affine=affine)
 
     def to_filename(self, filename):
