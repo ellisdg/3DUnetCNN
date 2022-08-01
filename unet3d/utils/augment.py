@@ -16,7 +16,7 @@ from .utils import copy_image
 
 
 def flip_image(image, axis):
-    new_data = image.get_data().detach().clone()
+    new_data = image.detach().clone()
     new_data = torch.flip(new_data, dims=axis)
     return image.make_similar(data=new_data)
 
@@ -72,7 +72,7 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
         distorted_image = distort_image(copied_image, flip_axis=flip_axis, scale_factor=scale_factor,
                                         translation_scale=translation_scale)
         resampled_image = resample_to_img(source_image=distorted_image, target_image=image, interpolation=interpolation)
-        data_list.append(resampled_image.get_data())
+        data_list.append(resampled_image)
     data = torch.tensor(data_list)
     if background_correction:
         data = data + background
@@ -83,7 +83,7 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
     distorted_truth = distort_image(copied_truth_image, flip_axis=flip_axis, scale_factor=scale_factor,
                                     translation_scale=translation_scale)
     resampled_truth = resample_to_img(distorted_truth, truth_image, interpolation="nearest")
-    truth_data = resampled_truth.get_data()
+    truth_data = resampled_truth
     return data, truth_data
 
 
@@ -336,7 +336,7 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
 
 def smooth_img(image, fwhm):
     sigma = torch.divide(fwhm, get_spacing_from_affine(image.affine))
-    array = GaussianSmooth(sigma=sigma)(image.get_data())
+    array = GaussianSmooth(sigma=sigma)(image)
     return image.make_similar(array)
 
 

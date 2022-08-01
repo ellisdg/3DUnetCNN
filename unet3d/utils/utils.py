@@ -170,14 +170,14 @@ def _wip_convert_one_hot_to_label_map_with_label_groups(one_hot_encoding, labels
 
 def one_hot_image_to_label_map(one_hot_image, labels, axis=0, threshold=0.5, sum_then_threshold=True, dtype=torch.int16,
                                label_hierarchy=None):
-    label_map = convert_one_hot_to_label_map(get_nibabel_data(one_hot_image), labels=labels, axis=axis,
+    label_map = convert_one_hot_to_label_map(one_hot_image, labels=labels, axis=axis,
                                              threshold=threshold, sum_then_threshold=sum_then_threshold,
                                              dtype=dtype, label_hierarchy=label_hierarchy)
     return one_hot_image.make_similar(label_map)
 
 
 def copy_image(image):
-    return image.copy()
+    return image.detach.clone()
 
 
 def update_progress(progress, bar_length=30, message=""):
@@ -200,12 +200,13 @@ def update_progress(progress, bar_length=30, message=""):
 
 
 def combine_images(images, axis=0):
-    base_image = images[0]
-    if len(images) > 1:
-        data = [image.get_data() for image in images]
-        combined_data = torch.cat(data, axis)
-        return base_image.make_similar(combined_data)
-    return base_image
+    """
+    After testing the MetaTensor from MONAI, it looks like the first affine is kept and the other affines are discarded
+    when doing torch.cat. It might be helpful to check that the affines are equal before combining them, just for
+    sanity purposes.
+    TODO: add optional affine check to make sure all the affines are the same
+    """
+    return torch.cat(images, axis)
 
 
 def move_channels_last(data):
@@ -244,34 +245,26 @@ def load_single_image(filename, reorder=True, dtype=None, verbose=False, axcodes
         data = torch.moveaxis(nib_data, -1, 0)
     else:
         data = nib_data[None]  # Set channels shape to 1
-    image = Image(data, torch.from_numpy(nib_image.affine))
+    image = Image(x=data, affine=torch.from_numpy(nib_image.affine))
     if verbose:
         print("Finished loading", filename, "Shape:", image.shape)
     if dtype is not None:
-        image.set_dtype(dtype)
+        image.to(dtype)
     if reorder:
         return reorder_image(image, axcodes=axcodes)
     return image
 
 
 def reorder_image(image, axcodes="RAS"):
-    array, _, affine = Orientation(axcodes=axcodes)(image.get_data(),
-                                                    image.affine)
-    image.update(array, affine)
-    return image
+    return Orientation(axcodes=axcodes)(image)
 
 
 def extract_sub_volumes(image, sub_volume_indices):
-    data = image.dataobj[sub_volume_indices]
-    return image.make_similar(data)
+    return image[sub_volume_indices]
 
 
 def mask(data, threshold=0, dtype=torch.float):
     return torch.as_tensor(data > threshold, dtype=dtype)
-
-
-def get_nibabel_data(nibabel_image):
-    return nibabel_image.get_fdata()
 
 
 def in_config(string, dictionary, if_not_in_config_return=None):

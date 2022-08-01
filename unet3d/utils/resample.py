@@ -11,7 +11,7 @@ def pad_image(image, pad_width=1):
     spacing = get_spacing_from_affine(affine)
     affine[:3, 3] -= spacing * pad_width
     rep_pad = ReplicationPad3d(pad_width)
-    data = rep_pad(image.get_data())
+    data = rep_pad(image)
     return image.make_similar(data, affine)
 
 
@@ -32,13 +32,9 @@ def resample_image(source_image, target_image, interpolation="linear", pad=False
 def resample(image, target_affine, target_shape, interpolation='linear', pad=False, dtype=None, align_corners=True):
     resampler = SpatialResample(mode=monai_interpolation_mode(interpolation), align_corners=align_corners)
 
-    data = image.get_data()
-
     if dtype:
-        data = data.to(dtype)
-    array, affine = resampler(img=data, src_affine=image.affine,
-                              dst_affine=target_affine, spatial_size=target_shape)
-    return image.make_similar(array, affine)
+        image = image.to(dtype)
+    return resampler(img=image, dst_affine=target_affine, spatial_size=target_shape)
 
 
 def monai_interpolation_mode(interpolation):

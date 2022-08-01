@@ -38,7 +38,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
     """
 
     # img = check_niimg(img)
-    data = img.get_data()
+    data = img
     if percentile is not None:
         threshold_shape = [data.shape[0]] + [1 for i in range(len(data.shape) - 1)]  # (C, 1, 1, 1) for 4D
         passes_threshold = data > torch.as_tensor(np.percentile(data, percentile,

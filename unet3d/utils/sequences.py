@@ -10,10 +10,10 @@ from .nilearn_custom_utils.nilearn_utils import crop_img
 from .radiomic_utils import binary_classification, multilabel_classification, fetch_data, fetch_data_for_point
 from .hcp import (extract_gifti_surface_vertices, get_vertices_from_scalar, get_metric_data,
                   extract_cifti_volumetric_data)
-from .utils import (copy_image, extract_sub_volumes, mask,
+from .utils import (copy_image, extract_sub_volumes,
                     compile_one_hot_encoding,
                     load_image, load_single_image,
-                    get_nibabel_data, add_one_hot_encoding_contours, reorder_image)
+                    add_one_hot_encoding_contours, reorder_image)
 from . import normalize
 from .resample import resample, resample_to_img
 from .augment import scale_affine, add_noise, affine_swap_axis, translate_affine, random_blur, random_permutation_x_y
@@ -52,7 +52,7 @@ def normalization_name_to_function(normalization_name):
 
 
 def normalize_image_with_function(image, function, volume_indices=None, **kwargs):
-    data = get_nibabel_data(image)
+    data = image.detach().clone()
     if volume_indices is not None:
         data[volume_indices] = function(data[volume_indices], **kwargs)
     else:
@@ -101,13 +101,10 @@ def augment_affine(affine, shape, augment_scale_std=None, augment_scale_probabil
 
 def augment_image(image, augment_blur_mean=None, augment_blur_std=None, augment_blur_probability=1,
                   additive_noise_std=None, additive_noise_probability=1):
-    augment1 = image.dataobj.mean()
     if not (augment_blur_mean is None or augment_blur_std is None) and decision(augment_blur_probability):
         image = random_blur(image, mean=augment_blur_mean, std=augment_blur_std)
-    augment2 = image.dataobj.mean()
     if additive_noise_std and decision(additive_noise_probability):
-        image.dataobj = add_noise(image.dataobj, sigma_factor=additive_noise_std)
-    augment3 = image.dataobj.mean()
+        image = add_noise(image, sigma_factor=additive_noise_std)
     return image
 
 
@@ -470,7 +467,7 @@ class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
                                                      reorder=self.reorder,
                                                      interpolation=self.interpolation)
         input_img = resample(feature_image, affine, self.window, interpolation=self.interpolation)
-        return get_nibabel_data(self.normalize_image(input_img))
+        return self.normalize_image(input_img)
 
 
 class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
@@ -510,7 +507,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
 
     def resample_input(self, input_filenames):
         input_image, target_image = self.resample_image(input_filenames)
-        x, y = get_nibabel_data(input_image), get_nibabel_data(target_image)
+        x, y = input_image, target_image
         return self.permute_inputs(x, y)
 
     def permute_inputs(self, x, y):
@@ -606,7 +603,7 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
 
     def resample_input(self, input_filenames):
         input_image, target_image = self.resample_image(input_filenames)
-        target_data = get_nibabel_data(target_image)
+        target_data = target_image
         assert len(target_data.shape) == 4
         if target_data.shape[0] == 1:
             # only a single channel exists
@@ -634,7 +631,7 @@ class WholeVolumeSegmentationSequence(WholeVolumeAutoEncoderSequence):
             target_data = torch.cat(_target_data, dim=self.channel_axis)
         if self.add_contours:
             target_data = add_one_hot_encoding_contours(target_data)
-        return self.permute_inputs(get_nibabel_data(input_image), target_data)
+        return self.permute_inputs(input_image, target_data)
 
 
 class WindowedAutoEncoderSequence(HCPRegressionSequence):
@@ -678,7 +675,7 @@ class WholeVolumeSupervisedRegressionSequence(WholeVolumeAutoEncoderSequence):
     def load_target_image(self, feature_image, input_filenames, resample=False):
         target_image = super().load_target_image(feature_image, input_filenames)
         if self.normalize_target:
-            image_data = self.target_normalization_func(target_image.get_fdata())
+            image_data = self.target_normalization_func(target_image)
             return feature_image.make_similar(data=image_data,
                                               affine=target_image.header.affine)
         else:
