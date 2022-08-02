@@ -1,8 +1,8 @@
 Normalization options:
-* zero_mean_normalize_image_data
+* zero_mean
     z score normalization where the mean is divided by the standard deviation.
 * foreground_zero_mean_normalize_image_data
-    Same as zero_mean_normalize_image_data except the foreground is masked and normalized while the background remains
+    Same as zero_mean except the foreground is masked and normalized while the background remains
     the same.
 * zero_floor_normalize_image_data
 * zero_one_window
