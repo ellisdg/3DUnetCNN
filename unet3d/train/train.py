@@ -21,11 +21,11 @@ def build_optimizer(optimizer_name, model_parameters, learning_rate=1e-4):
     return getattr(torch.optim, optimizer_name)(model_parameters, lr=learning_rate)
 
 
-def run_pytorch_training(config, model_filename, training_log_filename, verbose=1, use_multiprocessing=False,
-                         n_workers=1, max_queue_size=5, model_name='resnet_34', n_gpus=1,
-                         sequence_class=WholeBrainCIFTI2DenseScalarDataset, directory=None, test_input=1,
-                         metric_to_monitor="loss", model_metrics=(), bias=None, pin_memory=False, amp=False,
-                         prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None, samples_per_epoch=None):
+def run_training(config, model_filename, training_log_filename,
+                 n_workers=1, model_name='resnet_34', n_gpus=1,
+                 sequence_class=WholeBrainCIFTI2DenseScalarDataset, directory=None, test_input=1,
+                 metric_to_monitor="loss", pin_memory=False, amp=False,
+                 prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None, samples_per_epoch=None):
     """
     :param test_input: integer with the number of inputs from the generator to write to file. 0, False, or None will
     write no inputs to file.
@@ -51,28 +51,15 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
     if 'model_name' in config:
         model_name = config['model_name']
 
-    if "n_outputs" in config:
-        n_outputs = config['n_outputs']
-    else:
-        n_outputs = len(np.concatenate(config['metric_names']))
-
     if "model_kwargs" in config:
         model_kwargs = config["model_kwargs"]
-        if "input_shape" not in config["model_kwargs"]:
-            # assume that the model will take in the whole image window
-            config["model_kwargs"]["input_shape"] = window
     else:
         model_kwargs = dict()
 
-    model = build_or_load_model(model_name, model_filename, n_features=config["n_features"], n_outputs=n_outputs,
-                                freeze_bias=in_config("freeze_bias", config, False),
-                                bias=bias, n_gpus=n_gpus, **model_kwargs)
+    model = build_or_load_model(model_name, model_filename, n_gpus=n_gpus, **model_kwargs)
     model.train()
 
     criterion = load_criterion(config['loss'], n_gpus=n_gpus, loss_kwargs=in_config("loss_kwargs", config, dict()))
-
-    if "weights" in config and config["weights"] is not None:
-        raise NotImplementedError("Custom weighted loss functions are not currently implemented")
 
     optimizer_kwargs = dict()
     if "initial_learning_rate" in config:
@@ -94,15 +81,9 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
 
     # 4. Create datasets
     training_dataset = sequence_class(filenames=config['training_filenames'],
-                                      flip=in_config('flip', config, False),
-                                      reorder=config['reorder'],
                                       window=window,
                                       spacing=spacing,
-                                      points_per_subject=in_config('points_per_subject', config, 1),
-                                      surface_names=in_config('surface_names', config, None),
-                                      metric_names=in_config('metric_names', config, None),
                                       base_directory=directory,
-                                      iterations_per_epoch=in_config("iterations_per_epoch", config, 1),
                                       **in_config("additional_training_args", config, dict()),
                                       **sequence_kwargs)
 
@@ -134,12 +115,8 @@ def run_pytorch_training(config, model_filename, training_log_filename, verbose=
     else:
         validation_dataset = sequence_class(filenames=config['validation_filenames'],
                                             flip=False,
-                                            reorder=config['reorder'],
                                             window=window,
                                             spacing=spacing,
-                                            points_per_subject=in_config('validation_points_per_subject', config, 1),
-                                            surface_names=in_config('surface_names', config, None),
-                                            metric_names=in_config('metric_names', config, None),
                                             **sequence_kwargs,
                                             **in_config("additional_validation_args", config, dict()))
         validation_loader = DataLoader(validation_dataset,
