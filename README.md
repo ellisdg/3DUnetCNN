@@ -46,8 +46,7 @@ manage dependcies and avoid conflicts with existing packages.
 2. Add the ```training_filenames``` and ```validation_filenames``` for your dataset to the configuration file.
 <br /><br />
 Example:<br />
-```"training_filenames": [[["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"], "sub01/labelmap.nii.gz"], ...]```
-<br />
+```"training_filenames": [[["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"], "sub01/labelmap.nii.gz"], ...]``` <br />
 Where ```["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"]``` is the set of input filenames for single subject, 
 ```"sub01/labelmap.nii.gz"``` is the labelmap filename for that subject. This should be repeated for all the subjects in the dataset.
 It is probably easiest to add these filenames using a Python script.<br /><br />
