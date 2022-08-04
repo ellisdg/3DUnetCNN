@@ -32,18 +32,25 @@ How to train a UNet on your own data.
 
 ### Installation <a name="installation"></a>
 1. Clone the repository:<br />
-`git clone https://github.com/ellisdg/3DUnetCNN.git`
+```git clone https://github.com/ellisdg/3DUnetCNN.git``` <br /><br />
 
 2. Install the required dependencies<sup>*</sup>:<br />
-`pip install -r 3DUnetCNN/requirements.txt`
+```pip install -r 3DUnetCNN/requirements.txt``` 
 
 <sup>*</sup>It is highly recommended that an Anaconda environment or a virtual environment is used to 
 manage dependcies and avoid conflicts with existing packages.
 
 ### Setup the configuration file <a name="configuration"></a>
 1. Copy the default configuration file: <br />
-```cp ...```
-2. Add ```training_filenames``` and ```validation_filenames``` to the configuration file.
+```cp examples/default_config.json <your-default_config>.json```<br /><br />
+2. Add the ```training_filenames``` and ```validation_filenames``` for your dataset to the configuration file.
+<br /><br />
+Example:<br />
+```"training_filenames": [[["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"], "sub01/labelmap.nii.gz"], ...]```
+<br />
+Where ```["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"]``` is the set of input filenames for single subject, 
+```"sub01/labelmap.nii.gz"``` is the labelmap filename for that subject. This should be repeated for all the subjects in the dataset.
+It is probably easiest to add these filenames using a Python script.<br /><br />
 3. (optional) Change model and training configuration settings as desired. (see [Configuration File Guide](doc/Configuration.md))
 
 ### Train the model <a name="training"></a>
@@ -59,7 +66,6 @@ Run model inference on the ```validation_filenames```:<br />
 
 ## Documentation <a name="documentation"></a>
 * [Configuration Guide](doc/Configuration.md)
-* [Common Errors](doc/CommonErrors.md)
 * [Frequently Asked Questions](doc/FAQ.md)
 
 ### Still have questions? <a name="questions"></a>

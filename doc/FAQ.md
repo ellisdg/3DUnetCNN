@@ -1,2 +1,22 @@
-# How do I fix "ValueError: num_samples should be a positive integer value, but got num_samples=0"?
-This error comes up when the script can't find the data to train on. It usually can be fixed by modifying the "generate_filenames_kwargs" part of the config file. Otherwise, it is possible that you haven't downloaded the data yet.
+
+
+
+## How can I make gif visualizations like those shown in the README?
+You can use the [make_gif.py](../unet3d/scripts/make_gif.py) to make your own gif visualizations.
+
+## How do I fix "ValueError: num_samples should be a positive integer value, but got num_samples=0"?
+This error comes up when the script can't find the data to train on. 
+Check that the ```training_filenames``` and ```validation_filenames``` in the configuration file are valid.
+
+## How much GPU memory do I need?
+It is recommended to have at least 11GB of GPU memory.
+See [GPU Memory and Input Size](./Configuration.md#gpu) for instructions on how to
+adjust the input image size to use less memory.
+
+## Do I need to use a GPU?
+You can run model inference without a GPU, but model training will take far too long without a GPU.
+
+
+
+
+

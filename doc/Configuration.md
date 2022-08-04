@@ -11,8 +11,7 @@
 The configuration file determines the model architecture and how it will be trained.
 This is helpful for running multiple experiments as it provides documentation for
 each configuration you have experimented with. A configuration file should produce
-close to the same results each time it is used for training, with the exception that 
-batch size may change based on the number of GPUs being used.
+similar results each time it is used for training.
 
 ## Configuration Example <a name="example"></a>
 ```
