@@ -42,23 +42,33 @@ manage dependcies and avoid conflicts with existing packages.
 
 ### Setup the configuration file <a name="configuration"></a>
 1. Copy the default configuration file: <br />
-```cp examples/default_config.json <your-default_config>.json```<br /><br />
+```cp examples/default_config.json <your_config>.json```<br /><br />
 2. Add the ```training_filenames``` and ```validation_filenames``` for your dataset to the configuration file.
 <br /><br />
 Example:<br />
 ```"training_filenames": [[["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"], "sub01/labelmap.nii.gz"], ...]``` <br />
-Where ```["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"]``` is the set of input filenames for single subject, 
-```"sub01/labelmap.nii.gz"``` is the labelmap filename for that subject. This should be repeated for all the subjects in the dataset.
-It is probably easiest to add these filenames using a Python script.<br /><br />
+* ```["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"]``` is the set of input filenames for a single subject.
+* ```"sub01/labelmap.nii.gz"``` is the labelmap filename for that same subject.
+* This should be repeated for all the subjects in the dataset.
+  (It is probably easiest to add these filenames using a Python script.)
 3. (optional) Change model and training configuration settings as desired. (see [Configuration File Guide](doc/Configuration.md))
 
 ### Train the model <a name="training"></a>
 Run the model training:<br />
-```3DUnetCNN/scripts/train.py ...```
+```3DUnetCNN/scripts/train.py --configuration_filename <your_config>.json --model_filename <your_model>.pth --training_log_filename <your_training>.txt``` <br />
+* ```<your_config>.json``` should be set to the configuration file you created above.
+* ```<your_model>.pth``` is the filename where the training will save the model file.
+* ```<your_training>.txt``` is the filename where the training will save the training and validation losses for each epoch.
+* (optional) set ```--ngpus``` and ```--nthreads``` to the number of gpus and threads available. (default is ngpus=1, nthreads=8)
 
 ### Predict Validation Cases <a name="inference"></a>
 Run model inference on the ```validation_filenames```:<br />
-```3DUnetCNN/scripts/predict.py ...```
+```3DUnetCNN/scripts/predict.py --configuration_filename <your_config>.json --model_filename <your_model>.pth --output_directory <your_predictions_folder>```
+* ```<your_config>.json``` should be changed to the same configuration used in training.
+* ```<your_model>.pth``` should be changed to the model filename specified during training.
+* ```<your_prediction_folder>``` should be changed to the folder where you want the predictions to be saved.
+* (optional) setting ```--group test``` will tell the script to look for ```test_filenames``` in the configuration file
+ instead of ```validation_filenames```.
 
 ### Evaluate Results <a name="evaluation"></a>
 ```3DUnetCNN/scripts/evaluate.py ...```
