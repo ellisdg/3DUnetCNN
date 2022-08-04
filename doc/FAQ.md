@@ -15,7 +15,7 @@ Check that the ```training_filenames``` and ```validation_filenames``` in the co
 
 ## How much GPU memory do I need?
 It is recommended to have at least 11GB of GPU memory.
-See [GPU Memory and Input Size](./Configuration.md#gpu) for instructions on how to
+See GPU Memory and Input Size section of the [Configuration File Guide](./Configuration.md) for instructions on how to
 adjust the input image size to use less memory.
 
 ## Do I need to use a GPU?
