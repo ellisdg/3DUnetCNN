@@ -52,7 +52,7 @@ def normalization_name_to_function(normalization_name):
 
 
 def normalize_image_with_function(image, function, volume_indices=None, **kwargs):
-    data = image.detach().clone()
+    data = image.detach().clone().to(float)
     if volume_indices is not None:
         data[volume_indices] = function(data[volume_indices], **kwargs)
     else:
