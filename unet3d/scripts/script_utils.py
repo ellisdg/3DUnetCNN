@@ -26,6 +26,5 @@ def get_machine_config(namespace):
     else:
         return {"n_workers": namespace.nthreads,
                 "n_gpus": namespace.ngpus,
-                "use_multiprocessing": namespace.nthreads > 1,
                 "pin_memory": namespace.pin_memory,
                 "directory": namespace.directory}
