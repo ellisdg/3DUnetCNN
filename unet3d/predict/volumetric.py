@@ -26,14 +26,13 @@ def load_volumetric_sequence(sequence, sequence_kwargs, filenames, window, spaci
     return dataset
 
 
-def load_volumetric_model_and_dataset(model_name, model_filename, model_kwargs, n_outputs, n_features,
+def load_volumetric_model_and_dataset(model_name, model_filename, model_kwargs,
                                       strict_model_loading, n_gpus, sequence, sequence_kwargs, filenames, window,
                                       spacing, metric_names):
     if model_kwargs is None:
         model_kwargs = dict()
 
-    model = load_volumetric_model(model_name=model_name, model_filename=model_filename, n_outputs=n_outputs,
-                                  n_features=n_features, strict=strict_model_loading, n_gpus=n_gpus, **model_kwargs)
+    model = load_volumetric_model(model_name=model_name, model_filename=model_filename, strict=strict_model_loading, n_gpus=n_gpus, **model_kwargs)
     dataset = load_volumetric_sequence(sequence, sequence_kwargs, filenames, window, spacing, metric_names,
                                        batch_size=1)
     basename = os.path.basename(model_filename).split(".")[0]
@@ -109,9 +108,9 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                                            verbose=verbose)
 
 
-def volumetric_predictions(model_filename, model_name, n_features, filenames, window,
+def volumetric_predictions(model_filename, model_name, filenames, window,
                            criterion_name, prediction_dir=None, output_csv=None, reference=None,
-                           n_gpus=1, n_workers=1, batch_size=1, model_kwargs=None, n_outputs=None,
+                           n_gpus=1, n_workers=1, batch_size=1, model_kwargs=None,
                            sequence_kwargs=None, spacing=None, sequence=None,
                            strict_model_loading=True, metric_names=None,
                            print_prediction_time=True, verbose=True,
@@ -122,8 +121,8 @@ def volumetric_predictions(model_filename, model_name, n_features, filenames, wi
     import torch
     # from .train.pytorch import load_criterion
 
-    model, dataset, basename = load_volumetric_model_and_dataset(model_name, model_filename, model_kwargs, n_outputs,
-                                                                 n_features, strict_model_loading, n_gpus, sequence,
+    model, dataset, basename = load_volumetric_model_and_dataset(model_name, model_filename, model_kwargs,
+                                                                 strict_model_loading, n_gpus, sequence,
                                                                  sequence_kwargs, filenames, window, spacing,
                                                                  metric_names)
 
