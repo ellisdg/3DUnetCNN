@@ -1,2 +1,3 @@
+from monai.networks.nets import *
 from .classification.resnet import *
-from .build import fetch_model_by_name
+from .classification.custom import *

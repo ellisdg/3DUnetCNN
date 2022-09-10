@@ -10,7 +10,7 @@ import torch.nn
 
 import monai.losses
 
-from ..models.pytorch.build import build_or_load_model
+from unet3d.models.build import build_or_load_model
 from ..utils.pytorch import WholeBrainCIFTI2DenseScalarDataset
 from .training_utils import epoch_training, epoch_validatation, collate_flatten, collate_5d_flatten
 from ..utils.pytorch import losses

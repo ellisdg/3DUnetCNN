@@ -7,7 +7,7 @@ from unet3d.utils.utils import one_hot_image_to_label_map
 
 
 def load_volumetric_model(model_name, model_filename, n_outputs, n_features, n_gpus, strict, **kwargs):
-    from unet3d.models.pytorch.build import build_or_load_model
+    from unet3d.models.build import build_or_load_model
     model = build_or_load_model(model_name=model_name, model_filename=model_filename, n_outputs=n_outputs,
                                 n_features=n_features, n_gpus=n_gpus, strict=strict, **kwargs)
     model.eval()

@@ -90,7 +90,7 @@ def make_predictions(config_filename, model_filename, output_directory='./', n_s
         batch_size = config["batch_size"]
 
     if single_subject is None:
-        from unet3d.models.pytorch.build import build_or_load_model
+        from unet3d.models.build import build_or_load_model
 
         model = build_or_load_model(model_filename=model_filename, model_name=config["model_name"],
                                     n_features=config["n_features"], n_outputs=config["n_outputs"],
@@ -106,7 +106,7 @@ def make_predictions(config_filename, model_filename, output_directory='./', n_s
     for feature_filename, surface_filenames, metric_filenames, subject_id in filenames:
         if single_subject is None or subject_id == single_subject:
             if model is None:
-                from unet3d.models.pytorch.build import build_or_load_model
+                from unet3d.models.build import build_or_load_model
 
                 model = build_or_load_model(model_filename=model_filename, model_name=config["model_name"],
                                             n_features=config["n_features"], n_outputs=config["n_outputs"],
