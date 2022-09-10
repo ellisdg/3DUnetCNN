@@ -13,13 +13,8 @@ def fetch_model_by_name(model_name, *args, **kwargs):
         raise ValueError("model name {} not supported".format(model_name))
 
 
-def build_or_load_model(model_name, model_filename, n_features, n_outputs, n_gpus=0, bias=None, freeze_bias=False,
-                        strict=False, **kwargs):
-    model = fetch_model_by_name(model_name, n_features=n_features, n_outputs=n_outputs, **kwargs)
-    if bias is not None:
-        model.fc.bias = torch.nn.Parameter(torch.from_numpy(bias))
-    if freeze_bias:
-        model.fc.bias.requires_grad_(False)
+def build_or_load_model(model_name, model_filename, n_gpus=0, strict=False, **kwargs):
+    model = fetch_model_by_name(model_name, **kwargs)
     if n_gpus > 1:
         model = model.cuda()
         model = torch.nn.DataParallel(model).cuda()
