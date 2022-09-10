@@ -64,8 +64,12 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         else:
             return img
 
-    start = coords.min(dim=1).values
-    end = coords.max(dim=1).values + 1
+    values_min, indices_min = torch.min(coords, dim=1)
+    start = values_min
+
+    values_max, indices_max = torch.max(coords, dim=1)
+    end = values_max + 1
+
     if int(pad) > 0:
         pad_width = int(pad)
         # pad with one voxel to avoid resampling problems
