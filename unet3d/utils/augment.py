@@ -247,7 +247,7 @@ def _rotate_affine(affine, shape, rotation):
     """
     assert_affine_is_diagonal(affine)
     # center the image on (0, 0, 0)
-    temp_origin = (affine.diagonal()[:3] * torch.asarray(shape)) / 2
+    temp_origin = (affine.diagonal()[:3] * torch.tensor(shape)) / 2
     temp_affine = affine.detach().clone()
     temp_affine[:, :3] = temp_origin
 
@@ -292,7 +292,7 @@ def scale_affine(affine, shape, scale, ndim=3):
     if not isinstance(scale, Iterable):
         scale = torch.ones(ndim) * scale
     else:
-        scale = torch.asarray(scale)
+        scale = torch.tensor(scale)
 
     # 1. find the image center
     center = find_center(affine, shape, ndim=ndim)
