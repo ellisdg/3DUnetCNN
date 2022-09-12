@@ -124,7 +124,7 @@ def run_with_background_correction(func, image, background=None, returns_array=F
 
 
 def get_background_values(data, axis=(-3, -2, -1)):
-    background = data.min(axis=axis)
+    background, _ = data.min(axis=axis)
     if isinstance(background, np.ndarray):
         while len(background.shape) < len(data.shape):
             background = background[..., None]
