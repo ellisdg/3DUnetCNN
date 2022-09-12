@@ -54,6 +54,7 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, ret
     :param dtype: output type of the array
     :return: binary numpy array of shape: (n_samples, n_labels, ...)
     """
+    print(data.shape, n_labels, labels)
     while len(data.shape) < 5:
         data = data[None]
     assert data.shape[1] == 1
