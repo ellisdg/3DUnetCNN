@@ -95,6 +95,7 @@ def batch_loss(model, images, target, criterion, n_gpus=0, use_amp=None):
 def _batch_loss(model, images, target, criterion):
     output = model(images)
     batch_size = images.size(0)
+    print(batch_size, output.shape, target.shape)
     loss = criterion(output, target)
     return loss, batch_size
 

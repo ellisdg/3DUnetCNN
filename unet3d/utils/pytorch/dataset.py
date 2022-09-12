@@ -79,8 +79,9 @@ class WholeVolumeSegmentationDataset(WholeVolumeSegmentationSequence, Dataset):
         return len(self.epoch_filenames)
 
     def __getitem__(self, idx):
-        item = self.epoch_filenames[idx]
-        x, y = self.resample_input(item)
+        with torch.no_grad():
+            item = self.epoch_filenames[idx]
+            x, y = self.resample_input(item)
         return x.float(), y.float()
 
 
