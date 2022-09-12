@@ -496,14 +496,15 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         self.random_permutation_probability = random_permutation_probability
 
     def __getitem__(self, idx):
-        x_batch = list()
-        y_batch = list()
-        batch_filenames = self.epoch_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
-        for item in batch_filenames:
-            x, y = self.resample_input(item)
-            x_batch.append(x)
-            y_batch.append(y)
-        return torch.as_tensor(x_batch), torch.as_tensor(y_batch)
+        with torch.no_grad():
+            x_batch = list()
+            y_batch = list()
+            batch_filenames = self.epoch_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
+            for item in batch_filenames:
+                x, y = self.resample_input(item)
+                x_batch.append(x)
+                y_batch.append(y)
+            return torch.as_tensor(x_batch), torch.as_tensor(y_batch)
 
     def resample_input(self, input_filenames):
         input_image, target_image = self.resample_image(input_filenames)

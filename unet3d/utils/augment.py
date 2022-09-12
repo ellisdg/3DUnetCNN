@@ -347,9 +347,8 @@ def random_blur(image, mean, std):
 
 
 def affine_swap_axis(affine, shape, axis=0):
-    assert_affine_is_diagonal(affine)
-    new_affine = affine.detach().clone()
-    origin = affine[axis, 3]
-    new_affine[axis, 3] = origin + shape[axis] * affine[axis, axis]
-    new_affine[axis, axis] = -affine[axis, axis]
-    return new_affine
+    """FROM MONAI FLIP"""
+    mat = torch.as_tensor(torch.eye(len(affine)), dtype=affine.dtype)
+    sp = axis - 1
+    mat[sp, sp], mat[sp, -1] = mat[sp, sp] * -1, shape[axis] - 1
+    return affine @ mat
