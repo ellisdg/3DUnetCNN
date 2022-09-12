@@ -46,7 +46,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
                                                                                 data.ndim))).reshape(threshold_shape))
         # basically it thresholds per channel now, but there is a bunch of hoopla to make sure the shapes work
     else:
-        infinity_norm = max(-data.min(), data.max())
+        infinity_norm = max(-data.min()[0], data.max()[0])
         passes_threshold = torch.logical_or(data < -rtol * infinity_norm,
                                             data > rtol * infinity_norm)
 
