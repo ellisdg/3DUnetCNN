@@ -291,8 +291,6 @@ def scale_affine(affine, shape, scale, ndim=3):
     """
     if not isinstance(scale, Iterable):
         scale = torch.ones(ndim) * scale
-    else:
-        scale = torch.tensor(scale)
 
     # 1. find the image center
     center = find_center(affine, shape, ndim=ndim)
