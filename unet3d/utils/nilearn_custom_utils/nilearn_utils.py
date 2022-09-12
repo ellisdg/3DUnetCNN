@@ -46,7 +46,7 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
                                                                                 data.ndim))).reshape(threshold_shape))
         # basically it thresholds per channel now, but there is a bunch of hoopla to make sure the shapes work
     else:
-        infinity_norm = max(-data.min()[0], data.max()[0])
+        infinity_norm = max(-data.min(), data.max())
         passes_threshold = torch.logical_or(data < -rtol * infinity_norm,
                                             data > rtol * infinity_norm)
 
@@ -124,7 +124,7 @@ def run_with_background_correction(func, image, background=None, returns_array=F
 
 
 def get_background_values(data, axis=(-3, -2, -1)):
-    background, _ = data.min(axis=axis)
+    background, _ = data.min(dim=axis)
     if isinstance(background, np.ndarray):
         while len(background.shape) < len(data.shape):
             background = background[..., None]
