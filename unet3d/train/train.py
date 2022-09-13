@@ -230,19 +230,19 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         else:
             torch.save(model.state_dict(), model_filename)
         if save_best and min_epoch == len(training_log) - 1:
-            best_filename = model_filename.split(".")[0] + "_best.{}".format(model_filename.split(".")[-1])
+            best_filename = model_filename.split(".")[0] + "_best.pth"
             forced_copy(model_filename, best_filename)
 
         if save_every_n_epochs and (epoch % save_every_n_epochs) == 0:
-            epoch_filename = model_filename.split(".")[0] + "_{}.{}".format(epoch, model_filename.split(".")[-1])
+            epoch_filename = model_filename.split(".")[0] + "_{}.pth".format(epoch)
             forced_copy(model_filename, epoch_filename)
 
         if save_last_n_models is not None and save_last_n_models > 1:
             if not save_every_n_epochs or not ((epoch - save_last_n_models) % save_every_n_epochs) == 0:
                 to_delete = model_filename.split(
-                    ".")[0] + "_{}.{}".format(epoch - save_last_n_models, model_filename.split(".")[-1])
+                    ".")[0] + "_{}.pth".format(epoch - save_last_n_models)
                 remove_file(to_delete)
-            epoch_filename = model_filename.split(".")[0] + "_{}.{}".format(epoch, model_filename.split(".")[-1])
+            epoch_filename = model_filename.split(".")[0] + "_{}.pth".format(epoch)
             forced_copy(model_filename, epoch_filename)
 
 
