@@ -11,7 +11,7 @@ import torch.nn
 import monai.losses
 
 from unet3d.models.build import build_or_load_model
-from ..utils.pytorch import WholeBrainCIFTI2DenseScalarDataset
+from ..utils.pytorch.dataset import WholeVolumeSegmentationDataset
 from .training_utils import epoch_training, epoch_validatation, collate_flatten, collate_5d_flatten
 from ..utils.pytorch import losses
 from ..utils.utils import in_config
@@ -21,12 +21,19 @@ def build_optimizer(optimizer_name, model_parameters, learning_rate=1e-4):
     return getattr(torch.optim, optimizer_name)(model_parameters, lr=learning_rate)
 
 
-def run_training(config, model_filename, training_log_filename,
-                 n_workers=1, model_name='resnet_34', n_gpus=1,
-                 sequence_class=WholeBrainCIFTI2DenseScalarDataset, directory=None, test_input=1,
-                 metric_to_monitor="loss", pin_memory=False, amp=False,
-                 prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None, samples_per_epoch=None):
+def start_training(config, model_filename, training_log_filename,
+                   n_workers=1, n_gpus=1,
+                   sequence_class=WholeVolumeSegmentationDataset, directory=None, test_input=1,
+                   metric_to_monitor="loss", pin_memory=False, amp=False, n_epochs=1000,
+                   prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None, samples_per_epoch=None,
+                   save_best=False, early_stopping_patience=None, save_every_n_epochs=None, save_last_n_models=None):
     """
+    TODO: move model loading outside of this function
+
+    This function instantiates the training and validation datasets and then runs the training.
+    Ultimately, I would like to simplify the functions such that each one has a unique job, such as: read the config,
+    instantiate and then return the datasets, build or load the model, and finally run the training.
+
     :param test_input: integer with the number of inputs from the generator to write to file. 0, False, or None will
     write no inputs to file.
     :param sequence_class: class to use for the generator sequence
@@ -50,6 +57,8 @@ def run_training(config, model_filename, training_log_filename,
     spacing = np.asarray(config['spacing']) if 'spacing' in config else None
     if 'model_name' in config:
         model_name = config['model_name']
+    else:
+        model_name = "UNet"
 
     if "model_kwargs" in config:
         model_kwargs = config["model_kwargs"]
@@ -128,15 +137,15 @@ def run_training(config, model_filename, training_log_filename,
                                        pin_memory=pin_memory,
                                        prefetch_factor=prefetch_factor)
 
-    train(model=model, optimizer=optimizer, criterion=criterion, n_epochs=config["n_epochs"],
+    train(model=model, optimizer=optimizer, criterion=criterion, n_epochs=n_epochs,
           training_loader=training_loader, validation_loader=validation_loader, model_filename=model_filename,
           training_log_filename=training_log_filename,
           metric_to_monitor=metric_to_monitor,
-          early_stopping_patience=in_config("early_stopping_patience", config),
-          save_best=in_config("save_best", config, False),
+          early_stopping_patience=early_stopping_patience,
+          save_best=save_best,
           n_gpus=n_gpus,
-          save_every_n_epochs=in_config("save_every_n_epochs", config),
-          save_last_n_models=in_config("save_last_n_models", config),
+          save_every_n_epochs=save_every_n_epochs,
+          save_last_n_models=save_last_n_models,
           amp=amp,
           scheduler_name=scheduler_name,
           scheduler_kwargs=scheduler_kwargs,

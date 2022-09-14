@@ -1,7 +1,7 @@
 import argparse
 import os
 import numpy as np
-from unet3d.train import run_training
+from unet3d.train import start_training
 from unet3d.utils.filenames import generate_filenames, load_sequence
 from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.scripts.predict import format_parser as format_prediction_args
@@ -154,14 +154,14 @@ def main():
     if in_config("add_contours", config["sequence_kwargs"], False):
         config["n_outputs"] = config["n_outputs"] * 2
 
-    run_training(config,
-                 os.path.abspath(namespace.model_filename),
-                 os.path.abspath(namespace.training_log_filename),
-                 sequence_class=sequence_class,
-                 metric_to_monitor=metric_to_monitor,
-                 test_input=namespace.n_examples,
-                 **training_function_kwargs,
-                 **system_config)
+    start_training(config,
+                   os.path.abspath(namespace.model_filename),
+                   os.path.abspath(namespace.training_log_filename),
+                   sequence_class=sequence_class,
+                   metric_to_monitor=metric_to_monitor,
+                   test_input=namespace.n_examples,
+                   **training_function_kwargs,
+                   **system_config)
 
     if namespace.sub_command == "predict":
         run_inference(namespace)
