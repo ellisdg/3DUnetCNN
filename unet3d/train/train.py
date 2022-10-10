@@ -264,10 +264,10 @@ def remove_file(filename):
         os.remove(filename)
 
 
-def append_to_filename(filename, what_to_append, seperator="_"):
+def append_to_filename(filename, what_to_append):
     dirname, basename = os.path.split(filename)
     basename_no_extension, extension = basename.split(".")
-    return os.path.join(dirname, "{}.{}".format(seperator.join([basename_no_extension, what_to_append]), extension))
+    return os.path.join(dirname, "{}_{}.{}".format(basename_no_extension, what_to_append, extension))
 
 
 def get_lr(optimizer):
