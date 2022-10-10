@@ -239,19 +239,18 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         else:
             torch.save(model.state_dict(), model_filename)
         if save_best and min_epoch == len(training_log) - 1:
-            best_filename = model_filename.split(".")[0] + "_best.pth"
+            best_filename = append_to_filename(model_filename, "best")
             forced_copy(model_filename, best_filename)
 
         if save_every_n_epochs and (epoch % save_every_n_epochs) == 0:
-            epoch_filename = model_filename.split(".")[0] + "_{}.pth".format(epoch)
+            epoch_filename = append_to_filename(model_filename, epoch)
             forced_copy(model_filename, epoch_filename)
 
         if save_last_n_models is not None and save_last_n_models > 1:
             if not save_every_n_epochs or not ((epoch - save_last_n_models) % save_every_n_epochs) == 0:
-                to_delete = model_filename.split(
-                    ".")[0] + "_{}.pth".format(epoch - save_last_n_models)
+                to_delete = append_to_filename(model_filename, epoch - save_last_n_models)
                 remove_file(to_delete)
-            epoch_filename = model_filename.split(".")[0] + "_{}.pth".format(epoch)
+            epoch_filename = append_to_filename(model_filename, epoch)
             forced_copy(model_filename, epoch_filename)
 
 
@@ -263,6 +262,12 @@ def forced_copy(source, target):
 def remove_file(filename):
     if os.path.exists(filename):
         os.remove(filename)
+
+
+def append_to_filename(filename, what_to_append, seperator="_"):
+    dirname, basename = os.path.split(filename)
+    basename_no_extension, extension = basename.split(".")[0]
+    return os.path.join(dirname, seperator.join([basename_no_extension, what_to_append]) + extension)
 
 
 def get_lr(optimizer):
