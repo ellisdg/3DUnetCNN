@@ -266,7 +266,7 @@ def remove_file(filename):
 
 def append_to_filename(filename, what_to_append, seperator="_"):
     dirname, basename = os.path.split(filename)
-    basename_no_extension, extension = basename.split(".")[0]
+    basename_no_extension, extension = basename.split(".")
     return os.path.join(dirname, seperator.join([basename_no_extension, what_to_append]) + extension)
 
 
