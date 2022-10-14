@@ -1,3 +1,4 @@
+import os
 
 
 def pytorch_predict_batch_array(model, batch, n_gpus=1):
@@ -15,7 +16,8 @@ def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
     if len(epoch_filenames) > 2:
         subject_id = epoch_filenames[-1]
     else:
-        subject_id = ""
+        subject_id = "_".join([os.path.basename(os.path.dirname(x_filename)),
+                               os.path.basename(x_filename).split(".")[0]])
     return x_filename, subject_id
 
 
