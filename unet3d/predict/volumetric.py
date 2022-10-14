@@ -6,10 +6,10 @@ from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filena
 from unet3d.utils.utils import one_hot_image_to_label_map
 
 
-def load_volumetric_model(model_name, model_filename, n_outputs, n_features, n_gpus, strict, **kwargs):
+def load_volumetric_model(model_name, model_filename, n_gpus, strict, **kwargs):
     from unet3d.models.build import build_or_load_model
-    model = build_or_load_model(model_name=model_name, model_filename=model_filename, n_outputs=n_outputs,
-                                n_features=n_features, n_gpus=n_gpus, strict=strict, **kwargs)
+    model = build_or_load_model(model_name=model_name, model_filename=model_filename, n_gpus=n_gpus, strict=strict,
+                                **kwargs)
     model.eval()
     return model
 
@@ -32,7 +32,8 @@ def load_volumetric_model_and_dataset(model_name, model_filename, model_kwargs,
     if model_kwargs is None:
         model_kwargs = dict()
 
-    model = load_volumetric_model(model_name=model_name, model_filename=model_filename, strict=strict_model_loading, n_gpus=n_gpus, **model_kwargs)
+    model = load_volumetric_model(model_name=model_name, model_filename=model_filename, strict=strict_model_loading,
+                                  n_gpus=n_gpus, **model_kwargs)
     dataset = load_volumetric_sequence(sequence, sequence_kwargs, filenames, window, spacing, metric_names,
                                        batch_size=1)
     basename = os.path.basename(model_filename).split(".")[0]
