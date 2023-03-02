@@ -12,7 +12,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_filename")
     parser.add_argument("--config_filename")
-    parser.add_argument("--output_dir")
+    parser.add_argument("--output_directory")
     parser.add_argument("--group")
     return parser.parse_args()
 
@@ -41,7 +41,7 @@ def main():
                                    batch_size=1,
                                    shuffle=False)
     for i, (img, trg) in enumerate(validation_loader):
-        torch.save(img, os.path.join(args.output_dir, "{}.pt".format(i)))
+        torch.save(img, os.path.join(args.output_directory, "{}.pt".format(i)))
 
 
 if __name__ == "__main__":
