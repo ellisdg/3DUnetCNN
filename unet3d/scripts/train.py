@@ -2,7 +2,7 @@ import argparse
 import os
 import numpy as np
 from unet3d.train import start_training
-from unet3d.utils.filenames import generate_filenames, load_sequence
+from unet3d.utils.filenames import generate_filenames, load_dataset_class
 from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
@@ -147,7 +147,7 @@ def main():
             # try to generate the filenames
             config[key] = generate_filenames(config, name, directory,
                                              raise_if_not_exists=namespace.debug)
-    sequence_class = load_sequence(config["sequence"])
+    dataset_class = load_dataset_class(config["dataset"])
 
     check_hierarchy(config)
 
@@ -157,7 +157,7 @@ def main():
     start_training(config,
                    os.path.abspath(namespace.model_filename),
                    os.path.abspath(namespace.training_log_filename),
-                   sequence_class=sequence_class,
+                   sequence_class=dataset_class,
                    metric_to_monitor=metric_to_monitor,
                    test_input=namespace.n_examples,
                    **training_function_kwargs,

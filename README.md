@@ -1,6 +1,6 @@
 # 3D U-Net Convolution Neural Network
 
-[[Update August 2022 - data loading is now 10x faster!](doc/Changes.md)]
+[[Update March 2023 - data loading is now 10x faster!](doc/Changes.md)]
 
 * [Tutorials](#tutorials)
 * [Introduction](#introduction)

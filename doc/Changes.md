@@ -1,4 +1,4 @@
-## August 2022
+## March 2023
 * Utilizes MONAI instead of NiLearn as the image loading and processing core.
   * This results in data loading and augmentation speeds seemingly 10-20x faster in my experiments (your results may vary).
 * Simplifies configuration options.
@@ -13,4 +13,4 @@
 * Allows for using MONAI loss classes
 * Adds ATLAS example
 * Removes old examples
-* Using --fit_gpu_mem is no longer recomended
+* Using --fit_gpu_mem is no longer recommended

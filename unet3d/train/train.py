@@ -53,8 +53,7 @@ def start_training(config, model_filename, training_log_filename,
     multiprocessing optimization should be arguments to this function, as these arguments affect the computation time,
     but the results should not vary based on whether multiprocessing is used or not.
     """
-    window = np.asarray(config['window'])
-    spacing = np.asarray(config['spacing']) if 'spacing' in config else None
+
     if 'model_name' in config:
         model_name = config['model_name']
     else:
@@ -70,15 +69,9 @@ def start_training(config, model_filename, training_log_filename,
 
     criterion = load_criterion(config['loss'], n_gpus=n_gpus, loss_kwargs=in_config("loss_kwargs", config, dict()))
 
-    optimizer_kwargs = dict()
-    if "initial_learning_rate" in config:
-        optimizer_kwargs["learning_rate"] = config["initial_learning_rate"]
-
-    optimizer = build_optimizer(optimizer_name=config["optimizer"],
+    optimizer = build_optimizer(optimizer_name=config["optimizer"].pop("name"),
                                 model_parameters=model.parameters(),
-                                **optimizer_kwargs)
-
-    sequence_kwargs = in_config("sequence_kwargs", config, dict())
+                                **config["optimizer"])
 
     if "flatten_y" in config and config["flatten_y"]:
         collate_fn = collate_flatten
@@ -88,16 +81,23 @@ def start_training(config, model_filename, training_log_filename,
         from torch.utils.data.dataloader import default_collate
         collate_fn = default_collate
 
+    if "training" in config["dataset"]:
+        training_kwargs = config["dataset"].pop("training")
+    else:
+        training_kwargs = dict()
+
+    if "validation" in config["dataset"]:
+        validation_kwargs = config["dataset"].pop("validation")
+    else:
+        validation_kwargs = dict()
+
     # 4. Create datasets
     training_dataset = sequence_class(filenames=config['training_filenames'],
-                                      window=window,
-                                      spacing=spacing,
-                                      base_directory=directory,
-                                      **in_config("additional_training_args", config, dict()),
-                                      **sequence_kwargs)
+                                      **training_kwargs,
+                                      **config["dataset"])
 
     training_loader = DataLoader(training_dataset,
-                                 batch_size=config["batch_size"] // in_config('points_per_subject', config, 1),
+                                 batch_size=config["batch_size"],
                                  shuffle=True,
                                  num_workers=n_workers,
                                  collate_fn=collate_fn,
@@ -123,14 +123,10 @@ def start_training(config, model_filename, training_log_filename,
         metric_to_monitor = "loss"
     else:
         validation_dataset = sequence_class(filenames=config['validation_filenames'],
-                                            flip=False,
-                                            window=window,
-                                            spacing=spacing,
-                                            **sequence_kwargs,
-                                            **in_config("additional_validation_args", config, dict()))
+                                            **validation_kwargs,
+                                            **config["dataset"])
         validation_loader = DataLoader(validation_dataset,
-                                       batch_size=config["validation_batch_size"] // in_config("points_per_subject",
-                                                                                               config, 1),
+                                       batch_size=config["validation_batch_size"],
                                        shuffle=False,
                                        num_workers=n_workers,
                                        collate_fn=collate_fn,

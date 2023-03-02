@@ -183,9 +183,5 @@ def load_bias(bias_filename):
     return np.fromfile(os.path.join(unet3d_path, bias_filename))
 
 
-def load_sequence(sequence_name):
-    try:
-        sequence_class = getattr(keras_sequences, sequence_name)
-    except AttributeError as error:
-        sequence_class = getattr(pytorch_datasets, sequence_name)
-    return sequence_class
+def load_dataset_class(dataset_kwargs):
+    return getattr(pytorch_datasets, dataset_kwargs.pop("name"))
