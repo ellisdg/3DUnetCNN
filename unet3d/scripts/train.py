@@ -104,7 +104,6 @@ def main():
     print("Model: ", namespace.model_filename)
     print("Log: ", namespace.training_log_filename)
     system_config = get_machine_config(namespace)
-    training_function_kwargs = in_config("training_function_kwargs", config, dict())
 
     # set verbosity
     if namespace.debug:
@@ -161,7 +160,7 @@ def main():
                    sequence_class=dataset_class,
                    metric_to_monitor=metric_to_monitor,
                    test_input=namespace.n_examples,
-                   **training_function_kwargs,
+                   **in_config("training", config, dict()),
                    **system_config)
 
     if namespace.sub_command == "predict":

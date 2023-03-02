@@ -21,9 +21,9 @@ def build_optimizer(optimizer_name, model_parameters, **kwargs):
     return getattr(torch.optim, optimizer_name)(params=model_parameters, **kwargs)
 
 
-def start_training(config, model_filename, training_log_filename,
+def start_training(config, model_filename, training_log_filename, batch_size, validation_batch_size,
                    n_workers=1, n_gpus=1,
-                   sequence_class=WholeVolumeSegmentationDataset, directory=None, test_input=1,
+                   sequence_class=WholeVolumeSegmentationDataset, test_input=1,
                    metric_to_monitor="loss", pin_memory=False, amp=False, n_epochs=1000,
                    prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None, samples_per_epoch=None,
                    save_best=False, early_stopping_patience=None, save_every_n_epochs=None, save_last_n_models=None):
@@ -116,7 +116,7 @@ def start_training(config, model_filename, training_log_filename,
                                             **validation_kwargs,
                                             **config["dataset"])
         validation_loader = DataLoader(validation_dataset,
-                                       batch_size=config["validation_batch_size"],
+                                       batch_size=validation_batch_size,
                                        shuffle=False,
                                        num_workers=n_workers,
                                        collate_fn=collate_fn,
