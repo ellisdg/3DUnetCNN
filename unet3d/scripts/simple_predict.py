@@ -42,7 +42,7 @@ def main():
                                    shuffle=False)
     for i, (img, trg) in enumerate(validation_loader):
         pred = model(img.cuda())[0].cpu()
-        print(pred.min(), pred.max(), pred.mean())
+        print(pred.min().numpy(), pred.max().numpy(), pred.mean().numpy())
         torch.save(pred[0], os.path.join(args.output_directory, "{}.pt".format(i)))
 
 
