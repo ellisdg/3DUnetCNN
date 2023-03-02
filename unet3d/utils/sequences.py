@@ -112,7 +112,7 @@ def format_feature_image(feature_image, window, crop=False, cropping_kwargs=None
                          augment_scale_probability=1, additive_noise_std=None, additive_noise_probability=0,
                          flip_left_right_probability=0, augment_translation_std=None,
                          augment_translation_probability=0, augment_blur_mean=None, augment_blur_std=None,
-                         augment_blur_probability=0, flip_front_back_probability=0, reorder=True,
+                         augment_blur_probability=0, flip_front_back_probability=0, reorder=False,
                          interpolation="linear"):
     if reorder:
         feature_image = reorder_image(feature_image)
@@ -151,7 +151,7 @@ def decision(probability):
 
 class BaseSequence(Sequence):
     def __init__(self, filenames, batch_size, target_labels, window, spacing, classification='binary', shuffle=True,
-                 points_per_subject=1, flip=False, reorder=True, iterations_per_epoch=1, deformation_augmentation=None,
+                 points_per_subject=1, flip=False, reorder=False, iterations_per_epoch=1, deformation_augmentation=None,
                  base_directory=None, subject_ids=None, inputs_per_epoch=None, channel_axis=0,
                  verbose=False):
         self.deformation_augmentation = deformation_augmentation
@@ -370,7 +370,7 @@ class ParcelBasedSequence(HCPRegressionSequence):
 
 class SubjectPredictionSequence(HCPParent, Sequence):
     def __init__(self, feature_filename, surface_filenames, surface_names, reference_metric_filename,
-                 batch_size=50, window=(64, 64, 64), flip=False, spacing=(1, 1, 1), reorder=True):
+                 batch_size=50, window=(64, 64, 64), flip=False, spacing=(1, 1, 1), reorder=False):
         super().__init__(surface_names=surface_names, window=window, flip=flip, reorder=reorder, spacing=spacing)
         self.feature_image = load_single_image(feature_filename, reorder=self.reorder)
         self.reference_metric = nib.load(reference_metric_filename)
@@ -391,7 +391,7 @@ class SubjectPredictionSequence(HCPParent, Sequence):
 
 
 class WholeVolumeToSurfaceSequence(HCPRegressionSequence):
-    def __init__(self, interpolation='linear', crop=True, cropping_kwargs=None,
+    def __init__(self, interpolation='linear', crop=False, cropping_kwargs=None,
                  augment_scale_std=0, augment_scale_probability=1, additive_noise_std=0, additive_noise_probability=1,
                  augment_blur_mean=None, augment_blur_std=None, augment_blur_probability=1,
                  augment_translation_std=None, augment_translation_probability=1, flip_left_right_probability=0,
