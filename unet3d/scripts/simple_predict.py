@@ -41,7 +41,7 @@ def main():
                                    batch_size=1,
                                    shuffle=False)
     for i, (img, trg) in enumerate(validation_loader):
-        pred = model(img)[0]
+        pred = model(img.cuda())[0].cpu()
         print(pred.min(), pred.max(), pred.mean())
         torch.save(pred[0], os.path.join(args.output_directory, "{}.pt".format(i)))
 
