@@ -26,7 +26,8 @@ def start_training(config, model_filename, training_log_filename, batch_size, va
                    sequence_class=WholeVolumeSegmentationDataset, test_input=1,
                    metric_to_monitor="loss", pin_memory=False, amp=False, n_epochs=1000,
                    prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None, samples_per_epoch=None,
-                   save_best=False, early_stopping_patience=None, save_every_n_epochs=None, save_last_n_models=None):
+                   save_best=False, early_stopping_patience=None, save_every_n_epochs=None, save_last_n_models=None,
+                   skip_validation=False):
     """
     TODO: move model loading outside of this function
 
@@ -87,7 +88,7 @@ def start_training(config, model_filename, training_log_filename, batch_size, va
                                       **config["dataset"])
 
     training_loader = DataLoader(training_dataset,
-                                 batch_size=config["batch_size"],
+                                 batch_size=batch_size,
                                  shuffle=True,
                                  num_workers=n_workers,
                                  collate_fn=collate_fn,
@@ -108,7 +109,7 @@ def start_training(config, model_filename, training_log_filename, batch_size, va
                 y_image = nib.Nifti1Image(y.squeeze(), affine=np.diag(np.ones(4)))
                 y_image.to_filename(model_filename.split(".")[0] + "_target_test_{}.nii.gz".format(index))
 
-    if 'skip_validation' in config and config['skip_validation']:
+    if skip_validation:
         validation_loader = None
         metric_to_monitor = "loss"
     else:
