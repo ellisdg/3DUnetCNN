@@ -6,6 +6,7 @@ import argparse
 from torch.utils.data import DataLoader
 import torch
 import os
+import nibabel as nib
 
 
 def parse_args():
@@ -42,9 +43,10 @@ def main():
                                    shuffle=False)
     with torch.no_grad():
         for i, (img, trg) in enumerate(validation_loader):
-            pred = model(img.cuda())[0].cpu()
-            print(pred.min().numpy(), pred.max().numpy(), pred.mean().numpy())
-            torch.save(pred[0], os.path.join(args.output_directory, "{}.pt".format(i)))
+            pred = model(img.cuda())[0].cpu().numpy()
+            print(pred.min(), pred.max(), pred.mean())
+            nib.Nifti1Image(dataobj=torch.swapdims(pred, 0, -1),
+                            affine=img.affine.numpy()).to_filename("{}.nii.gz".format(i))
 
 
 if __name__ == "__main__":
