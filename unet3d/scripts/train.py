@@ -123,7 +123,7 @@ def main():
                                         output_filename=namespace.config_filename.replace(".json", "_auto.json"))
 
     model_metrics = []
-    if config['skip_validation']:
+    if "skip_validation" in config and config['skip_validation']:
         # if skipping the validation, the loss function will be montiored.
         metric_to_monitor = "loss"
         groups = ("training",)
