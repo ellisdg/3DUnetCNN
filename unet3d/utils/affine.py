@@ -38,8 +38,7 @@ def adjust_affine_spacing(affine, new_spacing, spacing=None):
 
 
 def resize_affine(affine, shape, target_shape, copy=True):
-    if shape != target_shape:
-        print(shape, target_shape)
+    if not np.equal(shape, target_shape):
         if copy:
             affine = affine.detach().clone()
         scale = torch.divide(torch.as_tensor(shape), torch.as_tensor(target_shape))
