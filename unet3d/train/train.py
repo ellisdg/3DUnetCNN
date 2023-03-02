@@ -12,9 +12,8 @@ import monai.losses
 
 from unet3d.models.build import build_or_load_model
 from ..utils.pytorch.dataset import WholeVolumeSegmentationDataset
-from .training_utils import epoch_training, epoch_validatation, collate_flatten, collate_5d_flatten
+from .training_utils import epoch_training, epoch_validatation
 from ..utils.pytorch import losses
-from ..utils.utils import in_config
 
 
 def build_optimizer(optimizer_name, model_parameters, **kwargs):
