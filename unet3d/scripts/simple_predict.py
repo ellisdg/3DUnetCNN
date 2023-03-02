@@ -26,6 +26,9 @@ def main():
 
     dataset_class = load_dataset_class(config["dataset"])
 
+    if "training" in config["dataset"]:
+        config["dataset"].pop("training")
+
     if "validation" in config["dataset"]:
         validation_kwargs = config["dataset"].pop("validation")
     else:
