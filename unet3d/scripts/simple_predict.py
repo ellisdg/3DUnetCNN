@@ -6,6 +6,7 @@ import argparse
 from torch.utils.data import DataLoader
 import torch
 import os
+import numpy as np
 import nibabel as nib
 
 
@@ -45,8 +46,9 @@ def main():
         for i, (img, trg) in enumerate(validation_loader):
             pred = model(img.cuda())[0].cpu().numpy()
             print(pred.min(), pred.max(), pred.mean())
-            nib.Nifti1Image(dataobj=torch.swapdims(pred, 0, -1),
-                            affine=img.affine.numpy()).to_filename("{}.nii.gz".format(i))
+            nib.Nifti1Image(dataobj=np.swapaxes(pred, 0, -1),
+                            affine=img.affine.numpy()).to_filename(os.path.join(args.output_directory,
+                                                                                "{}.nii.gz".format(i)))
 
 
 if __name__ == "__main__":
