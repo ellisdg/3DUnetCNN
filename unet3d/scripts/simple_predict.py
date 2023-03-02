@@ -12,7 +12,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_filename")
     parser.add_argument("--config_filename")
-    parser.add_argument("--output_directory")
+    parser.add_argument("--output_dir")
     parser.add_argument("--group")
     return parser.parse_args()
 
