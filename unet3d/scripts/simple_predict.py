@@ -40,10 +40,11 @@ def main():
     validation_loader = DataLoader(validation_dataset,
                                    batch_size=1,
                                    shuffle=False)
-    for i, (img, trg) in enumerate(validation_loader):
-        pred = model(img.cuda())[0].cpu()
-        print(pred.min().numpy(), pred.max().numpy(), pred.mean().numpy())
-        torch.save(pred[0], os.path.join(args.output_directory, "{}.pt".format(i)))
+    with torch.no_grad():
+        for i, (img, trg) in enumerate(validation_loader):
+            pred = model(img.cuda())[0].cpu()
+            print(pred.min().numpy(), pred.max().numpy(), pred.mean().numpy())
+            torch.save(pred[0], os.path.join(args.output_directory, "{}.pt".format(i)))
 
 
 if __name__ == "__main__":
