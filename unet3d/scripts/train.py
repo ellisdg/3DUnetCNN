@@ -149,7 +149,8 @@ def main():
                                              raise_if_not_exists=namespace.debug)
     dataset_class = load_dataset_class(config["dataset"])
 
-    check_hierarchy(config)
+    # TODO: reimplement this type of labeling
+    # check_hierarchy(config)
 
     if in_config("add_contours", config["sequence_kwargs"], False):
         config["n_outputs"] = config["n_outputs"] * 2
