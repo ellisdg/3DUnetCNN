@@ -533,6 +533,7 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         # Reordering is done when the image is formatted
         image = load_image(filename, reorder=False, dtype=self.dtype,
                            verbose=self.verbose)
+        print(image.shape)
         if sub_volume_indices:
             image = extract_sub_volumes(image, sub_volume_indices)
         return image
