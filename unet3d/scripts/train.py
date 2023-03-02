@@ -46,16 +46,17 @@ def parse_args():
 
 
 def check_hierarchy(config):
-    if in_config("labels", config["sequence_kwargs"]) and in_config("use_label_hierarchy", config["sequence_kwargs"]):
-        config["sequence_kwargs"].pop("use_label_hierarchy")
-        labels = config["sequence_kwargs"].pop("labels")
+    if in_config("labels", config["dataset"]) and in_config("use_label_hierarchy", config["dataset"]):
+        config["dataset"].pop("use_label_hierarchy")
+        labels = config["dataset"].pop("labels")
         new_labels = list()
         while len(labels):
             new_labels.append(labels)
             labels = labels[1:]
-        config["sequence_kwargs"]["labels"] = new_labels
-    if "use_label_hierarchy" in config["sequence_kwargs"]:
-        config["sequence_kwargs"].pop("use_label_hierarchy")
+        config["dataset"]["labels"] = new_labels
+    if "use_label_hierarchy" in config["dataset"]:
+        # Remove this flag aas it has already been accounted for
+        config["dataset"].pop("use_label_hierarchy")
 
 
 def compute_unet_number_of_voxels(window, channels, n_layers):
@@ -107,9 +108,9 @@ def main():
 
     # set verbosity
     if namespace.debug:
-        if "sequence_kwargs" not in config:
-            config["sequence_kwargs"] = dict()
-        config["sequence_kwargs"]["verbose"] = namespace.debug
+        if "dataset" not in config:
+            config["dataset"] = dict()
+        config["dataset"]["verbose"] = namespace.debug
 
         import warnings
         warnings.filterwarnings('error')
@@ -149,10 +150,9 @@ def main():
                                              raise_if_not_exists=namespace.debug)
     dataset_class = load_dataset_class(config["dataset"])
 
-    # TODO: reimplement this type of labeling
-    # check_hierarchy(config)
+    check_hierarchy(config)
 
-    if in_config("add_contours", config["sequence_kwargs"], False):
+    if in_config("add_contours", config["dataset"], False):
         config["n_outputs"] = config["n_outputs"] * 2
 
     start_training(config,
