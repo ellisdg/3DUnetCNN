@@ -54,20 +54,10 @@ def start_training(config, model_filename, training_log_filename,
     but the results should not vary based on whether multiprocessing is used or not.
     """
 
-    if 'model_name' in config:
-        model_name = config['model_name']
-    else:
-        model_name = "UNet"
-
-    if "model_kwargs" in config:
-        model_kwargs = config["model_kwargs"]
-    else:
-        model_kwargs = dict()
-
-    model = build_or_load_model(model_name, model_filename, n_gpus=n_gpus, **model_kwargs)
+    model = build_or_load_model(config["model"].pop("name"), model_filename, n_gpus=n_gpus, **config["model"])
     model.train()
 
-    criterion = load_criterion(config['loss'], n_gpus=n_gpus, loss_kwargs=in_config("loss_kwargs", config, dict()))
+    criterion = load_criterion(config['loss'].pop("name"), n_gpus=n_gpus, loss_kwargs=config["loss"])
 
     optimizer = build_optimizer(optimizer_name=config["optimizer"].pop("name"),
                                 model_parameters=model.parameters(),
