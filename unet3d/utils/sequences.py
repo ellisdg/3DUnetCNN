@@ -258,7 +258,7 @@ class BaseSequence(Sequence):
 
 
 class HCPParent(object):
-    def __init__(self, surface_names, window, flip, reorder, spacing):
+    def __init__(self, surface_names, window, flip, reorder, spacing=None):
         self.surface_names = surface_names
         self.reorder = reorder
         self.flip = flip
@@ -277,7 +277,7 @@ class HCPParent(object):
 
 
 class HCPRegressionSequence(BaseSequence, HCPParent):
-    def __init__(self, filenames, batch_size, window, spacing, metric_names, classification=None,
+    def __init__(self, filenames, batch_size, window, spacing=None, metric_names=None, classification=None,
                  surface_names=('CortexLeft', 'CortexRight'), normalization="zero_mean", normalization_kwargs=None,
                  **kwargs):
         super().__init__(filenames=filenames, batch_size=batch_size, target_labels=tuple(), window=window,
