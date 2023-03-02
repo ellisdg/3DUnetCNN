@@ -17,8 +17,8 @@ from ..utils.pytorch import losses
 from ..utils.utils import in_config
 
 
-def build_optimizer(optimizer_name, model_parameters, learning_rate=1e-4):
-    return getattr(torch.optim, optimizer_name)(model_parameters, lr=learning_rate)
+def build_optimizer(optimizer_name, model_parameters, **kwargs):
+    return getattr(torch.optim, optimizer_name)(params=model_parameters, **kwargs)
 
 
 def start_training(config, model_filename, training_log_filename,
