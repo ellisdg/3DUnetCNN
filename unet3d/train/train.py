@@ -139,13 +139,13 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         training_log.extend(pd.read_csv(training_log_filename).values)
         start_epoch = int(training_log[-1][0]) + 1
     else:
-        start_epoch = 0
+        start_epoch = 1
     training_log_header = ["epoch", "loss", "lr", "val_loss"]
 
     if scheduler_name is not None:
         scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_name)
         scheduler = scheduler_class(optimizer, **scheduler_kwargs)
-        if start_epoch > 0:
+        if start_epoch > 1:
             # step the scheduler and optimizer to account for previous epochs
             for i in range(start_epoch):
                 optimizer.step()
