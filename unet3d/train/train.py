@@ -64,14 +64,6 @@ def start_training(config, model_filename, training_log_filename, batch_size, va
                                 model_parameters=model.parameters(),
                                 **config["optimizer"])
 
-    if "flatten_y" in config and config["flatten_y"]:
-        collate_fn = collate_flatten
-    elif "collate_fn" in config and config["collate_fn"] == "collate_5d_flatten":
-        collate_fn = collate_5d_flatten
-    else:
-        from torch.utils.data.dataloader import default_collate
-        collate_fn = default_collate
-
     if "training" in config["dataset"]:
         training_kwargs = config["dataset"].pop("training")
     else:
@@ -91,7 +83,6 @@ def start_training(config, model_filename, training_log_filename, batch_size, va
                                  batch_size=batch_size,
                                  shuffle=True,
                                  num_workers=n_workers,
-                                 collate_fn=collate_fn,
                                  pin_memory=pin_memory,
                                  prefetch_factor=prefetch_factor)
 
@@ -120,7 +111,6 @@ def start_training(config, model_filename, training_log_filename, batch_size, va
                                        batch_size=validation_batch_size,
                                        shuffle=False,
                                        num_workers=n_workers,
-                                       collate_fn=collate_fn,
                                        pin_memory=pin_memory,
                                        prefetch_factor=prefetch_factor)
 
