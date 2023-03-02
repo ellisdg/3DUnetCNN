@@ -41,7 +41,9 @@ def main():
                                    batch_size=1,
                                    shuffle=False)
     for i, (img, trg) in enumerate(validation_loader):
-        torch.save(img, os.path.join(args.output_directory, "{}.pt".format(i)))
+        pred = model(img[None])
+        print(pred.min(), pred.max(), pred.mean())
+        torch.save(pred[0], os.path.join(args.output_directory, "{}.pt".format(i)))
 
 
 if __name__ == "__main__":
