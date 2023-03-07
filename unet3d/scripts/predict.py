@@ -28,12 +28,6 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
     parser.add_argument("--interpolation", default="linear")
     parser.add_argument("--output_template")
     parser.add_argument("--replace", nargs="*")
-    parser.add_argument("--subjects_config_filename",
-                        help="Allows for specification of the config that contains the subject ids. If not set and the "
-                             "subject ids are not listed in the main config, then the filename for the subjects config "
-                             "will be read from the main config.")
-    parser.add_argument("--source",
-                        help="If using multisource templates set this to predict only filenames from a single source.")
     parser.add_argument("--filenames", nargs="*")
     parser.add_argument("--sub_volumes", nargs="*", type=int)
     parser.add_argument("--alternate_prediction_func", help="Manually set which function will be called to make the "
