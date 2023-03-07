@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import os
 import argparse
 from unet3d.utils.utils import load_json, in_config
