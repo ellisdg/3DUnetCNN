@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import nibabel as nib
-from unet3d.predict.volumetric import load_volumetric_model_and_dataset, load_images_from_dataset, \
+from unet3d.predict.volumetric import load_images_from_dataset, \
     prediction_to_image, write_prediction_image_to_file
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id, pytorch_predict_batch
 from unet3d.utils.utils import (load_json, break_down_volume_into_half_size_volumes, combine_half_size_volumes)
