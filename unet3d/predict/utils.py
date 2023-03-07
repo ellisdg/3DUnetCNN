@@ -22,7 +22,7 @@ def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
             ref_filename = dataset.epoch_filenames[1]
         else:
             ref_filename = dataset.epoch_filenames[0]
-        subject_id = infer_subject_id(x_filename, ref_filename)
+        subject_id = infer_subject_id(x_filename, ref_filename[dataset.feature_index])
     return x_filename, subject_id
 
 
