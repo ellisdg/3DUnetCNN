@@ -104,7 +104,7 @@ def run_inference(namespace):
                                   prediction_dir=namespace.output_directory,
                                   prefix=os.path.basename(namespace.model_filename).split(".")[0],
                                   batch_size=config['training']['validation_batch_size'],
-                                  dataset_kwargs=validation_kwargs + config["dataset"],
+                                  dataset_kwargs={**validation_kwargs, **config["dataset"]},
                                   sequence=dataset_class,
                                   resample_predictions=(not namespace.no_resample),
                                   interpolation=namespace.interpolation,
