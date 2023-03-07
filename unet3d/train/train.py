@@ -20,7 +20,7 @@ def build_optimizer(optimizer_name, model_parameters, **kwargs):
     return getattr(torch.optim, optimizer_name)(params=model_parameters, **kwargs)
 
 
-def start_training(config, model_filename, training_log_filename, batch_size, validation_batch_size,
+def start_training(config, model, training_log_filename, batch_size, validation_batch_size,
                    n_workers=1, n_gpus=1,
                    sequence_class=WholeVolumeSegmentationDataset, test_input=1,
                    metric_to_monitor="loss", pin_memory=False, amp=False, n_epochs=1000,
@@ -54,7 +54,6 @@ def start_training(config, model_filename, training_log_filename, batch_size, va
     but the results should not vary based on whether multiprocessing is used or not.
     """
 
-    model = build_or_load_model(config["model"].pop("name"), model_filename, n_gpus=n_gpus, **config["model"])
     model.train()
 
     criterion = load_criterion(config['loss'].pop("name"), n_gpus=n_gpus, loss_kwargs=config["loss"])

@@ -2,9 +2,10 @@ import os
 import argparse
 from unet3d.utils.utils import load_json, in_config
 from unet3d.predict.volumetric import volumetric_predictions
-from unet3d.utils.filenames import generate_filenames, load_subject_ids, load_dataset_class
+from unet3d.utils.filenames import load_dataset_class
 from unet3d.scripts.segment import format_parser as format_segmentation_parser
-from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
+from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser,
+                                         build_or_load_model_from_config)
 
 
 def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
@@ -62,35 +63,6 @@ def run_inference(namespace):
         filenames = list()
         for filename in namespace.filenames:
             filenames.append([filename, namespace.sub_volumes, None, None, os.path.basename(filename).split(".")[0]])
-    elif key not in config:
-        if namespace.replace is not None:
-            for _key in ("directory", "feature_templates", "target_templates"):
-                if _key in config["generate_filenames_kwargs"]:
-                    if type(config["generate_filenames_kwargs"][_key]) == str:
-
-                        for i in range(0, len(namespace.replace), 2):
-                            config["generate_filenames_kwargs"][_key] = config["generate_filenames_kwargs"][_key].replace(
-                                namespace.replace[i], namespace.replace[i + 1])
-                    else:
-                        config["generate_filenames_kwargs"][_key] = [template.replace(namespace.replace[0],
-                                                                                      namespace.replace[1]) for template
-                                                                     in
-                                                                     config["generate_filenames_kwargs"][_key]]
-        if namespace.directory_template is not None:
-            directory = namespace.directory_template
-        elif "directory" in system_config and system_config["directory"]:
-            directory = system_config["directory"]
-        elif "directory" in config:
-            directory = config["directory"]
-        else:
-            directory = ""
-        if namespace.subjects_config_filename:
-            config[namespace.group] = load_json(namespace.subjects_config_filename)[namespace.group]
-        else:
-            load_subject_ids(config, namespace.group)
-        filenames = generate_filenames(config, namespace.group, directory,
-                                       skip_targets=(not namespace.eval))
-
     else:
         filenames = config[key]
 
@@ -101,58 +73,18 @@ def run_inference(namespace):
     if not os.path.exists(namespace.output_directory):
         os.makedirs(namespace.output_directory)
 
-    if "evaluation_metric" in config and config["evaluation_metric"] is not None:
-        criterion_name = config['evaluation_metric']
+    dataset_class = load_dataset_class(config["dataset"])
+    if "training" in config["dataset"]:
+        config["dataset"].pop("training")
+
+    if "validation" in config["dataset"]:
+        validation_kwargs = config["dataset"].pop("validation")
     else:
-        criterion_name = config['loss']
+        validation_kwargs = dict()
 
-    if "model_kwargs" in config:
-        model_kwargs = config["model_kwargs"]
-    else:
-        model_kwargs = dict()
-
-    if namespace.activation:
-        model_kwargs["activation"] = namespace.activation
-
-    if "sequence_kwargs" in config:
-        sequence_kwargs = config["sequence_kwargs"]
-        # make sure any augmentations are set to None
-        for key in ["augment_scale_std", "additive_noise_std"]:
-            if key in sequence_kwargs:
-                sequence_kwargs[key] = None
-    else:
-        sequence_kwargs = dict()
-
-    if "reorder" not in sequence_kwargs:
-        sequence_kwargs["reorder"] = in_config("reorder", config, False)
-
-    if "generate_filenames" in config and config["generate_filenames"] == "multisource_templates":
-        if namespace.filenames is not None:
-            sequence_kwargs["inputs_per_epoch"] = None
-        else:
-            # set which source(s) to use for prediction filenames
-            if "inputs_per_epoch" not in sequence_kwargs:
-                sequence_kwargs["inputs_per_epoch"] = dict()
-            if namespace.source is not None:
-                # just use the named source
-                for dataset in filenames:
-                    sequence_kwargs["inputs_per_epoch"][dataset] = 0
-                sequence_kwargs["inputs_per_epoch"][namespace.source] = "all"
-            else:
-                # use all sources
-                for dataset in filenames:
-                    sequence_kwargs["inputs_per_epoch"][dataset] = "all"
-    if namespace.sub_volumes is not None:
-        sequence_kwargs["extract_sub_volumes"] = True
-
-    if "sequence" in config:
-        sequence = load_dataset_class(config["sequence"])
-    else:
-        sequence = None
-
-    labels = sequence_kwargs["labels"] if namespace.segment else None
-    if "use_label_hierarchy" in sequence_kwargs:
-        label_hierarchy = sequence_kwargs.pop("use_label_hierarchy")
+    labels = config["dataset"]["labels"] if namespace.segment else None
+    if "use_label_hierarchy" in config["dataset"]:
+        label_hierarchy = config["dataset"].pop("use_label_hierarchy")
     else:
         label_hierarchy = False
 
@@ -161,7 +93,7 @@ def run_inference(namespace):
         print("Using label hierarchy. Resetting threshold to 0.5 and turning the summation off.")
         namespace.threshold = 0.5
         namespace.sum = False
-    if in_config("add_contours", sequence_kwargs, False):
+    if in_config("add_contours", validation_kwargs, False):
         config["n_outputs"] = config["n_outputs"] * 2
         if namespace.use_contours:
             # this sets the labels for the contours
@@ -169,35 +101,26 @@ def run_inference(namespace):
                 raise RuntimeError("Cannot use contours for segmentation while a label hierarchy is specified.")
             labels = list(labels) + list(labels)
 
-    if namespace.alternate_prediction_func:
-        from unet3d import predict
-        func = getattr(predict, namespace.alternate_prediction_func)
-    else:
-        func = volumetric_predictions
+    model = build_or_load_model_from_config(config, namespace.model_filename, system_config["n_gpus"], strict=True)
+    model.eval()
 
-    return func(model_filename=namespace.model_filename,
-                filenames=filenames,
-                prediction_dir=namespace.output_directory,
-                model_name=config["model_name"],
-                window=config["window"],
-                criterion_name=criterion_name,
-                n_gpus=system_config['n_gpus'],
-                batch_size=config['validation_batch_size'],
-                n_workers=system_config["n_workers"],
-                model_kwargs=model_kwargs,
-                sequence_kwargs=sequence_kwargs,
-                sequence=sequence,
-                metric_names=in_config("metric_names", config, None),
-                evaluate_predictions=namespace.eval,
-                resample_predictions=(not namespace.no_resample),
-                interpolation=namespace.interpolation,
-                output_template=namespace.output_template,
-                segmentation=namespace.segment,
-                segmentation_labels=labels,
-                threshold=namespace.threshold,
-                sum_then_threshold=namespace.sum,
-                label_hierarchy=label_hierarchy,
-                write_input_images=namespace.write_input_images)
+    return volumetric_predictions(model=model,
+                                  filenames=filenames,
+                                  prediction_dir=namespace.output_directory,
+                                  prefix=os.path.basename(namespace.model_filename).split(".")[0],
+                                  batch_size=config['training']['validation_batch_size'],
+                                  dataset_kwargs=validation_kwargs + config["dataset"],
+                                  sequence=dataset_class,
+                                  resample_predictions=(not namespace.no_resample),
+                                  interpolation=namespace.interpolation,
+                                  output_template=namespace.output_template,
+                                  segmentation=namespace.segment,
+                                  segmentation_labels=labels,
+                                  threshold=namespace.threshold,
+                                  sum_then_threshold=namespace.sum,
+                                  label_hierarchy=label_hierarchy,
+                                  write_input_images=namespace.write_input_images,
+                                  **system_config)
 
 
 if __name__ == '__main__':

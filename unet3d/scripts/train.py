@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import os
 import numpy as np
@@ -6,7 +7,8 @@ from unet3d.utils.filenames import generate_filenames, load_dataset_class
 from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
-from unet3d.scripts.script_utils import get_machine_config, add_machine_config_to_parser
+from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser,
+                                         build_or_load_model_from_config)
 
 
 def parse_args():
@@ -20,13 +22,6 @@ def parse_args():
     parser.add_argument("--training_log_filename",
                         help="CSV filename to save the to save the training and validation results for each epoch.",
                         required=True)
-    parser.add_argument("--fit_gpu_mem", type=float,
-                        help="Specify the amount of gpu memory available on a single gpu and change the image size to "
-                             "fit into gpu memory automatically. Will try to find the largest image size that will fit "
-                             "onto a single gpu. The batch size is overwritten and set to the number of gpus available."
-                             " The new image size will be written to a new config file ending named "
-                             "'<original_config>_auto.json'. This option is experimental and only works with the UNet "
-                             "model. It has only been tested with gpus that have 12GB and 32GB of memory.")
     parser.add_argument("--batch_size", help="Override the batch size from the config file.", type=int)
     parser.add_argument("--debug", action="store_true", default=False,
                         help="Raises an error if a training file is not found. The default is to silently skip"
@@ -72,29 +67,6 @@ def compute_window_size(step, step_size, ratios):
     return np.asarray(step_ratios - mod + np.round(mod / step_size) * step_size, dtype=int)
 
 
-def update_config_to_fit_gpu_memory(config, n_gpus, gpu_memory, output_filename, voxels_per_gb=17000000.0,
-                                    ratios=(1.22, 1.56, 1.0)):
-    max_voxels = voxels_per_gb * gpu_memory
-    n_layers = len(config["model_kwargs"]["encoder_blocks"])
-    step_size = 2**(n_layers - 1)
-    step = 1
-    window = compute_window_size(step, step_size, ratios)
-    n_voxels = compute_unet_number_of_voxels(window, config["model_kwargs"]["base_width"], n_layers)
-    while n_voxels <= max_voxels:
-        step = step + 1
-        window = compute_window_size(step, step_size, ratios)
-        n_voxels = compute_unet_number_of_voxels(window, config["model_kwargs"]["base_width"], n_layers)
-    window = compute_window_size(step - 1, step_size, ratios).tolist()
-    print("Setting window size to {} x {} x {}".format(*window))
-    print("Setting batch size to", n_gpus)
-    config["window"] = window
-    config["model_kwargs"]["input_shape"] = window
-    config["batch_size"] = n_gpus
-    config["validation_batch_size"] = n_gpus
-    print("Writing new configuration file:", output_filename)
-    dump_json(config, output_filename)
-
-
 def main():
     namespace = parse_args()
 
@@ -118,35 +90,14 @@ def main():
     if namespace.batch_size:
         config["batch_size"] = namespace.batch_size
 
-    if namespace.fit_gpu_mem and namespace.fit_gpu_mem > 0:
-        update_config_to_fit_gpu_memory(config=config, n_gpus=system_config["n_gpus"], gpu_memory=namespace.fit_gpu_mem,
-                                        output_filename=namespace.config_filename.replace(".json", "_auto.json"))
-
-    model_metrics = []
-    if "skip_validation" in config and config['skip_validation']:
+    if "skip_validation" in config["training"] and config["training"]['skip_validation']:
         # if skipping the validation, the loss function will be montiored.
         metric_to_monitor = "loss"
-        groups = ("training",)
 
     else:
         # when the validation is not skipped, the validation loss will be monitored.
         metric_to_monitor = "val_loss"
-        groups = ("training", "validation")
 
-    if "directory" in system_config:
-        directory = system_config.pop("directory")
-    elif "directory" in config:
-        directory = config["directory"]
-    else:
-        directory = ""
-
-    for name in groups:
-        key = name + "_filenames"
-        if key not in config:
-            # If training or validation filenames are not listed in the config
-            # try to generate the filenames
-            config[key] = generate_filenames(config, name, directory,
-                                             raise_if_not_exists=namespace.debug)
     dataset_class = load_dataset_class(config["dataset"])
 
     check_hierarchy(config)
@@ -154,8 +105,10 @@ def main():
     if in_config("add_contours", config["dataset"], False):
         config["n_outputs"] = config["n_outputs"] * 2
 
+    model = build_or_load_model_from_config(config, os.path.abspath(namespace.model_filename), system_config["n_gpus"])
+
     start_training(config,
-                   os.path.abspath(namespace.model_filename),
+                   model,
                    os.path.abspath(namespace.training_log_filename),
                    sequence_class=dataset_class,
                    metric_to_monitor=metric_to_monitor,

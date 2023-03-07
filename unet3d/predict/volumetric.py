@@ -26,20 +26,6 @@ def load_volumetric_sequence(sequence, sequence_kwargs, filenames, window, spaci
     return dataset
 
 
-def load_volumetric_model_and_dataset(model_name, model_filename, model_kwargs,
-                                      strict_model_loading, n_gpus, sequence, sequence_kwargs, filenames, window,
-                                      spacing, metric_names):
-    if model_kwargs is None:
-        model_kwargs = dict()
-
-    model = load_volumetric_model(model_name=model_name, model_filename=model_filename, strict=strict_model_loading,
-                                  n_gpus=n_gpus, **model_kwargs)
-    dataset = load_volumetric_sequence(sequence, sequence_kwargs, filenames, window, spacing, metric_names,
-                                       batch_size=1)
-    basename = os.path.basename(model_filename).split(".")[0]
-    return model, dataset, basename
-
-
 def load_images_from_dataset(dataset, idx, resample_predictions):
     if resample_predictions:
         x_image, ref_image = dataset.get_feature_image(idx, return_unmodified=True)
@@ -109,25 +95,19 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                                            verbose=verbose)
 
 
-def volumetric_predictions(model_filename, model_name, filenames, window,
-                           criterion_name, prediction_dir=None, output_csv=None, reference=None,
-                           n_gpus=1, n_workers=1, batch_size=1, model_kwargs=None,
-                           sequence_kwargs=None, spacing=None, sequence=None,
-                           strict_model_loading=True, metric_names=None,
-                           print_prediction_time=True, verbose=True,
-                           evaluate_predictions=False, resample_predictions=False, interpolation="linear",
+def volumetric_predictions(model, filenames,
+                           prefix="", prediction_dir=None,
+                           n_gpus=1, n_workers=1, pin_memory=False, batch_size=1,
+                           dataset_kwargs=None, sequence=None,
+                           verbose=True,
+                           resample_predictions=False, interpolation="linear",
                            output_template=None, segmentation=False, segmentation_labels=None,
                            sum_then_threshold=True, threshold=0.7, label_hierarchy=None,
                            write_input_images=False):
     import torch
-    # from .train.pytorch import load_criterion
 
-    model, dataset, basename = load_volumetric_model_and_dataset(model_name, model_filename, model_kwargs,
-                                                                 strict_model_loading, n_gpus, sequence,
-                                                                 sequence_kwargs, filenames, window, spacing,
-                                                                 metric_names)
+    dataset = sequence(filenames=filenames, **dataset_kwargs)
 
-    # criterion = load_criterion(criterion_name, n_gpus=n_gpus)
     results = list()
     print("Dataset: ", len(dataset))
     with torch.no_grad():
@@ -146,7 +126,7 @@ def volumetric_predictions(model_filename, model_name, filenames, window,
             if len(batch) >= batch_size or idx == (len(dataset) - 1):
                 predict_volumetric_batch(model=model, batch=batch, batch_references=batch_references,
                                          batch_subjects=batch_subjects, batch_filenames=batch_filenames,
-                                         basename=basename, prediction_dir=prediction_dir,
+                                         basename=prefix, prediction_dir=prediction_dir,
                                          segmentation=segmentation, output_template=output_template, n_gpus=n_gpus,
                                          verbose=verbose, threshold=threshold, interpolation=interpolation,
                                          segmentation_labels=segmentation_labels,
