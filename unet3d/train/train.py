@@ -20,7 +20,7 @@ def build_optimizer(optimizer_name, model_parameters, **kwargs):
     return getattr(torch.optim, optimizer_name)(params=model_parameters, **kwargs)
 
 
-def start_training(config, model, training_log_filename, batch_size, validation_batch_size,
+def start_training(config, model, training_log_filename, batch_size, validation_batch_size, model_filename,
                    n_workers=1, n_gpus=1,
                    sequence_class=WholeVolumeSegmentationDataset, test_input=1,
                    metric_to_monitor="loss", pin_memory=False, amp=False, n_epochs=1000,

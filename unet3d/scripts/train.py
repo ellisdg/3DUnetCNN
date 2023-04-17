@@ -110,6 +110,7 @@ def main():
     start_training(config,
                    model,
                    os.path.abspath(namespace.training_log_filename),
+                   model_filename=os.path.abspath(namespace.model_filename),
                    sequence_class=dataset_class,
                    metric_to_monitor=metric_to_monitor,
                    test_input=namespace.n_examples,
