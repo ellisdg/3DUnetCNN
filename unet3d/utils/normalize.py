@@ -5,7 +5,7 @@ from monai.transforms.intensity.array import HistogramNormalize
 
 def zero_mean(data, axis=(1, 2, 3)):
     return torch.divide(torch.subtract(data,
-                                       torch.mean(data, dim=(1, 2, 3)).reshape((data.shape[0], 1, 1, 1))),
+                                       torch.mean(data, dim=axis).reshape((data.shape[0], 1, 1, 1))),
                         torch.std(data, dim=axis).reshape((data.shape[0], 1, 1, 1)))
 
 
