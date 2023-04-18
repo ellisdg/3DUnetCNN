@@ -678,7 +678,7 @@ class WholeVolumeSupervisedRegressionSequence(WholeVolumeAutoEncoderSequence):
         if self.normalize_target:
             image_data = self.target_normalization_func(target_image)
             return feature_image.make_similar(data=image_data,
-                                              affine=target_image.header.affine)
+                                              affine=target_image.affine)
         else:
             return target_image
 
