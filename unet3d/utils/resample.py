@@ -30,7 +30,9 @@ def resample_image(source_image, target_image, interpolation="linear", pad=False
 
 
 def resample(image, target_affine, target_shape, interpolation='linear', pad=False, dtype=None, align_corners=True):
-    resampler = SpatialResample(mode=monai_interpolation_mode(interpolation), align_corners=align_corners)
+    mode = monai_interpolation_mode(interpolation)
+    print(type(mode), mode)
+    resampler = SpatialResample(mode=interpolation, align_corners=align_corners)
 
     if dtype:
         image = image.to(dtype)
@@ -38,7 +40,6 @@ def resample(image, target_affine, target_shape, interpolation='linear', pad=Fal
 
 
 def monai_interpolation_mode(interpolation):
-    print(type(interpolation), interpolation)
     if interpolation == "linear":
         return "bilinear"
     elif interpolation.isdigit():
