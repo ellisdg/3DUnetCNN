@@ -40,6 +40,8 @@ def resample(image, target_affine, target_shape, interpolation='linear', pad=Fal
 def monai_interpolation_mode(interpolation):
     if interpolation == "linear":
         return "bilinear"
+    elif interpolation.isdigit():
+        return int(interpolation)
     return interpolation
 
 

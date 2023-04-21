@@ -25,7 +25,10 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
                         help="Skips resampling the predicted images into the non-cropped image space. This can help "
                              "save on the storage space as the images can always be resampled back into the original "
                              "space when needed.")
-    parser.add_argument("--interpolation", default="linear")
+    parser.add_argument("--interpolation", default="bilinear",
+                        help="Interpolation method to use when resampling the predicted images into the non-cropped "
+                             "image space. Options are 'bilinear', 'nearest', or spline interpolation "
+                             "number 0-5.")
     parser.add_argument("--output_template")
     parser.add_argument("--replace", nargs="*")
     parser.add_argument("--filenames", nargs="*")
