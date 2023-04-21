@@ -15,7 +15,7 @@ def pad_image(image, pad_width=1):
     return image.make_similar(data, affine)
 
 
-def resample_image_to_spacing(image, new_spacing, interpolation='continuous'):
+def resample_image_to_spacing(image, new_spacing, interpolation='bilinear'):
     new_affine = adjust_affine_spacing(image.affine, new_spacing, spacing=image.header.get_zooms()[:3])
     new_shape = np.asarray(np.ceil(np.divide(get_extent_from_image(image), new_spacing)), dtype=int)
     new_data = torch.zeros(new_shape)
@@ -23,16 +23,16 @@ def resample_image_to_spacing(image, new_spacing, interpolation='continuous'):
     return resample_to_img(image, new_image, interpolation=interpolation)
 
 
-def resample_image(source_image, target_image, interpolation="linear", pad=False):
+def resample_image(source_image, target_image, interpolation="bilinear", pad=False):
     if pad:
         source_image = pad_image(source_image)
     return resample_to_img(source_image, target_image, interpolation=interpolation)
 
 
-def resample(image, target_affine, target_shape, interpolation='linear', pad=False, dtype=None, align_corners=True):
+def resample(image, target_affine, target_shape, interpolation='bilinear', pad=False, dtype=None, align_corners=True):
     mode = monai_interpolation_mode(interpolation)
     print(type(mode), mode)
-    resampler = SpatialResample(mode=interpolation, align_corners=align_corners)
+    resampler = SpatialResample(mode=mode, align_corners=align_corners)
 
     if dtype:
         image = image.to(dtype)
@@ -47,6 +47,6 @@ def monai_interpolation_mode(interpolation):
     return interpolation
 
 
-def resample_to_img(source_image, target_image, interpolation='linear', align_corners=True):
+def resample_to_img(source_image, target_image, interpolation='bilinear', align_corners=True):
     return resample(source_image, target_image.affine, target_image.shape[1:], interpolation=interpolation,
                     align_corners=align_corners, pad=False)

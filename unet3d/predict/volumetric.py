@@ -100,7 +100,7 @@ def volumetric_predictions(model, filenames,
                            n_gpus=1, n_workers=1, pin_memory=False, batch_size=1,
                            dataset_kwargs=None, sequence=None,
                            verbose=True,
-                           resample_predictions=False, interpolation="linear",
+                           resample_predictions=False, interpolation="bilinear",
                            output_template=None, segmentation=False, segmentation_labels=None,
                            sum_then_threshold=True, threshold=0.7, label_hierarchy=None,
                            write_input_images=False):
