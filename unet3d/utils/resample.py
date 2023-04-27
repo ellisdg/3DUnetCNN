@@ -29,9 +29,12 @@ def resample_image(source_image, target_image, interpolation="bilinear", pad=Fal
     return resample_to_img(source_image, target_image, interpolation=interpolation)
 
 
-def resample(image, target_affine, target_shape, interpolation='bilinear', pad=False, dtype=None, align_corners=True):
+def resample(image, target_affine, target_shape, interpolation='bilinear', pad=False, dtype=None, align_corners=True,
+             margin=1e-8):
+    if (np.all(np.abs(image.affine - target_affine) < margin)
+            and np.all(np.asarray(image.shape) == np.asarray(target_shape))):
+        return image
     mode = monai_interpolation_mode(interpolation)
-    print(type(mode), mode)
     resampler = SpatialResample(mode=mode, align_corners=align_corners)
 
     if dtype:
@@ -49,4 +52,4 @@ def monai_interpolation_mode(interpolation):
 
 def resample_to_img(source_image, target_image, interpolation='bilinear', align_corners=True):
     return resample(source_image, target_image.affine, target_image.shape[1:], interpolation=interpolation,
-                    align_corners=align_corners, pad=False)
+                    align_corners=align_corners)
