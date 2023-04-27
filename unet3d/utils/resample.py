@@ -31,11 +31,20 @@ def resample_image(source_image, target_image, interpolation="bilinear", pad=Fal
 
 def resample(image, target_affine, target_shape, interpolation='bilinear', pad=False, dtype=None, align_corners=True,
              margin=1e-6):
+    """
+    Resample an image to a target affine and shape.
+    :param image: Image to resample.
+    :param target_affine: Target affine.
+    :param target_shape: Target shape.
+    :param interpolation: Interpolation mode.
+    :param pad: not implemented
+    :param dtype: output data type
+    :param align_corners: align_corners parameter for SpatialResample
+    :param margin: margin for equality check
+    """
     if (torch.all(torch.abs(image.affine - target_affine) < margin)
             and torch.all(torch.tensor(image.shape[-3:]) == torch.tensor(target_shape))):
         return image
-    else:
-        print("{:.2e}".format(torch.abs(image.affine - target_affine).max()))
     mode = monai_interpolation_mode(interpolation)
     resampler = SpatialResample(mode=mode, align_corners=align_corners)
 
