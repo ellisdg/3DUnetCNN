@@ -32,8 +32,8 @@ def resample_image(source_image, target_image, interpolation="bilinear", pad=Fal
 def resample(image, target_affine, target_shape, interpolation='bilinear', pad=False, dtype=None, align_corners=True,
              margin=1e-8):
     print(image.affine, target_affine, target_shape)
-    if (np.all(np.abs(image.affine - target_affine) < margin)
-            and np.all(np.asarray(image.shape) == np.asarray(target_shape))):
+    if (torch.all(torch.abs(image.affine - target_affine) < margin)
+            and torch.all(torch.tensor(image.shape) == np.tensor(target_shape))):
         return image
     mode = monai_interpolation_mode(interpolation)
     resampler = SpatialResample(mode=mode, align_corners=align_corners)
