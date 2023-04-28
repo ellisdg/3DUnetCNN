@@ -41,7 +41,7 @@ def pytorch_predict_batch(batch_x, model, n_gpus):
     if n_gpus > 0:
         batch_x = batch_x.cuda()
     if batch_x.dtype != model.parameters()[0].dtype:
-        batch_x = batch_x.to(model.dtype)
+        batch_x = batch_x.to(model.parameters()[0].dtype)
     if hasattr(model, "test"):
         pred_x = model.test(batch_x)
     else:
