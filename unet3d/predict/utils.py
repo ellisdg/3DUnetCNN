@@ -11,8 +11,6 @@ def pytorch_predict_batch_array(model, batch, n_gpus=1):
 def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
     epoch_filenames = dataset.epoch_filenames[idx]
     x_filename = epoch_filenames[dataset.feature_index]
-    if type(x_filename) == list:
-        x_filename = x_filename[0]
     if verbose:
         print("Reading:", x_filename)
     if len(epoch_filenames) > 2:
@@ -29,6 +27,10 @@ def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
 
 
 def infer_subject_id(filename, ref_filename):
+    if type(filename) == list:
+        filename = filename[0]
+    if type(ref_filename) == list:
+        ref_filename = ref_filename[0]
     args = set(filename.split("/"))
     ref_args = set(ref_filename.split("/"))
     # return the parts that aren't in the reference filename
