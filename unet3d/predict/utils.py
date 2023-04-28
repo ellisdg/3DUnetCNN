@@ -40,7 +40,7 @@ def infer_subject_id(filename, ref_filename):
 def pytorch_predict_batch(batch_x, model, n_gpus):
     if n_gpus > 0:
         batch_x = batch_x.cuda()
-    if batch_x.dtype != model.dtype:
+    if batch_x.dtype != model.parameters()[0].dtype:
         batch_x = batch_x.to(model.dtype)
     if hasattr(model, "test"):
         pred_x = model.test(batch_x)
