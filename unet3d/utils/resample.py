@@ -42,14 +42,14 @@ def resample(image, target_affine, target_shape, interpolation='bilinear', pad=F
     :param align_corners: align_corners parameter for SpatialResample
     :param margin: margin for equality check
     """
+    if dtype:
+        image = image.to(dtype)
     if (torch.all(torch.abs(image.affine - target_affine) < margin)
             and torch.all(torch.tensor(image.shape[-3:]) == torch.tensor(target_shape))):
         return image
     mode = monai_interpolation_mode(interpolation)
     resampler = SpatialResample(mode=mode, align_corners=align_corners)
 
-    if dtype:
-        image = image.to(dtype)
     return resampler(img=image, dst_affine=target_affine, spatial_size=target_shape)
 
 
