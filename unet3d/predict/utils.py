@@ -11,6 +11,8 @@ def pytorch_predict_batch_array(model, batch, n_gpus=1):
 def get_feature_filename_and_subject_id(dataset, idx, verbose=False):
     epoch_filenames = dataset.epoch_filenames[idx]
     x_filename = epoch_filenames[dataset.feature_index]
+    if type(x_filename) == list:
+        x_filename = x_filename[0]
     if verbose:
         print("Reading:", x_filename)
     if len(epoch_filenames) > 2:
