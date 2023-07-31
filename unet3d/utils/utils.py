@@ -264,10 +264,6 @@ def extract_sub_volumes(image, sub_volume_indices):
     return image[sub_volume_indices]
 
 
-def mask(data, threshold=0, dtype=torch.float):
-    return torch.as_tensor(data > threshold, dtype=dtype)
-
-
 def estimate_binary_contour(binary):
     return torch.logical_xor(binary, binary_erosion(binary, iterations=1))
 
