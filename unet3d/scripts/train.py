@@ -2,14 +2,17 @@
 import argparse
 import os
 import warnings
+
 from unet3d.train import run_training
 from unet3d.utils.utils import load_json
 from unet3d.scripts.predict import format_parser as format_prediction_args
-from unet3d.scripts.predict import run_inference
+from unet3d.predict import volumetric_predictions
+from unet3d.utils.filenames import load_dataset_class
 from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser, build_optimizer,
                                          build_or_load_model_from_config, load_criterion_from_config, in_config,
                                          build_data_loaders_from_config, build_scheduler_from_config,
-                                         setup_cross_validation, load_filenames_from_config)
+                                         setup_cross_validation, load_filenames_from_config,
+                                         build_inference_loaders_from_config, check_hierarchy)
 
 
 def parse_args():
@@ -100,9 +103,12 @@ def run(config_filename, output_dir, namespace):
             training_log_filename = os.path.join(work_dir, "training_log.csv")
         print("Log: ", training_log_filename)
 
+        label_hierarchy = check_hierarchy(config)
+        dataset_class = load_dataset_class(config["dataset"])
         training_loader, validation_loader, metric_to_monitor = build_data_loaders_from_config(config,
                                                                                                system_config,
-                                                                                               work_dir)
+                                                                                               work_dir,
+                                                                                               dataset_class)
         model = build_or_load_model_from_config(config,
                                                 os.path.abspath(namespace.pretrained_model_filename),
                                                 system_config["n_gpus"])
@@ -127,8 +133,20 @@ def run(config_filename, output_dir, namespace):
                      scheduler=scheduler,
                      samples_per_epoch=in_config("samples_per_epoch", config["training"], None))
 
-        if namespace.sub_command == "predict":
-            run_inference(namespace)
+        for _dataloader, _name in build_inference_loaders_from_config(config,
+                                                                      dataset_class=dataset_class,
+                                                                      system_config=system_config):
+            prediction_dir = os.path.join(work_dir, _name)
+            os.makedirs(prediction_dir, exist_ok=True)
+            volumetric_predictions(model=model,
+                                   dataloader=_dataloader,
+                                   prediction_dir=prediction_dir,
+                                   interpolation="linear",  # TODO
+                                   segmentation=False,  # TODO
+                                   segmentation_labels=None,  # TODO: segment the labels
+                                   threshold=0.5,
+                                   sum_then_threshold=False,
+                                   label_hierarchy=label_hierarchy)
 
 
 def main():

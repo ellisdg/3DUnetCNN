@@ -1,7 +1,7 @@
 import monai.losses
 import torch
 import nibabel as nib
-from torch.utils.data import DataLoader
+from monai.data import DataLoader
 import numpy as np
 import os
 import warnings
@@ -10,7 +10,6 @@ from copy import deepcopy
 from unet3d.utils.pytorch import losses
 from unet3d.utils.utils import load_json, dump_json
 from unet3d.models.build import build_or_load_model
-from unet3d.utils.filenames import load_dataset_class
 
 
 def add_machine_config_to_parser(parser):
@@ -70,10 +69,7 @@ def build_optimizer(optimizer_name, model_parameters, **kwargs):
     return getattr(torch.optim, optimizer_name)(params=model_parameters, **kwargs)
 
 
-def build_data_loaders_from_config(config, system_config, output_dir):
-    dataset_class = load_dataset_class(config["dataset"])
-
-    check_hierarchy(config)
+def build_data_loaders_from_config(config, system_config, output_dir, dataset_class):
 
     if in_config("add_contours", config["dataset"], False):
         config["n_outputs"] = config["n_outputs"] * 2
@@ -119,7 +115,7 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
                                  prefetch_factor=prefetch_factor)
 
     if test_input:
-        test_dataset(test_input, training_dataset, output_dir=os.path.join(output_dir, "data_loader_testing"))
+        write_dataset_examples(test_input, training_dataset, output_dir=os.path.join(output_dir, "data_loader_testing"))
 
     if 'validation_filenames' not in config:
         warnings.warn(RuntimeWarning("No 'validation_filenames' key found in config. "
@@ -149,17 +145,18 @@ def build_inference_loaders_from_config(config, dataset_class, system_config):
         if "_filenames" in key and key.split("_filenames")[0] not in ("training",):
             name = key.split("_filenames")[0]
             print("Found inference filenames: {} (n={})".format(name, len(config[key])))
-            inference_dataloaders.append(build_inference_loader(filenames=config[key],
-                                                                dataset_class=dataset_class,
-                                                                dataset_kwargs=config["dataset"],
-                                                                inference_kwargs=inference_dataset_kwargs,
-                                                                batch_size=in_config("batch_size",
-                                                                                     config["inference"], 1),
-                                                                num_workers=in_config("n_workers", system_config, 1),
-                                                                pin_memory=in_config("pin_memory", system_config,
-                                                                                     False),
-                                                                prefetch_factor=in_config("prefetch_factor",
-                                                                                          config["inference"], 1)))
+            inference_dataloaders.append([build_inference_loader(filenames=config[key],
+                                                                 dataset_class=dataset_class,
+                                                                 dataset_kwargs=config["dataset"],
+                                                                 inference_kwargs=inference_dataset_kwargs,
+                                                                 batch_size=in_config("batch_size",
+                                                                                      config["inference"], 1),
+                                                                 num_workers=in_config("n_workers", system_config, 1),
+                                                                 pin_memory=in_config("pin_memory", system_config,
+                                                                                      False),
+                                                                 prefetch_factor=in_config("prefetch_factor",
+                                                                                           config["inference"], 1)),
+                                          name])
     return inference_dataloaders
 
 
@@ -186,7 +183,7 @@ def build_scheduler_from_config(config, optimizer):
     return scheduler
 
 
-def test_dataset(n_test_cases, training_dataset, output_dir):
+def write_dataset_examples(n_test_cases, training_dataset, output_dir):
     """
     param n_test_cases: integer with the number of inputs from the generator to write to file. 0, False, or None will
     """
@@ -204,17 +201,20 @@ def test_dataset(n_test_cases, training_dataset, output_dir):
 
 
 def check_hierarchy(config):
-    if in_config("labels", config["dataset"]) and in_config("use_label_hierarchy", config["dataset"]):
-        config["dataset"].pop("use_label_hierarchy")
+    label_hierarchy = False
+    if in_config("labels", config["dataset"]) and in_config("setup_label_hierarchy", config["dataset"]):
+        config["dataset"].pop("setup_label_hierarchy")
         labels = config["dataset"].pop("labels")
         new_labels = list()
         while len(labels):
             new_labels.append(labels)
             labels = labels[1:]
         config["dataset"]["labels"] = new_labels
-    if "use_label_hierarchy" in config["dataset"]:
-        # Remove this flag aas it has already been accounted for
-        config["dataset"].pop("use_label_hierarchy")
+        label_hierarchy = True
+    if "setup_label_hierarchy" in config["dataset"]:
+        # Remove this flag as it has already been accounted for
+        config["dataset"].pop("setup_label_hierarchy")
+    return label_hierarchy
 
 
 def setup_cross_validation(config, work_dir, n_folds, random_seed=25):
@@ -255,4 +255,4 @@ def load_filenames(filenames):
     elif ".npy" in filenames:
         return np.load(filenames)
     else:
-        raise(RuntimeError("Could not load filenames: {}".format(filenames)))
+        raise (RuntimeError("Could not load filenames: {}".format(filenames)))

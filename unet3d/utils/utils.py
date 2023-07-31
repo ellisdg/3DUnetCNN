@@ -245,7 +245,8 @@ def load_single_image(filename, reorder=True, dtype=None, verbose=False, axcodes
         data = torch.moveaxis(nib_data, -1, 0)
     else:
         data = nib_data[None]  # Set channels shape to 1
-    image = Image(x=data, affine=torch.from_numpy(nib_image.affine))
+    image = Image(x=data, affine=torch.from_numpy(nib_image.affine),
+                  meta={"source_filename": filename})
     if verbose:
         print("Finished loading", filename, "Shape:", image.shape)
     if dtype is not None:

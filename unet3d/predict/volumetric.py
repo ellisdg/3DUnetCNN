@@ -3,7 +3,7 @@ import torch
 
 from unet3d.utils.resample import resample_to_img
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
-from unet3d.utils.utils import one_hot_image_to_label_map
+from unet3d.utils.utils import one_hot_image_to_label_map, load_image
 
 
 def load_volumetric_model(model_name, model_filename, n_gpus, strict, **kwargs):
@@ -12,18 +12,6 @@ def load_volumetric_model(model_name, model_filename, n_gpus, strict, **kwargs):
                                 **kwargs)
     model.eval()
     return model
-
-
-def load_volumetric_sequence(sequence, sequence_kwargs, filenames, window, spacing, metric_names, batch_size=1):
-    from ..utils.pytorch.dataset import AEDataset
-    if sequence is None:
-        sequence = AEDataset
-    if sequence_kwargs is None:
-        sequence_kwargs = dict()
-    dataset = sequence(filenames=filenames, window=window, spacing=spacing, batch_size=batch_size,
-                       metric_names=metric_names,
-                       **sequence_kwargs)
-    return dataset
 
 
 def load_images_from_dataset(dataset, idx, resample_predictions):
@@ -95,44 +83,20 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                                            verbose=verbose)
 
 
-def volumetric_predictions(model, filenames,
-                           prefix="", prediction_dir=None,
-                           n_gpus=1, n_workers=1, pin_memory=False, batch_size=1,
-                           dataset_kwargs=None, sequence=None,
-                           verbose=True,
-                           resample_predictions=False, interpolation="bilinear",
-                           output_template=None, segmentation=False, segmentation_labels=None,
-                           sum_then_threshold=True, threshold=0.7, label_hierarchy=None,
-                           write_input_images=False):
-    import torch
+def volumetric_predictions(model, dataloader, prediction_dir, interpolation="linear",
+                           segmentation=False, segmentation_labels=None,
+                           sum_then_threshold=True, threshold=0.5, label_hierarchy=None):
 
-    dataset = sequence(filenames=filenames, **dataset_kwargs)
-
-    results = list()
-    print("Dataset: ", len(dataset))
+    print("Dataset: ", len(dataloader))
     with torch.no_grad():
-        batch = list()
-        batch_references = list()
-        batch_subjects = list()
-        batch_filenames = list()
-        for idx in range(len(dataset)):
-            x_filename, subject_id = get_feature_filename_and_subject_id(dataset, idx, verbose=verbose)
-            x_image, ref_image = load_images_from_dataset(dataset, idx, resample_predictions)
-
-            batch.append(x_image)
-            batch_references.append((x_image, ref_image))
-            batch_subjects.append(subject_id)
-            batch_filenames.append(x_filename)
-            if len(batch) >= batch_size or idx == (len(dataset) - 1):
-                predict_volumetric_batch(model=model, batch=batch, batch_references=batch_references,
-                                         batch_subjects=batch_subjects, batch_filenames=batch_filenames,
-                                         basename=prefix, prediction_dir=prediction_dir,
-                                         segmentation=segmentation, output_template=output_template, n_gpus=n_gpus,
-                                         verbose=verbose, threshold=threshold, interpolation=interpolation,
-                                         segmentation_labels=segmentation_labels,
-                                         sum_then_threshold=sum_then_threshold, label_hierarchy=label_hierarchy,
-                                         write_input_image=write_input_images)
-                batch = list()
-                batch_references = list()
-                batch_subjects = list()
-                batch_filenames = list()
+        for idx, (x, y) in enumerate(dataloader):
+            predictions = model(x)
+            for prediction, _x, _y in zip(predictions, x, y):
+                prediction_image = prediction_to_image(prediction, _x,
+                                                       reference_image=load_image(x.meta["source_filename"]),
+                                                       interpolation=interpolation, segmentation=segmentation,
+                                                       segmentation_labels=segmentation_labels,
+                                                       sum_then_threshold=sum_then_threshold,
+                                                       label_hierarchy=label_hierarchy, threshold=threshold)
+                out_filename = os.path.join(prediction_dir, os.path.basename(_y.meta["source_filename"]))
+                prediction_image.to_filename(out_filename)

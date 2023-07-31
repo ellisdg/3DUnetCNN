@@ -1,10 +1,11 @@
 import torch
 from monai.data.meta_tensor import MetaTensor
+from copy import deepcopy
 
 
 class Image(MetaTensor):
 
-    def make_similar(self, data, affine=None):
+    def make_similar(self, data, affine=None, copy_meta=True):
         if affine is None:
             if hasattr(data, "affine") and data.affine is not None:
                 affine = data.affine
@@ -12,7 +13,12 @@ class Image(MetaTensor):
                 affine = self.affine
         if hasattr(data, "array"):
             data = data.array
-        return Image(x=data, affine=affine)
+        if copy_meta:
+            meta = deepcopy(Image.meta)
+            meta.pop("affine")
+        else:
+            meta = dict()
+        return Image(x=data, affine=affine, meta=meta)
 
     def to_filename(self, filename):
         import nibabel as nib
