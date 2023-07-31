@@ -246,7 +246,10 @@ def setup_cross_validation(config, work_dir, n_folds, random_seed=25):
 def load_filenames_from_config(config):
     for key in config:
         if "_filenames" in config:
+            print(type(config[key]))
             config[key] = load_filenames(config[key])
+            print(key)
+            print(type(config[key]))
 
 
 def load_filenames(filenames):
