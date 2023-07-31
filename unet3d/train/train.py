@@ -8,19 +8,12 @@ import torch
 from torch.utils.data import DataLoader
 import torch.nn
 
-import monai.losses
-
-from unet3d.models.build import build_or_load_model
 from ..utils.pytorch.dataset import WholeVolumeSegmentationDataset
 from .training_utils import epoch_training, epoch_validatation
-from ..utils.pytorch import losses
 
 
-def build_optimizer(optimizer_name, model_parameters, **kwargs):
-    return getattr(torch.optim, optimizer_name)(params=model_parameters, **kwargs)
-
-
-def start_training(config, model, training_log_filename, batch_size, validation_batch_size, model_filename,
+def start_training(config, model, training_log_filename, batch_size, validation_batch_size, model_filename, criterion,
+                   optimizer,
                    n_workers=1, n_gpus=1,
                    sequence_class=WholeVolumeSegmentationDataset, test_input=1,
                    metric_to_monitor="loss", pin_memory=False, amp=False, n_epochs=1000,
@@ -28,8 +21,6 @@ def start_training(config, model, training_log_filename, batch_size, validation_
                    save_best=False, early_stopping_patience=None, save_every_n_epochs=None, save_last_n_models=None,
                    skip_validation=False):
     """
-    TODO: move model loading outside of this function
-
     This function instantiates the training and validation datasets and then runs the training.
     Ultimately, I would like to simplify the functions such that each one has a unique job, such as: read the config,
     instantiate and then return the datasets, build or load the model, and finally run the training.
@@ -55,12 +46,6 @@ def start_training(config, model, training_log_filename, batch_size, validation_
     """
 
     model.train()
-
-    criterion = load_criterion(config['loss'].pop("name"), n_gpus=n_gpus, loss_kwargs=config["loss"])
-
-    optimizer = build_optimizer(optimizer_name=config["optimizer"].pop("name"),
-                                model_parameters=model.parameters(),
-                                **config["optimizer"])
 
     if "training" in config["dataset"]:
         training_kwargs = config["dataset"].pop("training")
@@ -250,16 +235,3 @@ def get_lr(optimizer):
     return np.squeeze(np.unique(lrs))
 
 
-def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
-    if loss_kwargs is None:
-        loss_kwargs = dict()
-    try:
-        criterion = getattr(losses, criterion_name)(**loss_kwargs)
-    except AttributeError:
-        try:
-            criterion = getattr(torch.nn, criterion_name)(**loss_kwargs)
-        except AttributeError:
-            criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
-    if n_gpus > 0:
-        criterion.cuda()
-    return criterion

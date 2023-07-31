@@ -7,8 +7,8 @@ from unet3d.utils.filenames import generate_filenames, load_dataset_class
 from unet3d.utils.utils import load_json, in_config, dump_json
 from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
-from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser,
-                                         build_or_load_model_from_config)
+from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser, build_optimizer,
+                                         build_or_load_model_from_config, load_criterion_from_config)
 
 
 def parse_args():
@@ -106,7 +106,10 @@ def main():
         config["n_outputs"] = config["n_outputs"] * 2
 
     model = build_or_load_model_from_config(config, os.path.abspath(namespace.model_filename), system_config["n_gpus"])
-
+    criterion = load_criterion_from_config(config, n_gpus=system_config["n_gpus"])
+    optimizer = build_optimizer(optimizer_name=config["optimizer"].pop("name"),
+                                model_parameters=model.parameters(),
+                                **config["optimizer"])
     start_training(config,
                    model,
                    os.path.abspath(namespace.training_log_filename),
@@ -114,6 +117,8 @@ def main():
                    sequence_class=dataset_class,
                    metric_to_monitor=metric_to_monitor,
                    test_input=namespace.n_examples,
+                   criterion=criterion,
+                   optimizer=optimizer,
                    **in_config("training", config, dict()),
                    **system_config)
 
