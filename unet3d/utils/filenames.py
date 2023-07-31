@@ -3,7 +3,8 @@ from functools import partial, update_wrapper
 
 from unet3d.utils import sequences as keras_sequences
 from unet3d.utils.pytorch import dataset as pytorch_datasets
-from unet3d.utils.utils import load_image, load_json, in_config
+from unet3d.utils.utils import load_image, load_json
+from unet3d.scripts.script_utils import in_config
 
 unet3d_path = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 

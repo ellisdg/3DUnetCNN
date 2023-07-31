@@ -2,121 +2,18 @@ import os
 import shutil
 import warnings
 import numpy as np
-import nibabel as nib
 import pandas as pd
 import torch
-from torch.utils.data import DataLoader
 import torch.nn
 
-from ..utils.pytorch.dataset import WholeVolumeSegmentationDataset
 from .training_utils import epoch_training, epoch_validatation
 
 
-def start_training(config, model, training_log_filename, batch_size, validation_batch_size, model_filename, criterion,
-                   optimizer,
-                   n_workers=1, n_gpus=1,
-                   sequence_class=WholeVolumeSegmentationDataset, test_input=1,
-                   metric_to_monitor="loss", pin_memory=False, amp=False, n_epochs=1000,
-                   prefetch_factor=1, scheduler_name=None, scheduler_kwargs=None, samples_per_epoch=None,
-                   save_best=False, early_stopping_patience=None, save_every_n_epochs=None, save_last_n_models=None,
-                   skip_validation=False):
-    """
-    This function instantiates the training and validation datasets and then runs the training.
-    Ultimately, I would like to simplify the functions such that each one has a unique job, such as: read the config,
-    instantiate and then return the datasets, build or load the model, and finally run the training.
-
-    :param test_input: integer with the number of inputs from the generator to write to file. 0, False, or None will
-    write no inputs to file.
-    :param sequence_class: class to use for the generator sequence
-    :param model_name:
-    :param verbose:
-    :param use_multiprocessing:
-    :param n_workers:
-    :param max_queue_size:
-    :param config:
-    :param model_filename:
-    :param training_log_filename:
-    :param metric_to_monitor:
-    :param model_metrics:
-    :return:
-
-    Anything that directly affects the training results should go into the config file. Other specifications such as
-    multiprocessing optimization should be arguments to this function, as these arguments affect the computation time,
-    but the results should not vary based on whether multiprocessing is used or not.
-    """
-
-    model.train()
-
-    if "training" in config["dataset"]:
-        training_kwargs = config["dataset"].pop("training")
-    else:
-        training_kwargs = dict()
-
-    if "validation" in config["dataset"]:
-        validation_kwargs = config["dataset"].pop("validation")
-    else:
-        validation_kwargs = dict()
-
-    # 4. Create datasets
-    training_dataset = sequence_class(filenames=config['training_filenames'],
-                                      **training_kwargs,
-                                      **config["dataset"])
-
-    training_loader = DataLoader(training_dataset,
-                                 batch_size=batch_size,
-                                 shuffle=True,
-                                 num_workers=n_workers,
-                                 pin_memory=pin_memory,
-                                 prefetch_factor=prefetch_factor)
-
-    if test_input:
-        for index in range(test_input):
-            x, y = training_dataset[index]
-            if not isinstance(x, np.ndarray):
-                x = x.numpy()
-                y = y.numpy()
-            x = np.moveaxis(x, 0, -1)
-            x_image = nib.Nifti1Image(x.squeeze(), affine=np.diag(np.ones(4)))
-            x_image.to_filename(model_filename.split(".")[0] + "_input_test_{}.nii.gz".format(index))
-            if len(y.shape) >= 3:
-                y = np.moveaxis(y, 0, -1)
-                y_image = nib.Nifti1Image(y.squeeze(), affine=np.diag(np.ones(4)))
-                y_image.to_filename(model_filename.split(".")[0] + "_target_test_{}.nii.gz".format(index))
-
-    if skip_validation:
-        validation_loader = None
-        metric_to_monitor = "loss"
-    else:
-        validation_dataset = sequence_class(filenames=config['validation_filenames'],
-                                            **validation_kwargs,
-                                            **config["dataset"])
-        validation_loader = DataLoader(validation_dataset,
-                                       batch_size=validation_batch_size,
-                                       shuffle=False,
-                                       num_workers=n_workers,
-                                       pin_memory=pin_memory,
-                                       prefetch_factor=prefetch_factor)
-
-    train(model=model, optimizer=optimizer, criterion=criterion, n_epochs=n_epochs,
-          training_loader=training_loader, validation_loader=validation_loader, model_filename=model_filename,
-          training_log_filename=training_log_filename,
-          metric_to_monitor=metric_to_monitor,
-          early_stopping_patience=early_stopping_patience,
-          save_best=save_best,
-          n_gpus=n_gpus,
-          save_every_n_epochs=save_every_n_epochs,
-          save_last_n_models=save_last_n_models,
-          amp=amp,
-          scheduler_name=scheduler_name,
-          scheduler_kwargs=scheduler_kwargs,
-          samples_per_epoch=samples_per_epoch)
-
-
-def train(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
-          model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
-          save_best=False, n_gpus=1, save_every_n_epochs=None,
-          save_last_n_models=None, amp=False, scheduler_name=None, scheduler_kwargs=None,
-          samples_per_epoch=None):
+def run_training(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
+                 model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
+                 save_best=False, n_gpus=1, save_every_n_epochs=None,
+                 save_last_n_models=None, amp=False, scheduler=None,
+                 samples_per_epoch=None):
     training_log = list()
     if os.path.exists(training_log_filename):
         training_log.extend(pd.read_csv(training_log_filename).values)
@@ -125,20 +22,15 @@ def train(model, optimizer, criterion, n_epochs, training_loader, validation_loa
         start_epoch = 1
     training_log_header = ["epoch", "loss", "lr", "val_loss"]
 
-    if scheduler_name is not None:
-        scheduler_class = getattr(torch.optim.lr_scheduler, scheduler_name)
-        scheduler = scheduler_class(optimizer, **scheduler_kwargs)
-        if start_epoch > 1:
-            # step the scheduler and optimizer to account for previous epochs
-            for i in range(start_epoch, 1):
-                optimizer.step()
-                if scheduler_class == torch.optim.lr_scheduler.ReduceLROnPlateau:
-                    metric = np.asarray(training_log)[i - 1, training_log_header.index(metric_to_monitor)]
-                    scheduler.step(metric)
-                else:
-                    scheduler.step()
-    else:
-        scheduler = None
+    if scheduler is not None and start_epoch > 1:
+        # step the scheduler and optimizer to account for previous epochs
+        for i in range(start_epoch, 1):
+            optimizer.step()
+            if scheduler.__class__ == torch.optim.lr_scheduler.ReduceLROnPlateau:
+                metric = np.asarray(training_log)[i - 1, training_log_header.index(metric_to_monitor)]
+                scheduler.step(metric)
+            else:
+                scheduler.step()
 
     if amp:
         from torch.cuda.amp import GradScaler
@@ -233,5 +125,3 @@ def append_to_filename(filename, what_to_append):
 def get_lr(optimizer):
     lrs = [params['lr'] for params in optimizer.param_groups]
     return np.squeeze(np.unique(lrs))
-
-

@@ -13,6 +13,7 @@ This is helpful for running multiple experiments as it provides documentation fo
 each configuration you have experimented with. A configuration file should produce
 similar results each time it is used for training.
 
+TODO: Update example
 ## Configuration Example <a name="example"></a>
 ```
 { "window": [176, 224, 144],  # image size to input into the model
@@ -75,14 +76,6 @@ If you are getting out of memory errors, try decreasing the input/window size in
 Note that each input dimension must always be divisible by the number of downsampling layers squared.
 The example configuration shown above has 4 downsampling layers (5 encoding layers total) and therefore each
 dimension must be divisible by 16.
-
-
-### Using "--fit_gpu_mem" <a name="fitgpumem"></a>
-When ```--fit_gpu_mem``` is used the ```train.py``` script will automatically set the input image size and batch size based on the amount of GPU memory and number of GPUs.
-However, I recommend users setting their window/input size and batch size based on the
-computer hardware available to them.
-If you do not want these settings automatically set, you can adjust them yourself by making changes to the config file instead of using the
-```--fit_gpu_mem``` flag.
 
 ## Normalization <a name="norm"></a>
 Normalization can utilize any function in the [normalize.py](../unet3d/utils/normalize.py) file.

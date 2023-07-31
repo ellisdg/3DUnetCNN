@@ -267,10 +267,6 @@ def mask(data, threshold=0, dtype=torch.float):
     return torch.as_tensor(data > threshold, dtype=dtype)
 
 
-def in_config(string, dictionary, if_not_in_config_return=None):
-    return dictionary[string] if string in dictionary else if_not_in_config_return
-
-
 def estimate_binary_contour(binary):
     return torch.logical_xor(binary, binary_erosion(binary, iterations=1))
 

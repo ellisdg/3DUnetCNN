@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import os
 import argparse
-from unet3d.utils.utils import load_json, in_config
+from unet3d.utils.utils import load_json
 from unet3d.predict.volumetric import volumetric_predictions
 from unet3d.utils.filenames import load_dataset_class
 from unet3d.scripts.segment import format_parser as format_segmentation_parser
 from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser,
-                                         build_or_load_model_from_config)
+                                         build_or_load_model_from_config, in_config)
 
 
 def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
