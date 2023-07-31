@@ -253,6 +253,6 @@ def load_filenames(filenames):
     if type(filenames) == list:
         return filenames
     elif ".npy" in filenames:
-        return np.load(filenames)
+        return np.load(filenames).tolist()
     else:
         raise (RuntimeError("Could not load filenames: {}".format(filenames)))
