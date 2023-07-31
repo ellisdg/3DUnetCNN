@@ -5,7 +5,6 @@ import warnings
 
 from unet3d.train import run_training
 from unet3d.utils.utils import load_json
-from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.predict import volumetric_predictions
 from unet3d.utils.filenames import load_dataset_class
 from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser, build_optimizer,
@@ -44,10 +43,6 @@ def parse_args():
     parser.add_argument("--n_examples", type=int, default=1,
                         help="Number of example input/output pairs to write to file for debugging purposes. "
                              "(default = 1)")
-    subparsers = parser.add_subparsers(help="sub-commands", dest='sub_command')
-    prediction_parser = subparsers.add_parser(name="predict",
-                                              help="Run prediction after the model has finished training")
-    format_prediction_args(prediction_parser, sub_command=True)
     args = parser.parse_args()
 
     return args
