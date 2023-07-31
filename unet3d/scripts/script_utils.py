@@ -5,9 +5,10 @@ from torch.utils.data import DataLoader
 import numpy as np
 import os
 import warnings
+from copy import deepcopy
 
 from unet3d.utils.pytorch import losses
-from unet3d.utils.utils import load_json
+from unet3d.utils.utils import load_json, dump_json
 from unet3d.models.build import build_or_load_model
 from unet3d.utils.filenames import load_dataset_class
 
@@ -70,7 +71,6 @@ def build_optimizer(optimizer_name, model_parameters, **kwargs):
 
 
 def build_data_loaders_from_config(config, system_config, output_dir):
-
     dataset_class = load_dataset_class(config["dataset"])
 
     check_hierarchy(config)
@@ -136,7 +136,45 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
                                        num_workers=n_workers,
                                        pin_memory=pin_memory,
                                        prefetch_factor=prefetch_factor)
+
     return training_loader, validation_loader, metric_to_monitor
+
+
+def build_inference_loaders_from_config(config, dataset_class, system_config):
+    inference_dataloaders = list()
+    inference_dataset_kwargs = in_config("inference",
+                                         in_config("dataset", config["inference"], dict()),
+                                         dict())
+    for key in config:
+        if "_filenames" in key and key.split("_filenames")[0] not in ("training",):
+            name = key.split("_filenames")[0]
+            print("Found inference filenames: {} (n={})".format(name, len(config[key])))
+            inference_dataloaders.append(build_inference_loader(filenames=config[key],
+                                                                dataset_class=dataset_class,
+                                                                dataset_kwargs=config["dataset"],
+                                                                inference_kwargs=inference_dataset_kwargs,
+                                                                batch_size=in_config("batch_size",
+                                                                                     config["inference"], 1),
+                                                                num_workers=in_config("n_workers", system_config, 1),
+                                                                pin_memory=in_config("pin_memory", system_config,
+                                                                                     False),
+                                                                prefetch_factor=in_config("prefetch_factor",
+                                                                                          config["inference"], 1)))
+    return inference_dataloaders
+
+
+def build_inference_loader(filenames, dataset_class, inference_kwargs, dataset_kwargs,
+                           batch_size=1, num_workers=1, pin_memory=False, prefetch_factor=1):
+    _dataset = dataset_class(filenames=filenames,
+                             **inference_kwargs,
+                             **dataset_kwargs)
+    _loader = DataLoader(_dataset,
+                         batch_size=batch_size,
+                         shuffle=False,
+                         num_workers=num_workers,
+                         pin_memory=pin_memory,
+                         prefetch_factor=prefetch_factor)
+    return _loader
 
 
 def build_scheduler_from_config(config, optimizer):
@@ -177,3 +215,44 @@ def check_hierarchy(config):
     if "use_label_hierarchy" in config["dataset"]:
         # Remove this flag aas it has already been accounted for
         config["dataset"].pop("use_label_hierarchy")
+
+
+def setup_cross_validation(config, work_dir, n_folds, random_seed=25):
+    filenames = config["training_filenames"]
+    np.random.seed(random_seed)
+    np.random.shuffle(filenames)
+    val_step = int(len(filenames) / n_folds)
+    fold_configs = list()
+    for fold_i in range(0, n_folds):
+        val_start = val_step * fold_i
+        if (fold_i + 1) == n_folds:
+            training_filenames = filenames[:val_start] + filenames[(val_start + val_step):]
+            validation_filenames = filenames[val_start:(val_start + val_step)]
+        else:
+            training_filenames = filenames[:val_start]
+            validation_filenames = filenames[val_start:]
+        assert not np.any(np.isin(validation_filenames, training_filenames))
+        assert (len(validation_filenames) + len(training_filenames)) == len(filenames)
+        fold = fold_i + 1
+        config_filename = os.path.join(work_dir, "fold{}.json".format(fold))
+        fold_config = deepcopy(config)
+        fold_config["training_filenames"] = training_filenames
+        fold_config["validation_filenames"] = validation_filenames
+        dump_json(fold_config, config_filename)
+        fold_configs.append([fold_config, config_filename])
+    return fold_configs
+
+
+def load_filenames_from_config(config):
+    for key in config:
+        if "_filenames" in config:
+            config[key] = load_filenames(config[key])
+
+
+def load_filenames(filenames):
+    if type(filenames) == list:
+        return filenames
+    elif ".npy" in filenames:
+        return np.load(filenames)
+    else:
+        raise(RuntimeError("Could not load filenames: {}".format(filenames)))

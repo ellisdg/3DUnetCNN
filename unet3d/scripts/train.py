@@ -1,24 +1,31 @@
 #!/usr/bin/env python
 import argparse
 import os
+import warnings
 from unet3d.train import run_training
 from unet3d.utils.utils import load_json
 from unet3d.scripts.predict import format_parser as format_prediction_args
 from unet3d.scripts.predict import run_inference
 from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_to_parser, build_optimizer,
                                          build_or_load_model_from_config, load_criterion_from_config, in_config,
-                                         build_data_loaders_from_config, build_scheduler_from_config)
+                                         build_data_loaders_from_config, build_scheduler_from_config,
+                                         setup_cross_validation, load_filenames_from_config)
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config_filename", required=True,
                         help="JSON configuration file specifying the parameters for model training.")
-    parser.add_argument("--output_dir", required=True,
-                        help="Output directory where all the outputs will be saved.")
-    parser.add_argument("--model_filename",
-                        help="Location to save the model during and after training. If this filename exists "
-                             "prior to training, the model will be loaded from the filename. "
+    parser.add_argument("--output_dir", required=False,
+                        help="Output directory where all the outputs will be saved. "
+                             "Defaults to the directory of the configuration file.")
+    parser.add_argument("--setup_crossval_only", action="store_true", default=False,
+                        help="Only write the cross-validation configuration files. "
+                             "If selected, training will not be run. Instead the filenames will be split into "
+                             "folds and modified configuration files will be written to the working directory. "
+                             "This is useful if you want to submit training folds to an HPC scheduler system.")
+    parser.add_argument("--pretrained_model_filename",
+                        help="If this filename exists prior to training, the model will be loaded from the filename. "
                              "Default is '{output_dir}/{config_basename}/model.pth'.",
                         required=False)
     parser.add_argument("--training_log_filename",
@@ -43,68 +50,94 @@ def parse_args():
     return args
 
 
+def run(config_filename, output_dir, namespace):
+    print("Config: ", config_filename)
+    config = load_json(config_filename)
+    load_filenames_from_config(config)
+
+    work_dir = os.path.join(output_dir, os.path.basename(namespace.config_filename).split(".")[0])
+    os.makedirs(work_dir, exist_ok=True)
+
+    if "cross_validation" in config:
+        # call parent function through each fold of the training set
+        cross_validation_config = config.pop("cross_validation")
+        for _config, _config_filename in setup_cross_validation(config,
+                                                                work_dir=work_dir,
+                                                                n_folds=in_config("n_folds",
+                                                                                  cross_validation_config,
+                                                                                  5),
+                                                                random_seed=in_config("random_seed",
+                                                                                      cross_validation_config,
+                                                                                      25)):
+            if not namespace.setup_crossval_only:
+                print("Running cross validation fold:", _config_filename)
+                run(_config_filename, work_dir, namespace)
+            else:
+                print("Setup cross validation fold:", _config_filename)
+    else:
+        # run the training
+        system_config = get_machine_config(namespace)
+
+        # set verbosity
+        if namespace.debug:
+            if "dataset" not in config:
+                config["dataset"] = dict()
+            config["dataset"]["verbose"] = namespace.debug
+            warnings.filterwarnings('error')
+
+        # Override the batch size from the config file
+        if namespace.batch_size:
+            warnings.warn(RuntimeWarning('Overwriting the batch size from the configuration file (batch_size={}) to '
+                                         'batch_size={}'.format(config["training"]["batch_size"], namespace.batch_size)))
+            config["training"]["batch_size"] = namespace.batch_size
+
+        model_filename = os.path.join(work_dir, "model.pth")
+        print("Model: ", model_filename)
+
+        if namespace.training_log_filename:
+            training_log_filename = namespace.model_filename
+        else:
+            training_log_filename = os.path.join(work_dir, "training_log.csv")
+        print("Log: ", training_log_filename)
+
+        training_loader, validation_loader, metric_to_monitor = build_data_loaders_from_config(config,
+                                                                                               system_config,
+                                                                                               work_dir)
+        model = build_or_load_model_from_config(config,
+                                                os.path.abspath(namespace.pretrained_model_filename),
+                                                system_config["n_gpus"])
+        criterion = load_criterion_from_config(config, n_gpus=system_config["n_gpus"])
+        optimizer = build_optimizer(optimizer_name=config["optimizer"].pop("name"),
+                                    model_parameters=model.parameters(),
+                                    **config["optimizer"])
+        scheduler = build_scheduler_from_config(config, optimizer)
+
+        run_training(model=model.train(), optimizer=optimizer, criterion=criterion,
+                     n_epochs=in_config("n_epochs", config["training"], 1000),
+                     training_loader=training_loader, validation_loader=validation_loader,
+                     model_filename=model_filename,
+                     training_log_filename=training_log_filename,
+                     metric_to_monitor=metric_to_monitor,
+                     early_stopping_patience=in_config("early_stopping_patience", config["training"], None),
+                     save_best=in_config("save_best", config["training"], True),
+                     n_gpus=system_config["n_gpus"],
+                     save_every_n_epochs=in_config("save_every_n_epochs", config["training"], None),
+                     save_last_n_models=in_config("save_last_n_models", config["training"], None),
+                     amp=in_config("amp", config["training"], None),
+                     scheduler=scheduler,
+                     samples_per_epoch=in_config("samples_per_epoch", config["training"], None))
+
+        if namespace.sub_command == "predict":
+            run_inference(namespace)
+
+
 def main():
     namespace = parse_args()
-
-    print("Config: ", namespace.config_filename)
-    config = load_json(namespace.config_filename)
-
-    print("Model: ", namespace.model_filename)
-    print("Log: ", namespace.training_log_filename)
-    system_config = get_machine_config(namespace)
-
-    # set verbosity
-    if namespace.debug:
-        if "dataset" not in config:
-            config["dataset"] = dict()
-        config["dataset"]["verbose"] = namespace.debug
-
-        import warnings
-        warnings.filterwarnings('error')
-
-    # Override the batch size from the config file
-    if namespace.batch_size:
-        config["batch_size"] = namespace.batch_size
-
-    work_dir = os.path.join(namespace.output_dir, os.path.basename(namespace.config_filename).split(".")[0])
-
-    if namespace.model_filename:
-        model_filename = namespace.model_filename
+    if namespace.output_dir:
+        output_dir = os.path.abspath(namespace.output_dir)
     else:
-        model_filename = os.path.join(work_dir, "model.pth")
-
-    if namespace.training_log_filename:
-        training_log_filename = namespace.model_filename
-    else:
-        training_log_filename = os.path.join(work_dir, "training_log.csv")
-
-    training_loader, validation_loader, metric_to_monitor = build_data_loaders_from_config(config,
-                                                                                           system_config,
-                                                                                           work_dir)
-    model = build_or_load_model_from_config(config, os.path.abspath(namespace.model_filename), system_config["n_gpus"])
-    criterion = load_criterion_from_config(config, n_gpus=system_config["n_gpus"])
-    optimizer = build_optimizer(optimizer_name=config["optimizer"].pop("name"),
-                                model_parameters=model.parameters(),
-                                **config["optimizer"])
-    scheduler = build_scheduler_from_config(config, optimizer)
-
-    run_training(model=model.train(), optimizer=optimizer, criterion=criterion,
-                 n_epochs=in_config("n_epochs", config["training"], 1000),
-                 training_loader=training_loader, validation_loader=validation_loader,
-                 model_filename=model_filename,
-                 training_log_filename=training_log_filename,
-                 metric_to_monitor=metric_to_monitor,
-                 early_stopping_patience=in_config("early_stopping_patience", config["training"], None),
-                 save_best=in_config("save_best", config["training"], True),
-                 n_gpus=system_config["n_gpus"],
-                 save_every_n_epochs=in_config("save_every_n_epochs", config["training"], None),
-                 save_last_n_models=in_config("save_last_n_models", config["training"], None),
-                 amp=in_config("amp", config["training"], None),
-                 scheduler=scheduler,
-                 samples_per_epoch=in_config("samples_per_epoch", config["training"], None))
-
-    if namespace.sub_command == "predict":
-        run_inference(namespace)
+        output_dir = os.path.dirname(os.path.abspath(os.path.dirname(namespace.config_filename)))
+    run(namespace.config_filename, output_dir, namespace)
 
 
 if __name__ == '__main__':

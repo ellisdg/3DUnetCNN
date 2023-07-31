@@ -19,7 +19,7 @@ def load_json(filename):
 
 def dump_json(dataobj, filename):
     with open(filename, 'w') as opened_file:
-        json.dump(dataobj, opened_file)
+        json.dump(dataobj, opened_file, indent=4)
 
 
 def logical_and(array_list):
