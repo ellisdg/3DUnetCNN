@@ -7,14 +7,9 @@ from scipy.ndimage import binary_erosion
 
 import torch
 
-from monai.transforms import Orientation, LoadImageD, LoadImage
+from monai.transforms import Orientation
 
 from .image import Image
-
-
-def setup_default_loader(keys=None):
-    pass
-
 
 
 def load_json(filename):

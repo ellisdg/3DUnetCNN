@@ -1,6 +1,6 @@
 import os
 import torch
-
+from monai.data import NibabelWriter
 from unet3d.utils.resample import resample_to_img
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
 from unet3d.utils.utils import one_hot_image_to_label_map, load_image
@@ -91,15 +91,10 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
             x = item["image"]
-            print(x.meta["filename_or_obj"])
-            print(x.meta)
             predictions = model(x)
             for prediction, _x in zip(predictions, x):
-                prediction_image = prediction_to_image(prediction, _x,
-                                                       reference_image=load_image(x.meta["filename_or_obj"]),
-                                                       interpolation=interpolation, segmentation=segmentation,
-                                                       segmentation_labels=segmentation_labels,
-                                                       sum_then_threshold=sum_then_threshold,
-                                                       label_hierarchy=label_hierarchy, threshold=threshold)
-                out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"]))
-                prediction_image.to_filename(out_filename)
+                writer = NibabelWriter()
+                writer.set_data_array(_x)
+                writer.set_metadata(_x.meta, resample=True)
+                out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"][0]))
+                writer.write(out_filename)
