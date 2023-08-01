@@ -54,6 +54,7 @@ def run(config_filename, output_dir, namespace):
     load_filenames_from_config(config)
 
     work_dir = os.path.join(output_dir, os.path.basename(config_filename).split(".")[0])
+    print("Work Dir:", work_dir)
     os.makedirs(work_dir, exist_ok=True)
 
     if "cross_validation" in config:
@@ -149,7 +150,7 @@ def main():
     if namespace.output_dir:
         output_dir = os.path.abspath(namespace.output_dir)
     else:
-        output_dir = os.path.dirname(os.path.abspath(os.path.dirname(namespace.config_filename)))
+        output_dir = os.path.dirname(os.path.abspath(namespace.config_filename))
     run(namespace.config_filename, output_dir, namespace)
 
 

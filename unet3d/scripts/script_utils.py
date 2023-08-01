@@ -226,11 +226,11 @@ def setup_cross_validation(config, work_dir, n_folds, random_seed=25):
     for fold_i in range(0, n_folds):
         val_start = val_step * fold_i
         if (fold_i + 1) == n_folds:
-            training_filenames = filenames[:val_start] + filenames[(val_start + val_step):]
-            validation_filenames = filenames[val_start:(val_start + val_step)]
-        else:
             training_filenames = filenames[:val_start]
             validation_filenames = filenames[val_start:]
+        else:
+            training_filenames = filenames[:val_start] + filenames[(val_start + val_step):]
+            validation_filenames = filenames[val_start:(val_start + val_step)]
         assert not np.any(np.isin(validation_filenames, training_filenames))
         assert (len(validation_filenames) + len(training_filenames)) == len(filenames)
         fold = fold_i + 1
