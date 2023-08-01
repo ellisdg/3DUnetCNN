@@ -141,9 +141,11 @@ def build_inference_loaders_from_config(config, dataset_class, system_config):
     if "inference" in config:
         inference_dataset_kwargs = in_config("dataset", config["inference"], dict())
         batch_size = in_config("batch_size", config["inference"], 1)
+        prefetch_factor = in_config("prefetch_factor", config["inference"], 1)
     else:
         inference_dataset_kwargs = dict()
         batch_size = 1
+        prefetch_factor = 1
     for key in config:
         if "_filenames" in key and key.split("_filenames")[0] not in ("training",):
             name = key.split("_filenames")[0]
@@ -156,8 +158,7 @@ def build_inference_loaders_from_config(config, dataset_class, system_config):
                                                                  num_workers=in_config("n_workers", system_config, 1),
                                                                  pin_memory=in_config("pin_memory", system_config,
                                                                                       False),
-                                                                 prefetch_factor=in_config("prefetch_factor",
-                                                                                           config["inference"], 1)),
+                                                                 prefetch_factor=prefetch_factor),
                                           name])
     return inference_dataloaders
 
