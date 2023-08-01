@@ -1,6 +1,5 @@
 import os
 import shutil
-import warnings
 import numpy as np
 import pandas as pd
 import torch
@@ -54,11 +53,6 @@ def run_training(model, optimizer, criterion, n_epochs, training_loader, validat
         # train the model
         loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
                               scaler=scaler, samples_per_epoch=samples_per_epoch)
-        try:
-            training_loader.dataset.on_epoch_end()
-        except AttributeError:
-            warnings.warn("'on_epoch_end' method not implemented for the {} dataset.".format(
-                type(training_loader.dataset)))
 
         # Clear the cache from the GPUs
         if n_gpus:

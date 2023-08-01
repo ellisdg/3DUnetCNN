@@ -74,7 +74,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
         end = time.time()
 
         if i % print_frequency == 0:
-            progress.display(i)
+            progress.display(i+1)
 
         if samples_per_epoch and (i + 1) * batch_size >= samples_per_epoch:
             break
@@ -127,7 +127,7 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, use_a
             end = time.time()
 
             if i % print_freq == 0:
-                progress.display(i)
+                progress.display(i+1)
 
             if n_gpus:
                 torch.cuda.empty_cache()
