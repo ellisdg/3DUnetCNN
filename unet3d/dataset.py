@@ -8,7 +8,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
         transforms = list()
         if inference == "auto":
             # Look at the first set and determine if labels are present
-            inference = "label" in filenames[0].keys()
+            inference = "label" not in filenames[0].keys()
 
         if inference:
             keys = ("image",)
