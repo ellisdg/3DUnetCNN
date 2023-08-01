@@ -187,6 +187,8 @@ def write_dataset_examples(n_test_cases, training_dataset, output_dir):
     """
     param n_test_cases: integer with the number of inputs from the generator to write to file. 0, False, or None will
     """
+    warnings.warn("Writing dataset examples is not working right now.")
+    return
     os.makedirs(output_dir, exist_ok=True)
     for index in range(n_test_cases):
         x, y = training_dataset[index]
