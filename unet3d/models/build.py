@@ -20,7 +20,7 @@ def build_or_load_model(model_name, model_filename, n_gpus=0, strict=False, **kw
         model = torch.nn.DataParallel(model).cuda()
     elif n_gpus > 0:
         model = model.cuda()
-    if os.path.exists(model_filename):
+    if model_filename and os.path.exists(model_filename):
         if n_gpus > 0:
             state_dict = torch.load(model_filename)
         else:
