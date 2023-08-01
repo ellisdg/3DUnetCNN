@@ -150,7 +150,7 @@ def decision(probability):
 
 
 class BaseSequence(Sequence):
-    def __init__(self, filenames, batch_size, target_labels, window, spacing, classification='binary', shuffle=True,
+    def __init__(self, filenames, target_labels, window, spacing,  batch_size=None, classification='binary', shuffle=True,
                  points_per_subject=1, flip=False, reorder=False, iterations_per_epoch=1, deformation_augmentation=None,
                  base_directory=None, subject_ids=None, inputs_per_epoch=None, channel_axis=0,
                  verbose=False):
@@ -277,7 +277,7 @@ class HCPParent(object):
 
 
 class HCPRegressionSequence(BaseSequence, HCPParent):
-    def __init__(self, filenames, batch_size, window, spacing=None, metric_names=None, classification=None,
+    def __init__(self, filenames, window, batch_size=None, spacing=None, metric_names=None, classification=None,
                  surface_names=('CortexLeft', 'CortexRight'), normalization="zero_mean", normalization_kwargs=None,
                  **kwargs):
         super().__init__(filenames=filenames, batch_size=batch_size, target_labels=tuple(), window=window,
@@ -499,11 +499,10 @@ class WholeVolumeAutoEncoderSequence(WholeVolumeToSurfaceSequence):
         with torch.no_grad():
             x_batch = list()
             y_batch = list()
-            batch_filenames = self.epoch_filenames[idx * self.batch_size:(idx + 1) * self.batch_size]
-            for item in batch_filenames:
-                x, y = self.resample_input(item)
-                x_batch.append(x)
-                y_batch.append(y)
+            item = self.epoch_filenames[idx]
+            x, y = self.resample_input(item)
+            x_batch.append(x)
+            y_batch.append(y)
             return torch.as_tensor(x_batch), torch.as_tensor(y_batch)
 
     def resample_input(self, input_filenames):
