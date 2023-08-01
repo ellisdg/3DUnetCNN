@@ -150,11 +150,12 @@ def run(config_filename, output_dir, namespace):
 
 def main():
     namespace = parse_args()
+    config_filename = os.path.abspath(namespace.config_filename)
     if namespace.output_dir:
         output_dir = os.path.abspath(namespace.output_dir)
     else:
-        output_dir = os.path.dirname(os.path.abspath(namespace.config_filename))
-    run(namespace.config_filename, output_dir, namespace)
+        output_dir = os.path.dirname(config_filename)
+    run(config_filename, output_dir, namespace)
 
 
 if __name__ == '__main__':
