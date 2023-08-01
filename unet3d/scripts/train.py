@@ -53,7 +53,7 @@ def run(config_filename, output_dir, namespace):
     config = load_json(config_filename)
     load_filenames_from_config(config)
 
-    work_dir = os.path.join(output_dir, os.path.basename(namespace.config_filename).split(".")[0])
+    work_dir = os.path.join(output_dir, os.path.basename(config_filename).split(".")[0])
     os.makedirs(work_dir, exist_ok=True)
 
     if "cross_validation" in config:

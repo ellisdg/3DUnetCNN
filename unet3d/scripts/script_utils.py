@@ -7,7 +7,7 @@ import os
 import warnings
 from copy import deepcopy
 
-from unet3d.utils.pytorch import losses
+from unet3d import losses
 from unet3d.utils.utils import load_json, dump_json
 from unet3d.models.build import build_or_load_model
 
