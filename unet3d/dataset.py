@@ -27,5 +27,3 @@ class SegmentationDatasetPersistent(PersistentDataset):
 
         transform = Compose(transforms, lazy=True)
         super().__init__(data=filenames, cache_dir=cache_dir, transform=transform)
-
-

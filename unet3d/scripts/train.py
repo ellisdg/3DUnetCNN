@@ -40,7 +40,7 @@ def parse_args():
                              "any training files that cannot be found. Use this flag to debug the config for finding"
                              "the data.")
     add_machine_config_to_parser(parser)
-    parser.add_argument("--n_examples", type=int, default=1,
+    parser.add_argument("--n_examples", type=int, default=0,
                         help="Number of example input/output pairs to write to file for debugging purposes. "
                              "(default = 1)")
     args = parser.parse_args()

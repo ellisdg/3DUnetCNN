@@ -90,7 +90,7 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
                        # from the system config
                        n_workers=1, pin_memory=False,
                        # from config["training"]
-                       test_input=1, batch_size=1, validation_batch_size=1, prefetch_factor=1,
+                       test_input=0, batch_size=1, validation_batch_size=1, prefetch_factor=1,
                        ):
     if "training" in config["dataset"]:
         training_kwargs = config["dataset"].pop("training")
