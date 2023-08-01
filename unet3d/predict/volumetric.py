@@ -91,6 +91,7 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
             x = item["image"]
+            print(x.shape)
             predictions = model(x)
             for prediction, _x in zip(predictions, x):
                 writer = NibabelWriter()
