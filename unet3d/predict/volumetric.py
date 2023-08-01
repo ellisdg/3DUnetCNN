@@ -89,14 +89,17 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
 
     print("Dataset: ", len(dataloader))
     with torch.no_grad():
-        for idx, (x, y) in enumerate(dataloader):
+        for idx, item in enumerate(dataloader):
+            x = item["image"]
+            print(x.meta["filename_or_obj"])
+            print(x.meta)
             predictions = model(x)
-            for prediction, _x, _y in zip(predictions, x, y):
+            for prediction, _x in zip(predictions, x):
                 prediction_image = prediction_to_image(prediction, _x,
-                                                       reference_image=load_image(x.meta["source_filename"]),
+                                                       reference_image=load_image(x.meta["filename_or_obj"]),
                                                        interpolation=interpolation, segmentation=segmentation,
                                                        segmentation_labels=segmentation_labels,
                                                        sum_then_threshold=sum_then_threshold,
                                                        label_hierarchy=label_hierarchy, threshold=threshold)
-                out_filename = os.path.join(prediction_dir, os.path.basename(_y.meta["source_filename"]))
+                out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"]))
                 prediction_image.to_filename(out_filename)
