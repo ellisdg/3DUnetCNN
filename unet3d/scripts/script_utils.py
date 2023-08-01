@@ -194,6 +194,7 @@ def write_dataset_examples(n_test_cases, training_dataset, output_dir):
         item = training_dataset[index]
         print(item)
         x = item["image"]
+        print(x.shape)
         y = item["labels"]
         affine = x.affine
         x = np.moveaxis(x.numpy(), 0, -1).squeeze()
