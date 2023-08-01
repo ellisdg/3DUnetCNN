@@ -1,10 +1,11 @@
 from monai.transforms import Transform, MapTransform
-from monai.transforms.utils import Mapping
+from monai.transforms.utils import TransformBackends
 from unet3d.utils.utils import compile_one_hot_encoding
 import torch
 
 
 class LabelMapToOneHot(Transform):
+    backend = [TransformBackends.TORCH]
     def __init__(self, labels, dtype=torch.uint8):
         self.labels = labels
         self.dtype = dtype
