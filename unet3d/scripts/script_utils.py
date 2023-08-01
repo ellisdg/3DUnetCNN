@@ -102,7 +102,7 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
     else:
         validation_kwargs = dict()
 
-    # 4. Create datasets
+    # Create datasets
     training_dataset = dataset_class(filenames=config['training_filenames'],
                                      **training_kwargs,
                                      **config["dataset"])
@@ -253,6 +253,6 @@ def load_filenames(filenames):
     if type(filenames) == list:
         return filenames
     elif ".npy" in filenames:
-        return np.load(filenames).tolist()
+        return np.load(filenames, allow_pickle=True).tolist()
     else:
         raise (RuntimeError("Could not load filenames: {}".format(filenames)))

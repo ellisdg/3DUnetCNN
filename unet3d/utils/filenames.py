@@ -184,5 +184,7 @@ def load_bias(bias_filename):
     return np.fromfile(os.path.join(unet3d_path, bias_filename))
 
 
-def load_dataset_class(dataset_kwargs):
+def load_dataset_class(dataset_kwargs, cache_dir="./cache"):
+    if "Persistent" in dataset_kwargs["name"] and "cache_dir" not in dataset_kwargs:
+        dataset_kwargs["cache_dir"] = os.path.abspath(cache_dir)
     return getattr(pytorch_datasets, dataset_kwargs.pop("name"))

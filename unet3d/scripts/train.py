@@ -99,7 +99,7 @@ def run(config_filename, output_dir, namespace):
         print("Log: ", training_log_filename)
 
         label_hierarchy = check_hierarchy(config)
-        dataset_class = load_dataset_class(config["dataset"])
+        dataset_class = load_dataset_class(config["dataset"], cache_dir=os.path.join(work_dir, "cache"))
         training_loader, validation_loader, metric_to_monitor = build_data_loaders_from_config(config,
                                                                                                system_config,
                                                                                                work_dir,
