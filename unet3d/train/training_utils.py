@@ -33,7 +33,9 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
     model.train()
 
     end = time.time()
-    for i, (images, target) in enumerate(train_loader):
+    for i, item in enumerate(train_loader):
+        images = item["image"]
+        target = item["target"]
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -112,8 +114,9 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, use_a
 
     with torch.no_grad():
         end = time.time()
-        for i, (images, target) in enumerate(val_loader):
-
+        for i, item in enumerate(val_loader):
+            images = item["image"]
+            target = item["target"]
             loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus,  use_amp=use_amp)
 
             # measure accuracy and record loss
