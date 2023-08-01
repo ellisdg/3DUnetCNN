@@ -105,8 +105,11 @@ def run(config_filename, output_dir, namespace):
                                                                                                system_config,
                                                                                                work_dir,
                                                                                                dataset_class)
+        pretrained = namespace.pretrained_model_filename
+        if pretrained:
+            pretrained = os.path.abspath(pretrained)
         model = build_or_load_model_from_config(config,
-                                                os.path.abspath(namespace.pretrained_model_filename),
+                                                pretrained,
                                                 system_config["n_gpus"])
         criterion = load_criterion_from_config(config, n_gpus=system_config["n_gpus"])
         optimizer = build_optimizer(optimizer_name=config["optimizer"].pop("name"),
