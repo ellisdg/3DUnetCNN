@@ -24,7 +24,7 @@ def run_training(model, optimizer, criterion, n_epochs, training_loader, validat
 
     if scheduler is not None and start_epoch > 1:
         # step the scheduler and optimizer to account for previous epochs
-        for i in range(start_epoch, 1):
+        for i in range(1, start_epoch):
             optimizer.step()
             if scheduler.__class__ == torch.optim.lr_scheduler.ReduceLROnPlateau:
                 metric = np.asarray(training_log)[i - 1, training_log_header.index(metric_to_monitor)]
@@ -38,7 +38,7 @@ def run_training(model, optimizer, criterion, n_epochs, training_loader, validat
     else:
         scaler = None
 
-    for epoch in range(start_epoch, n_epochs):
+    for epoch in range(start_epoch, n_epochs+1):
         # early stopping
         if training_log:
             metric = np.asarray(training_log)[:, training_log_header.index(metric_to_monitor)]
