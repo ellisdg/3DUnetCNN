@@ -8,12 +8,12 @@ class SegmentationDatasetPersistent(PersistentDataset):
         transforms = list()
         if inference == "auto":
             # Look at the first set and determine if labels are present
-            inference = "labels" in filenames[0].keys()
+            inference = "label" in filenames[0].keys()
 
         if inference:
             keys = ("image",)
         else:
-            keys = ("image", "labels")
+            keys = ("image", "label")
         transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True))
 
         if desired_shape:
@@ -22,7 +22,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
         if not inference:
             if labels is None:
                 raise ValueError("Must set 'labels' for {}".format(self.__class__))
-            transforms.append(LabelMapToOneHotD(keys=("labels",), labels=labels))
+            transforms.append(LabelMapToOneHotD(keys=("label",), labels=labels))
 
         transform = Compose(transforms, lazy=True)
         super().__init__(data=filenames, cache_dir=cache_dir, transform=transform)

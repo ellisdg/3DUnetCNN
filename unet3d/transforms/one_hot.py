@@ -6,6 +6,7 @@ import torch
 
 class LabelMapToOneHot(Transform):
     backend = [TransformBackends.TORCH]
+
     def __init__(self, labels, dtype=torch.uint8):
         self.labels = labels
         self.dtype = dtype
@@ -27,4 +28,3 @@ class LabelMapToOneHotD(MapTransform):
         for key in self.key_iterator(d):
             d[key] = self.converter(d[key])
         return d
-
