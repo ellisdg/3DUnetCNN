@@ -101,6 +101,7 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
                 writer = NibabelWriter()
                 writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=True)
+                print(_x.meta["filename_or_obj"])
                 out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"][0]))
                 print("Writing:", out_filename)
                 writer.write(out_filename, verbose=True)
