@@ -95,7 +95,6 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
             predictions = model(x)
             batch_size = x.shape[0]
-            print(batch_size)
             for idx in range(batch_size):
                 _prediction = predictions[idx]
                 _x = x[idx]
@@ -103,4 +102,5 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
                 writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=True)
                 out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"][0]))
-                writer.write(out_filename)
+                print("Writing:", out_filename)
+                writer.write(out_filename, verbose=True)
