@@ -94,9 +94,13 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
             # TODO: pass desired device to this function
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
             predictions = model(x)
-            for prediction, _x in zip(predictions, x):
+            batch_size = x.shape[0]
+            print(batch_size)
+            for idx in range(batch_size):
+                _prediction = predictions[idx]
+                _x = x[idx]
                 writer = NibabelWriter()
-                writer.set_data_array(_x)
+                writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=True)
                 out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"][0]))
                 writer.write(out_filename)
