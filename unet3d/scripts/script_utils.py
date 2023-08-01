@@ -191,9 +191,10 @@ def write_dataset_examples(n_test_cases, training_dataset, output_dir):
     # return
     os.makedirs(output_dir, exist_ok=True)
     for index in range(n_test_cases):
-        x, y = training_dataset[index]
-        print(x)
-        print(y)
+        item = training_dataset[index]
+        print(item)
+        x = item["image"]
+        y = item["labels"]
         affine = x.affine
         x = np.moveaxis(x.numpy(), 0, -1).squeeze()
         x_image = nib.Nifti1Image(x, affine=affine)
