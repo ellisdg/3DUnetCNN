@@ -35,7 +35,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
     end = time.time()
     for i, item in enumerate(train_loader):
         images = item["image"]
-        target = item["target"]
+        target = item["label"]
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -116,7 +116,7 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, use_a
         end = time.time()
         for i, item in enumerate(val_loader):
             images = item["image"]
-            target = item["target"]
+            target = item["label"]
             loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus,  use_amp=use_amp)
 
             # measure accuracy and record loss
