@@ -4,7 +4,7 @@ from unet3d.transforms import LabelMapToOneHotD
 
 
 class SegmentationDatasetPersistent(PersistentDataset):
-    def __init__(self, filenames, cache_dir, labels=None, inference="auto", desired_shape=None):
+    def __init__(self, filenames, cache_dir, labels=None, inference=False, desired_shape=None):
         transforms = list()
         if inference == "auto":
             # Look at the first set and determine if labels are present
