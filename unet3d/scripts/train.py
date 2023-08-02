@@ -28,7 +28,13 @@ def parse_args():
                              "This is useful if you want to submit training folds to an HPC scheduler system.")
     parser.add_argument("--pretrained_model_filename",
                         help="If this filename exists prior to training, the model will be loaded from the filename. "
-                             "Default is '{output_dir}/{config_basename}/model.pth'.",
+                             "Default is '{output_dir}/{config_basename}/model.pth'. "
+                             "The default behavior is to use flexible loading of the model where not all the "
+                             "model layers/weights have to match. "
+                             "If training is interrupted and resumed, if a pretrained model is defined "
+                             "the pretrained model will be used instead of loading "
+                             "the model that was being trained initially. Therefore, if you are resuming training "
+                             "it is best to not set the pretrained_model_filename.",
                         required=False)
     parser.add_argument("--training_log_filename",
                         help="CSV filename to save the to save the training and validation results for each epoch. "
