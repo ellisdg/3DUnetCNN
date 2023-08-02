@@ -1,39 +1,66 @@
+import torch
+from torch.nn import ReplicationPad3d
 import numpy as np
-from nilearn.image import new_img_like, resample_to_img
+from monai.transforms import SpatialResample
 
-from unet3d.utils.affine import get_extent_from_image, adjust_affine_spacing
+from unet3d.utils.affine import get_extent_from_image, adjust_affine_spacing, get_spacing_from_affine
 
 
-def pad_image(image, mode='edge', pad_width=1):
-    affine = np.copy(image.affine)
-    spacing = np.copy(image.header.get_zooms()[:3])
+def pad_image(image, pad_width=1):
+    affine = image.affine
+    spacing = get_spacing_from_affine(affine)
     affine[:3, 3] -= spacing * pad_width
-    if len(image.shape) > 3:
-        # just pad the first three dimensions
-        pad_width = [[pad_width]*2]*3 + [[0, 0]]*(len(image.shape) - 3)
-    data = np.pad(image.get_data(), pad_width=pad_width, mode=mode)
-    return image.__class__(data, affine)
+    rep_pad = ReplicationPad3d(pad_width)
+    data = rep_pad(image)
+    return image.make_similar(data, affine)
 
 
-def resample_image_to_spacing(image, new_spacing, interpolation='continuous'):
+def resample_image_to_spacing(image, new_spacing, interpolation='bilinear'):
     new_affine = adjust_affine_spacing(image.affine, new_spacing, spacing=image.header.get_zooms()[:3])
-    new_shape = np.asarray(np.ceil(np.divide(get_extent_from_image(image), new_spacing)), dtype=np.int)
-    new_data = np.zeros(new_shape)
-    new_image = new_img_like(image, new_data, affine=new_affine)
+    new_shape = np.asarray(np.ceil(np.divide(get_extent_from_image(image), new_spacing)), dtype=int)
+    new_data = torch.zeros(new_shape)
+    new_image = image.make_similar(image, new_data, affine=new_affine)
     return resample_to_img(image, new_image, interpolation=interpolation)
 
 
-def resample_image(source_image, target_image, interpolation="linear", pad_mode='edge', pad=False):
+def resample_image(source_image, target_image, interpolation="bilinear", pad=False):
     if pad:
-        source_image = pad_image(source_image, mode=pad_mode)
+        source_image = pad_image(source_image)
     return resample_to_img(source_image, target_image, interpolation=interpolation)
 
 
-def resample(image, target_affine, target_shape, interpolation='linear', pad_mode='edge', pad=False, dtype=None):
-    if dtype is None:
-        dtype = image.get_data_dtype()
-    else:
-        image = image.__class__(np.asarray(image.dataobj, dtype), affine=image.affine)
-    target_data = np.zeros(target_shape, dtype=dtype)
-    target_image = image.__class__(target_data, affine=target_affine)
-    return resample_image(image, target_image, interpolation=interpolation, pad_mode=pad_mode, pad=pad)
+def resample(image, target_affine, target_shape, interpolation='bilinear', pad=False, dtype=None, align_corners=True,
+             margin=1e-6):
+    """
+    Resample an image to a target affine and shape.
+    :param image: Image to resample.
+    :param target_affine: Target affine.
+    :param target_shape: Target shape.
+    :param interpolation: Interpolation mode.
+    :param pad: not implemented
+    :param dtype: output data type
+    :param align_corners: align_corners parameter for SpatialResample
+    :param margin: margin for equality check
+    """
+    if dtype:
+        image = image.to(dtype)
+    if (torch.all(torch.abs(image.affine - target_affine) < margin)
+            and torch.all(torch.tensor(image.shape[-3:]) == torch.tensor(target_shape))):
+        return image
+    mode = monai_interpolation_mode(interpolation)
+    resampler = SpatialResample(mode=mode, align_corners=align_corners)
+
+    return resampler(img=image, dst_affine=target_affine, spatial_size=target_shape)
+
+
+def monai_interpolation_mode(interpolation):
+    if interpolation == "linear":
+        return "bilinear"
+    elif interpolation.isdigit():
+        return int(interpolation)
+    return interpolation
+
+
+def resample_to_img(source_image, target_image, interpolation='bilinear', align_corners=True):
+    return resample(source_image, target_image.affine, target_image.shape[1:], interpolation=interpolation,
+                    align_corners=align_corners)

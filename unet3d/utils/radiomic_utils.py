@@ -1,12 +1,9 @@
 import numpy as np
-from multiprocessing import Pool, Manager, Process
-from functools import partial
 import os
-from nilearn.image import reorder_img, resample_to_img
 import nibabel as nib
 
 from .utils import update_progress, move_channels_first, move_channels_last, load_single_image
-from .normalize import zero_mean_normalize_image_data as unet3d_normalize
+from .normalize import zero_mean as unet3d_normalize
 from .resample import resample as unet3d_resample
 from .augment import permute_data, random_permutation_key
 
@@ -102,28 +99,6 @@ def load_fs_lut():
             fs_lut[row[1]] = int(row[0])
     return fs_lut
 
-
-def view_mdfa_image(mdfa_filename, reference_filename):
-    import matplotlib.pyplot as plt
-    reference_image = nib.load(reference_filename)
-    mdfa_image = reorder_img(nib.load(mdfa_filename), resample='linear')
-    resampled_reference_image = resample_to_img(reference_image, mdfa_image,
-                                                interpolation='linear')
-    mdfa_data = mdfa_image.get_data()
-    reference_data = resampled_reference_image.get_data()
-    midway_points = np.asarray(np.divide(mdfa_image.shape[:3], 2), np.int)
-    fig, axes = plt.subplots(3, 3, figsize=(12, 12), num=1)
-    axes[0, 1].imshow(np.rot90(reference_data[midway_points[0], :, :]), cmap='gray')
-    axes[0, 2].imshow(np.rot90(reference_data[:, midway_points[1], :]), cmap='gray')
-    axes[0, 0].imshow(np.rot90(reference_data[:, :, midway_points[2]]), cmap='gray')
-    axes[1, 1].imshow(np.rot90(mdfa_data[midway_points[0], :, :,0]), cmap='gray')
-    axes[1, 2].imshow(np.rot90(mdfa_data[:, midway_points[1], :,0]), cmap='gray')
-    axes[1, 0].imshow(np.rot90(mdfa_data[:, :, midway_points[2], 0]), cmap='gray')
-    axes[2, 1].imshow(np.rot90(mdfa_data[midway_points[0], :, :, 1:]))
-    axes[2, 2].imshow(np.rot90(mdfa_data[:, midway_points[1], :, 1:]))
-    axes[2, 0].imshow(np.rot90(mdfa_data[:, :, midway_points[2], 1:]))
-    plt.show()
-
     
 def label_coordinates(image, label=1):
     """Returns the coordinate locations that are equal to the provided label(default 1)."""
@@ -146,19 +121,6 @@ def index_to_point(index, affine):
     return np.dot(affine, list(index) + [1])[:3]
 
 
-def view_input_data(data):
-    import matplotlib.pyplot as plt
-    midway_points = np.asarray(np.divide(data.shape[:3], 2), np.int)
-    fig, axes = plt.subplots(2, 3, figsize=(12, 8), num=1)
-    axes[0, 1].imshow(np.rot90(data[midway_points[0], :, :,0]), cmap='gray')
-    axes[0, 2].imshow(np.rot90(data[:, midway_points[1], :,0]), cmap='gray')
-    axes[0, 0].imshow(np.rot90(data[:, :, midway_points[2], 0]), cmap='gray')
-    axes[1, 1].imshow(np.rot90(data[midway_points[0], :, :, 1:]))
-    axes[1, 2].imshow(np.rot90(data[:, midway_points[1], :, 1:]))
-    axes[1, 0].imshow(np.rot90(data[:, :, midway_points[2], 1:]))
-    plt.show()
-
-    
 def compute_roc_xy(predictions, truth):
     x = list()
     y = list()
@@ -170,147 +132,6 @@ def compute_roc_xy(predictions, truth):
         y.append(sensitivity)
         x.append(1 - specificity)
     return x, y
-
-
-def compute_distance_roc_xy(distances, truth, max_distance=100.1, step=0.01):
-    x = list()
-    y = list()
-    for t in np.arange(0, max_distance, step):
-        p_pos = distances < t
-        p_neg = p_pos == False
-        sensitivity = np.sum(p_pos[truth])/np.sum(truth)
-        specificity = np.sum(p_neg[truth == False])/np.sum(truth == False)
-        y.append(sensitivity)
-        x.append(1 - specificity)
-    return np.asarray(x), np.asarray(y)
-
-
-def predict_from_queue(model, queue, n_iterations, batch_size):
-    x = list()
-    y = list()
-    predictions = list()
-    i = 0
-    item = queue.get()
-    while item is not None:
-        i += 1
-        _x, _y = item
-        if _x is not None:
-            x.append(_x)
-            y.append(_y)
-            if len(x) >= batch_size or queue.empty():
-                p = model.predict(np.asarray(x)).reshape((len(x),))
-                predictions.extend(zip(p, y))
-                x = list()
-                y = list()
-                update_progress(i/n_iterations)
-        item = queue.get()
-    if len(x) > 0:
-        p = model.predict(np.asarray(x)).reshape((len(x),))
-        predictions.extend(zip(p, y))
-        update_progress(1)
-    return predictions
-
-
-def read_data_into_queue(args, queue, window, reorder=False, flip=False,
-                         interpolation='linear', spacing=(1, 1, 1)):
-    feature_filename, target_filename, indices, target_labels = args
-    feature_image = load_single_image(feature_filename, reorder=reorder)
-    target_image = load_single_image(target_filename, reorder=reorder)
-    target_image_data = target_image.get_data()
-    for i, index in enumerate(indices):
-        label = target_image_data[index[0], index[1], index[2]]
-        point = index_to_point(index, target_image.affine)
-        with np.errstate(invalid='raise'):
-            try:
-                 data = fetch_data_for_point(point,
-                                             feature_image, 
-                                             window=window, 
-                                             flip=flip, 
-                                             interpolation=interpolation, 
-                                             spacing=spacing)
-            except FloatingPointError:
-                label = 0
-                data = None
-        classification = int(label in target_labels)
-        queue.put((data, classification))
-
-
-def fill_queue(dataset, queue, pool_size, func=read_data_into_queue, window=(64, 64, 64),
-               reorder=False, flip=False, interpolation='linear', spacing=(1, 1, 1)):
-    with Pool(pool_size) as pool:
-        pool.map(partial(func, queue=queue, window=window, spacing=spacing,
-                         reorder=reorder, interpolation=interpolation,
-                         flip=flip), iterable=dataset)
-    queue.put(None)
-
-
-def predict_validation_data(model, datasets, window=(64, 64, 64), pool_size=15, batch_size=100, max_queue_size=1000,
-                            data_reading_func=read_data_into_queue, spacing=(1, 1, 1),
-                            flip=False, reorder=False, interpolation='linear'):
-    predictions = dict()
-    for dataset_name in datasets:
-        print(dataset_name)
-        n_iterations = len(datasets[dataset_name]) * len(datasets[dataset_name][0][2])
-        manager = Manager()
-        queue = manager.Queue(max_queue_size)
-        filling_process = Process(target=fill_queue,
-                                  kwargs=dict(dataset=datasets[dataset_name],
-                                              queue=queue,
-                                              pool_size=pool_size,
-                                              func=data_reading_func,
-                                              window=window,
-                                              flip=flip,
-                                              reorder=reorder,
-                                              interpolation=interpolation,
-                                              spacing=spacing))
-        filling_process.start()
-        predictions[dataset_name] = predict_from_queue(queue=queue,
-                                                       n_iterations=n_iterations,
-                                                       model=model,
-                                                       batch_size=batch_size)
-        filling_process.join()
-        del manager
-        del queue
-        del filling_process
-    return predictions
-
-
-def plot_diagonal(ax):
-    ax.plot((-1, 2), (-1, 2), color='k', linestyle='--')
-    
-
-def plot_predictions(predictions):
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots(1)
-    for dataset_name, dataset_predictions in predictions.items():
-        plot_dataset_predictions(ax, dataset_predictions, dataset_name)
-    ax.legend()
-    ax.set_xlabel('1 - Specifity')
-    ax.set_xlim((-.01, 1.01))
-    ax.set_ylabel('Sensitivity')
-    ax.set_ylim((-.01, 1.01))
-    plot_diagonal(ax)
-    return fig
-
-
-def plot_dataset_predictions(ax, dataset_predictions, dataset_name):
-    dataset_predictions = np.asarray(dataset_predictions)
-    p = dataset_predictions[:, 0]
-    t = dataset_predictions[:, 1]
-    s0 = np.sum(t)
-    t = np.asarray(t, np.bool)
-    s1 = np.sum(t)
-    if s1 != s0:
-        raise RuntimeError('Rounding Error! {} != {}'.format(s1, s0))
-    roc_x, roc_y = compute_roc_xy(p, t)
-    ax.plot(roc_x, roc_y, label=dataset_name)
-
-
-def pick_random_list_elements(input_list, n_elements, replace=False):
-    indices = range(len(input_list))
-    random_indices = np.random.choice(indices, replace=replace, size=n_elements)
-    random_elements = np.asarray(input_list)[random_indices]
-    return random_elements.tolist()
 
 
 def binary_classification(label, target_labels):

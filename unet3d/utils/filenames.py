@@ -1,9 +1,8 @@
 import os
 from functools import partial, update_wrapper
 
-from unet3d.utils import sequences as keras_sequences
-from unet3d.utils.pytorch import dataset as pytorch_datasets
-from unet3d.utils.utils import load_image, load_json, in_config
+from unet3d import dataset as pytorch_datasets
+from unet3d.utils.utils import load_image, load_json
 
 unet3d_path = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
@@ -183,9 +182,7 @@ def load_bias(bias_filename):
     return np.fromfile(os.path.join(unet3d_path, bias_filename))
 
 
-def load_sequence(sequence_name):
-    try:
-        sequence_class = getattr(keras_sequences, sequence_name)
-    except AttributeError as error:
-        sequence_class = getattr(pytorch_datasets, sequence_name)
-    return sequence_class
+def load_dataset_class(dataset_kwargs, cache_dir="./cache"):
+    if "Persistent" in dataset_kwargs["name"] and "cache_dir" not in dataset_kwargs:
+        dataset_kwargs["cache_dir"] = os.path.abspath(cache_dir)
+    return getattr(pytorch_datasets, dataset_kwargs.pop("name"))

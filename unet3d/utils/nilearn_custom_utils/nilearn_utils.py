@@ -1,10 +1,13 @@
 import numpy as np
-from nilearn.image.image import check_niimg
+import torch
+# from nilearn.image.image import check_niimg
 from nilearn.image.resampling import get_bounds
 from nilearn.image.image import _crop_img_to as crop_img_to
+import warnings
 
 
-def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None, return_affine=False):
+def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentile=None, return_affine=False,
+             warn=False):
     """Crops img as much as possible
     Will crop img, removing as many zero entries as possible
     without touching non-zero entries. Will leave one voxel of
@@ -34,26 +37,44 @@ def crop_img(img, rtol=1e-8, copy=True, return_slices=False, pad=True, percentil
         Cropped version of the input image
     """
 
-    img = check_niimg(img)
-    data = img.get_data()
+    # img = check_niimg(img)
+    data = img
     if percentile is not None:
-        passes_threshold = data > np.percentile(data, percentile)
+        threshold_shape = [data.shape[0]] + [1 for i in range(len(data.shape) - 1)]  # (C, 1, 1, 1) for 4D
+        passes_threshold = data > torch.as_tensor(np.percentile(data, percentile,
+                                                                axis=(np.arange(1,
+                                                                                data.ndim))).reshape(threshold_shape))
+        # basically it thresholds per channel now, but there is a bunch of hoopla to make sure the shapes work
     else:
         infinity_norm = max(-data.min(), data.max())
-        passes_threshold = np.logical_or(data < -rtol * infinity_norm,
-                                         data > rtol * infinity_norm)
+        passes_threshold = torch.logical_or(data < -rtol * infinity_norm,
+                                            data > rtol * infinity_norm)
 
     if data.ndim == 4:
-        passes_threshold = np.any(passes_threshold, axis=-1)
-    coords = np.array(np.where(passes_threshold))
-    start = coords.min(axis=1)
-    end = coords.max(axis=1) + 1
+        passes_threshold = torch.any(passes_threshold, dim=0)
+    coords = torch.stack(torch.where(passes_threshold))
+
+    if coords.shape[1] == 0:
+        if warn:
+            warnings.warn("No foreground detected. No cropping will be performed.")
+        if return_affine:
+            return img.affine, torch.as_tensor(img.shape[1:])
+        elif return_slices:
+            return
+        else:
+            return img
+
+    values_min, indices_min = torch.min(coords, dim=1)
+    start = values_min
+
+    values_max, indices_max = torch.max(coords, dim=1)
+    end = values_max + 1
 
     if int(pad) > 0:
         pad_width = int(pad)
         # pad with one voxel to avoid resampling problems
-        start = np.maximum(start - pad_width, 0)
-        end = np.minimum(end + pad_width, data.shape[:3])
+        start = torch.maximum(start - pad_width, torch.zeros(start.shape))
+        end = torch.minimum(end + pad_width, torch.as_tensor(data.shape[1:]))
 
     slices = [slice(s, e) for s, e in zip(start, end)]
 
@@ -71,10 +92,10 @@ def image_slices_to_affine(image, slices):
 
     linear_part = affine[:3, :3]
     old_origin = affine[:3, 3]
-    new_origin_voxel = np.array([s.start for s in slices])
-    new_origin = old_origin + linear_part.dot(new_origin_voxel)
+    new_origin_voxel = torch.as_tensor([s.start for s in slices])
+    new_origin = old_origin + torch.matmul(linear_part, new_origin_voxel)
 
-    new_affine = np.eye(4)
+    new_affine = torch.eye(4)
     new_affine[:3, :3] = linear_part
     new_affine[:3, 3] = new_origin
     return new_affine
@@ -103,7 +124,7 @@ def run_with_background_correction(func, image, background=None, returns_array=F
 
 
 def get_background_values(data, axis=(-3, -2, -1)):
-    background = data.min(axis=axis)
+    background, _ = data.min(dim=axis)
     if isinstance(background, np.ndarray):
         while len(background.shape) < len(data.shape):
             background = background[..., None]

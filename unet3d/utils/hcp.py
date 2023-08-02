@@ -1,7 +1,5 @@
 import numpy as np
 
-from unet3d.utils.utils import get_nibabel_data
-
 
 def extract_gifti_surface_vertices(surface, index=0, geometric_type="Anatomical", **kwargs):
     return extract_gifti_array(surface, index=index, geometric_type=geometric_type, **kwargs)
@@ -142,7 +140,7 @@ def extract_cifti_volumetric_data(cifti_image, map_names, subject_id=None, model
     if subject_id is not None:
         for i, map_name in enumerate(list(map_names)):
             map_names[i] = map_name.format(subject_id)
-    data = get_nibabel_data(cifti_image)
+    data = np.asarray(cifti_image.dataobj)
     all_map_names = extract_cifti_scalar_map_names(cifti_image)
     mask = np.in1d(all_map_names, map_names)
     data = np.swapaxes(data[mask], 0, -1)

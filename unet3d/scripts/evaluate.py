@@ -1,8 +1,7 @@
 import os.path
 import glob
 from argparse import ArgumentParser
-from unet3d.utils.filenames import generate_filenames_from_templates
-from unet3d.utils.utils import load_json, load_single_image, get_nibabel_data
+from unet3d.utils.utils import load_json, load_single_image
 import numpy as np
 import pandas as pd
 from multiprocessing import Pool
@@ -36,10 +35,8 @@ def get_filenames(namespace):
 
 def evaluate_filenames(filename1, filename2, labels):
     image1 = load_single_image(filename1, reorder=False)
-    data1 = get_nibabel_data(image1)
     image2 = load_single_image(filename2, reorder=False)
-    data2 = get_nibabel_data(image2)
-    return evaluate_image_data(data1, data2, labels)
+    return evaluate_image_data(image1, image2, labels)
 
 
 def _evaluate_filenames(args, labels):

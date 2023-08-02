@@ -1,27 +1,24 @@
 import numpy as np
-import nibabel as nib
-from nilearn.image import new_img_like, resample_to_img, smooth_img
-from nilearn.image.resampling import BoundingBoxError
+from monai.transforms import GaussianSmooth
 import random
 import itertools
 from collections.abc import Iterable
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.ndimage.filters import gaussian_filter
 
+import torch
+
 from .affine import get_extent_from_image, get_spacing_from_affine, assert_affine_is_diagonal
-from .resample import resample
+from .image import get_image
+from .resample import resample, resample_to_img
 from .nilearn_custom_utils.nilearn_utils import get_background_values
 from .utils import copy_image
 
 
 def flip_image(image, axis):
-    try:
-        new_data = np.copy(image.get_data())
-        for axis_index in axis:
-            new_data = np.flip(new_data, axis=axis_index)
-    except TypeError:
-        new_data = np.flip(image.get_data(), axis=axis)
-    return new_img_like(image, data=new_data)
+    new_data = image.detach().clone()
+    new_data = torch.flip(new_data, dims=axis)
+    return image.make_similar(data=new_data)
 
 
 def random_flip_dimensions(n_dimensions):
@@ -33,7 +30,7 @@ def random_flip_dimensions(n_dimensions):
 
 
 def random_scale_factor(n_dim=3, mean=1., std=0.25):
-    return np.random.normal(mean, std, n_dim)
+    return torch.normal(mean, std, size=(n_dim,))
 
 
 def random_boolean():
@@ -42,7 +39,7 @@ def random_boolean():
 
 def distort_image(image, flip_axis=None, scale_factor=None, translation_scale=None):
     if translation_scale is not None:
-        image = translate_image(image, translation_scale, copy=False)
+        image = translate_image(image, translation_scale)
     if flip_axis:
         image = flip_image(image, flip_axis)
     if scale_factor is not None:
@@ -74,30 +71,20 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
         copied_image = copy_image(image)
         distorted_image = distort_image(copied_image, flip_axis=flip_axis, scale_factor=scale_factor,
                                         translation_scale=translation_scale)
-        try:
-            resampled_image = resample_to_img(source_img=distorted_image, target_img=image, interpolation=interpolation)
-        except BoundingBoxError:
-            resampled_image = distorted_image
-        data_list.append(resampled_image.get_data())
-    data = np.asarray(data_list)
+        resampled_image = resample_to_img(source_image=distorted_image, target_image=image, interpolation=interpolation)
+        data_list.append(resampled_image)
+    data = torch.tensor(data_list)
     if background_correction:
-        data[:] += background
+        data = data + background
     if noise_factor is not None:
         data = add_noise(data, sigma_factor=noise_factor)
     truth_image = get_image(truth, affine)
     copied_truth_image = copy_image(truth_image)
     distorted_truth = distort_image(copied_truth_image, flip_axis=flip_axis, scale_factor=scale_factor,
                                     translation_scale=translation_scale)
-    try:
-        resampled_truth = resample_to_img(distorted_truth, truth_image, interpolation="nearest")
-    except BoundingBoxError:
-        resampled_truth = distorted_truth
-    truth_data = resampled_truth.get_data()
+    resampled_truth = resample_to_img(distorted_truth, truth_image, interpolation="nearest")
+    truth_data = resampled_truth
     return data, truth_data
-
-
-def get_image(data, affine, nib_class=nib.Nifti1Image):
-    return nib_class(dataobj=data, affine=affine)
 
 
 def generate_permutation_keys():
@@ -138,13 +125,13 @@ def permute_data(data, key):
     rotated 90 degrees around the z-axis, then reversed on the y-axis, and then
     transposed.
     """
-    data = np.copy(data)
+    data = data.detach().clone()
     (rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose = key
 
     if rotate_y != 0:
-        data = np.rot90(data, rotate_y, axes=(1, 3))
+        data = torch.rot90(data, rotate_y, dims=(1, 3))
     if rotate_z != 0:
-        data = np.rot90(data, rotate_z, axes=(2, 3))
+        data = torch.rot90(data, rotate_z, dims=(2, 3))
     if flip_x:
         data = data[:, ::-1]
     if flip_y:
@@ -168,7 +155,7 @@ def random_permutation_x_y(x_data, y_data, channel_axis=0):
     """
     key = random_permutation_key()
     if channel_axis != 0:
-        return [np.moveaxis(permute_data(np.moveaxis(data, channel_axis, 0), key), 0, channel_axis)
+        return [torch.moveaxis(permute_data(torch.moveaxis(data, channel_axis, 0), key), 0, channel_axis)
                 for data in (x_data, y_data)]
     else:
         return permute_data(x_data, key), permute_data(y_data, key)
@@ -176,7 +163,7 @@ def random_permutation_x_y(x_data, y_data, channel_axis=0):
 
 def reverse_permute_data(data, key):
     key = reverse_permutation_key(key)
-    data = np.copy(data)
+    data = data.detach().clone()
     (rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose = key
 
     if transpose:
@@ -189,9 +176,9 @@ def reverse_permute_data(data, key):
     if flip_x:
         data = data[:, ::-1]
     if rotate_z != 0:
-        data = np.rot90(data, rotate_z, axes=(2, 3))
+        data = torch.rot90(data, rotate_z, dims=(2, 3))
     if rotate_y != 0:
-        data = np.rot90(data, rotate_y, axes=(1, 3))
+        data = torch.rot90(data, rotate_y, dims=(1, 3))
     return data
 
 
@@ -209,9 +196,9 @@ def add_noise(data, mean=0., sigma_factor=0.1):
     deviation of the additive noise. Assumes standard deviation is the same for all channels.
     :return:
     """
-    sigma = np.std(data) * sigma_factor
-    noise = np.random.normal(mean, sigma, data.shape)
-    return np.add(data, noise)
+    sigma = torch.abs(torch.multiply(torch.std(data), sigma_factor))
+    noise = torch.normal(mean, sigma, size=data.shape)
+    return torch.add(data, noise)
 
 
 def translate_affine(affine, shape, translation_scales, copy=True):
@@ -225,11 +212,11 @@ def translate_affine(affine, shape, translation_scales, copy=True):
     :return: affine
     """
     if copy:
-        affine = np.copy(affine)
+        affine = affine.detach().clone()
     spacing = get_spacing_from_affine(affine)
-    extent = np.multiply(shape, spacing)
-    translation = np.multiply(translation_scales, extent)
-    affine[:3, 3] += translation
+    extent = torch.multiply(shape, spacing)
+    translation = torch.multiply(translation_scales, extent)
+    affine[:3, 3] = affine[:3, 3] + translation
     return affine
 
 
@@ -244,9 +231,9 @@ def translate_image(image, translation_scales, interpolation="linear"):
     randomly translated on average (0.05 for example).
     :return: translated image
     """
-    affine = np.copy(image.affine)
-    translation = np.multiply(translation_scales, get_extent_from_image(image))
-    affine[:3, 3] += translation
+    affine = image.affine.detach().clone()
+    translation = torch.multiply(translation_scales, get_extent_from_image(image))
+    affine[:3, 3] = affine[:3, 3] + translation
     return resample(image, target_affine=affine, target_shape=image.shape, interpolation=interpolation)
 
 
@@ -260,20 +247,19 @@ def _rotate_affine(affine, shape, rotation):
     """
     assert_affine_is_diagonal(affine)
     # center the image on (0, 0, 0)
-    temp_origin = (affine.diagonal()[:3] * np.asarray(shape)) / 2
-    temp_affine = np.copy(affine)
+    temp_origin = (affine.diagonal()[:3] * torch.tensor(shape)) / 2
+    temp_affine = affine.detach().clone()
     temp_affine[:, :3] = temp_origin
 
-    rotation_affine = np.diag(np.ones(4))
+    rotation_affine = torch.diag(torch.ones(4))
     theta_x, theta_y, theta_z = rotation
-    affine_x = np.copy(rotation_affine)
-    affine_x[1, 1] = np.cos(theta_x)
-    affine_x[1, 2] = -np.sin(theta_x)
-    affine_x[2, 1] = np.sin(theta_x)
-    affine_x[2, 2] = np.cos(theta_x)
-    print(affine_x)
-    x_rotated_affine = np.dot(affine, affine_x)
-    new_affine = np.copy(x_rotated_affine)
+    affine_x = rotation_affine.detach().clone()
+    affine_x[1, 1] = torch.cos(theta_x)
+    affine_x[1, 2] = -torch.sin(theta_x)
+    affine_x[2, 1] = torch.sin(theta_x)
+    affine_x[2, 2] = torch.cos(theta_x)
+    x_rotated_affine = torch.matmul(affine, affine_x)
+    new_affine = x_rotated_affine.detach().clone()
     new_affine[:, :3] = affine[:, :3]
     return new_affine
 
@@ -283,8 +269,8 @@ def find_image_center(image, ndim=3):
 
 
 def find_center(affine, shape, ndim=3):
-    return np.matmul(affine,
-                     list(np.divide(shape[:ndim], 2)) + [1])[:ndim]
+    center_voxel = torch.divide(shape[:ndim], 2)
+    return torch.matmul(affine, torch.cat((center_voxel, torch.ones(1))))[:ndim]
 
 
 def scale_image(image, scale, ndim=3, interpolation='linear'):
@@ -304,23 +290,21 @@ def scale_affine(affine, shape, scale, ndim=3):
     :return:
     """
     if not isinstance(scale, Iterable):
-        scale = np.ones(ndim) * scale
-    else:
-        scale = np.asarray(scale)
+        scale = torch.ones(ndim) * scale
 
     # 1. find the image center
     center = find_center(affine, shape, ndim=ndim)
 
     # 2. translate the affine
-    affine = affine.copy()
+    affine = affine.detach().clone()
     origin = affine[:ndim, ndim]
-    t = np.diag(np.ones(ndim + 1))
+    t = torch.diag(torch.ones(ndim + 1))
     t[:ndim, ndim] = (center - origin) * (1 - 1 / scale)
-    affine = np.matmul(t, affine)
+    affine = torch.matmul(t, affine)
 
     # 3. scale the affine
-    s = np.diag(list(1 / scale) + [1])
-    affine = np.matmul(affine, s)
+    s = torch.diag(torch.cat(((1 / scale), torch.ones(1))))
+    affine = torch.matmul(affine, s)
     return affine
 
 
@@ -339,13 +323,19 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
     dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
     dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
     dz = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
-    x, y, z, c = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]), np.arange(shape[2]), np.arange(shape[3]),
+    x, y, z, c = torch.meshgrid(torch.arange(shape[0]), torch.arange(shape[1]), torch.arange(shape[2]), torch.arange(shape[3]),
                              indexing="ij")
-    indices = np.reshape(x+dx, (-1, 1)), np.reshape(y+dy, (-1, 1)), np.reshape(z+dz, (-1, 1)), np.reshape(c, (-1, 1))
+    indices = torch.reshape(x+dx, (-1, 1)), torch.reshape(y+dy, (-1, 1)), torch.reshape(z+dz, (-1, 1)), torch.reshape(c, (-1, 1))
 
     distored_image = map_coordinates(image, indices, order=1, mode='reflect')
     distored_target_image = map_coordinates(target_image, indices, order=1, mode='reflect')
     return distored_image.reshape(image.shape), distored_target_image.reshape(image.shape)
+
+
+def smooth_img(image, fwhm):
+    sigma = torch.divide(fwhm, get_spacing_from_affine(image.affine))
+    array = GaussianSmooth(sigma=sigma)(image)
+    return image.make_similar(array)
 
 
 def random_blur(image, mean, std):
@@ -353,13 +343,12 @@ def random_blur(image, mean, std):
     mean: mean fwhm in millimeters.
     std: standard deviation of fwhm in millimeters.
     """
-    return smooth_img(image, fwhm=np.abs(np.random.normal(mean, std, 3)).tolist())
+    return smooth_img(image, fwhm=torch.abs(torch.normal(mean, std, size=(3,))))
 
 
 def affine_swap_axis(affine, shape, axis=0):
-    assert_affine_is_diagonal(affine)
-    new_affine = np.copy(affine)
-    origin = affine[axis, 3]
-    new_affine[axis, 3] = origin + shape[axis] * affine[axis, axis]
-    new_affine[axis, axis] = -affine[axis, axis]
-    return new_affine
+    """FROM MONAI FLIP"""
+    mat = torch.as_tensor(torch.eye(len(affine)), dtype=affine.dtype)
+    sp = axis - 1
+    mat[sp, sp], mat[sp, -1] = mat[sp, sp] * -1, shape[axis] - 1
+    return affine @ mat
