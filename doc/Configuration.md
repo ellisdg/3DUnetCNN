@@ -13,61 +13,88 @@ This is helpful for running multiple experiments as it provides documentation fo
 each configuration you have experimented with. A configuration file should produce
 similar results each time it is used for training.
 
-TODO: Update example
+
 ## Configuration Example <a name="example"></a>
+Example python code to setup the configuration file for BraTS 2020 data.
 ```
-{ "window": [176, 224, 144],  # image size to input into the model
-  "n_features": 1,  # number of features or channels for input
-  "optimizer": "Adam",  # class of PyTorch optimizer
-  "loss": "DiceLoss",  # name of loss function from MONAI or Pytorch
-  "reorder": true,  # changes the orientation of input images to RAS
-  "n_epochs": 200,  # training lasts for n epochs
-  "save_every_n_epochs": null,  # saves a model every n epochs
-  "initial_learning_rate": 1e-4,  # the initial learning rate
-  "early_stopping_patience": 20,  # stop training after the validation loss stops improving for n epochs
-  "save_best": true,  # save the best model from training (the latest model will still be saved)
-  "save_last_n_models": null,  # save the last n models from training
-  "batch_size": 1,  # usually set to the number of GPUs you are using
-  "validation_batch_size": 1,  # usually the same as batch_size
-  "model_name": "AutocastUNet",  # name of the model class to use
-  "model_kwargs": {  # arguments for initialization of the model class
-    "base_width": 32,
-    "encoder_blocks": [2, 2, 2, 2, 2],
-    "decoder_mirrors_encoder": false,
-    "input_shape": [176, 224, 144],
-    "activation": "sigmoid"
-  },
-  "skip_validation": false,  # do not run the validation
-  "iterations_per_epoch": 1,  # iterate through training n times per epoch
-  "n_outputs": 1,  # number of output labels
-  "sequence": "WholeVolumeSegmentationDataset",  # dataset class to use for loading data
-  "sequence_kwargs": {  # arguments for initialization of all datasets (both training and validation)
-    "normalization": "zero_mean",  # normalization function
-    "crop": true,  # crop the input images to remove blank space
-    "cropping_kwargs": {"percentile": 0.75}
-    "interpolation": "linear", 
-    "labels": [1],  # labels in the output label map
-    "use_label_hierarchy": false  # use when the labels have heirarchical ordering such as in the BRATS challenge
-  },
-  "additional_training_args": {  # arguments for intitialization of training dataset only
-    "flip_left_right_probability": 0.5,  # upon loading, mirrors an input/output image set L/R 50% of the time
-    "random_permutation_probability": null  # if not null, will randomly permute along any axis resulting in 48 unique permutations
-  },
-  "additional_validation_args": {  # arguments for initialization of validation dataset only
-    "random_permutation_probability": null
-  },
-  "training_function_kwargs": {
-    "amp": true,  # use automatic mixed percision (if using "AutocastUNet", this should be true)
-    "scheduler_name": "ReduceLROnPlateau",  # PyTorch scheduler class
-    "scheduler_kwargs": {  # scheduler class arguments
-      "patience": 10,
-      "factor": 0.5,
-      "min_lr": 1e-08
-    }
-  },
-  "training_filenames = [["in_file1.nii.gz", "labelmap1.nii.gz", ...]
-  "validation_filenames" = [["in_file2.nii.gz", "labelmap2.nii.gz", ...]
-  "test_filenames" = [["in_file3.nii.gz", "labelmap3.nii.gz", ...]  # if applicable
+config = dict()
+
+model_config = dict()
+model_config["name"] = "DynUNet"  # network model name from MONAI
+# set the network hyper-parameters
+model_config["in_channels"] = 4  # 4 input images for the BraTS challenge
+model_config["out_channels"] = 3   # whole tumor, tumor core, enhancing tumor
+model_config["spatial_dims"] = 3   # 3D input images
+model_config["deep_supervision"] = False  # do not check outputs of lower layers
+model_config["strides"] = [[1, 1, 1], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2], [2, 2, 2]][:-1]  # number of downsampling convolutions
+model_config["filters"] = [64, 96, 128, 192, 256, 384, 512, 768, 1024][:len(model_config["strides"])]  # number of filters per layer
+model_config["kernel_size"] = [[3, 3, 3]] * len(model_config["strides"])  # size of the convolution kernels per layer
+model_config["upsample_kernel_size"] = model_config["strides"][1:]  # should be the same as the strides
+
+# put the model config in the main config
+config["model"] = model_config
+
+config["optimizer"] = {'name': 'Adam', 
+                       'lr': 0.001}  # initial learning rate
+
+# define the loss
+config["loss"] = {'name': 'GeneralizedDiceLoss', # from Monai
+                  'include_background': False,  # we do not have a label for the background, so this should be false
+                  'sigmoid': True}  # transform the model logits to activations
+
+# set the cross validation parameters
+config["cross_validation"] = {'folds': 5,  # number of cross validation folds
+                              'seed': 25},  # seed to make the generation of cross validation folds consistent across different trials
+# set the scheduler parameters
+config["scheduler"] = {'name': 'ReduceLROnPlateau', 
+                       'patience': 10,  # wait 10 epochs with no improvement before reducing the learning rate
+                       'factor': 0.5,   # multiply the learning rate by 0.5
+                       'min_lr': 1e-08}  # stop reducing the learning rate once it gets to 1e-8
+
+# set the dataset parameters
+config["dataset"] = {'name': 'SegmentationDatasetPersistent',  # 'Persistent' means that it will save the preprocessed outputs generated during the first epoch
+# However, using 'Persistent', does also increase the time of the first epoch compared to the other epochs, which should run faster
+  'desired_shape': [128, 128, 128],  # resize the images to this shape, increase this to get higher resolution images (increases computation time and memory usage)
+  'labels': [1, 3, 2],  # 1: edema; 2: enhancing tumor, 3: necrotic center
+  'setup_label_hierarchy': True,  # changes the labels to whole tumor (1, 3, 2), tumor core (3, 2), and enhancing tumor (2) to be consistent with the challenge
+  'normalization': 'NormalizeIntensityD',  # z score normalize the input images to zero mean unit standard deviation
+  'normalization_kwargs': {'channel_wise': True, "nonzero": False},  # perform the normalization channel wise and include the background
+  'resample': True,  # resample the images when resizing them, otherwise the resize could crop out regions of interest
+  'crop_foreground': True,  # crop the foreground of the images
+                    }
+config["training"] = {'batch_size': 1,  # number of image/label pairs to read at a time during training
+  'validation_batch_size': 1,  # number of image/label pairs to read at atime during validation
+  'amp': False,  # don't set this to true unless the model you are using is setup to use automatic mixed precision (AMP)
+  'early_stopping_patience': None,  # stop the model early if the validaiton loss stops improving
+  'n_epochs': 250,  # number of training epochs, reduce this if you don't want training to run as long
+  'save_every_n_epochs': None,  # save the model every n epochs (otherwise only the latest model will be saved)
+  'save_last_n_models': None,  # save the last n models 
+  'save_best': True}  # save the model that has the best validation loss
+
+# get the training filenames
+config["training_filenames"] = list()
+
+# if your BraTS data is stored somewhere else, change this code to fetch that data
+for subject_folder in sorted(glob.glob("BraTS2020_TrainingData/MICCAI_BraTS2020_TrainingData/*")):
+    if not os.path.isdir(subject_folder):
+        continue
+    image_filenames = sorted(glob.glob(os.path.join(subject_folder, "*.nii")))
+    for i in range(len(image_filenames)):
+        if "seg" in image_filenames[i].lower():
+            label = image_filenames.pop(i)
+            break
+    assert len(image_filenames) == 4
+    config["training_filenames"].append({"image": image_filenames, "label": label})
+
+
+config["bratsvalidation_filenames"] = list()  # "validation_filenames" is reserved for the cross-validation, so we will call this bratsvalidation_filenames
+for subject_folder in sorted(glob.glob("BraTS2020_ValidationData/MICCAI_BraTS2020_ValidationData/*")):
+    if not os.path.isdir(subject_folder):
+        continue
+    image_filenames = sorted(glob.glob(os.path.join(subject_folder, "*.nii")))
+    assert len(image_filenames) == 4
+    config["bratsvalidation_filenames"].append({"image": image_filenames})
+  
 ```
 ## GPU Memory Constraints and Input Size <a name="gpu"></a>
 I find that an input size of 176x224x144 works well for 32GB V100 GPUs.

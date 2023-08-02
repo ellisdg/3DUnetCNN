@@ -1,6 +1,6 @@
 # 3D U-Net Convolution Neural Network
 
-[[Update March 2023 - data loading is now 10x faster!](doc/Changes.md)]
+[[Update August 2023 - data loading is now 10x faster!](doc/Changes.md)]
 
 * [Tutorials](#tutorials)
 * [Introduction](#introduction)
@@ -17,10 +17,6 @@
 ## Tutorials <a name="tutorials"></a>
 ### [Brain Tumor Segmentation (BraTS 2022)](examples/brats2020)
 [![Tumor Segmentation Example](doc/viz/tumor_segmentation_illusatration.gif)](examples/brats2020)
-### [Anatomical Tracings of Lesions After Stroke (ATLAS 2.0)](examples/atlas_2022)
-[![ATLAS Segmentation Example](doc/viz/ATLAS.gif)](examples/atlas2022)
-### [Automatic Cranial Implant Design (AutoImpant 2020)](examples/autoimplant2020)
-[![ Segmentation Example](doc/viz/AutoImplant-Viz.png)](examples/autoimplant2020)
 
 ## Introduction <a name="introduction"></a>
 We designed 3DUnetCNN to make it easy to apply and control the training and application of various deep learning models to medical imaging data.

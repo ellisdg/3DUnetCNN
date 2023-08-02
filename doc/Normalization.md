@@ -1,4 +1,6 @@
-Normalization options:
+Currently any MONAI normalization transform is supported.
+
+Old options that no longer work but may be implemented in the future:
 * zero_mean
     z score normalization where the mean is divided by the standard deviation.
 * foreground_zero_mean_normalize_image_data
