@@ -108,6 +108,8 @@ def run(config_filename, output_dir, namespace):
         pretrained = namespace.pretrained_model_filename
         if pretrained:
             pretrained = os.path.abspath(pretrained)
+        else:
+            pretrained = model_filename
         model = build_or_load_model_from_config(config,
                                                 pretrained,
                                                 system_config["n_gpus"])
