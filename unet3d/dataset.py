@@ -22,7 +22,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
         else:
             keys = ("image", "label")
         transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True,
-                                     dtype=("float32", "uchar")))
+                                     dtype=None))
 
         if crop_foreground:
             foreground_func = partial(percentile_threshold, percentile=foreground_percentile)
