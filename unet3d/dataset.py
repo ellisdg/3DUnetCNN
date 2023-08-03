@@ -10,7 +10,7 @@ from functools import partial
 
 class SegmentationDatasetPersistent(PersistentDataset):
     def __init__(self, filenames, cache_dir, labels=None, inference="auto", desired_shape=None,
-                 normalization="zero_mean", normalization_kwargs=None, crop_foreground=False,
+                 normalization="NormalizeIntensityD", normalization_kwargs=None, crop_foreground=False,
                  foreground_percentile=0.1, random_crop=False, resample=False):
         transforms = list()
         if inference == "auto":
@@ -35,7 +35,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
 
         if desired_shape:
             if random_crop:
-                transforms.append(RandSpatialCropD(keys=keys, roi_size=desired_shape, lazy=True))
+                transforms.append(RandSpatialCropD(keys=keys, roi_size=desired_shape, lazy=True, random_size=False))
             elif resample:
                 transforms.append(ResizeD(keys=keys, spatial_size=desired_shape, mode=("trilinear", "nearest"),
                                           lazy=True))
@@ -45,14 +45,10 @@ class SegmentationDatasetPersistent(PersistentDataset):
         if normalization_kwargs is None:
             normalization_kwargs = dict()
         if normalization is not None:
-            if normalization == "zero_mean":
-                normalization_class = NormalizeIntensityD
-                transforms.append(NormalizeIntensityD(keys=("image",), **normalization_kwargs))
-            else:
-                try:
-                    normalization_class = getattr(monai.transforms, normalization)
-                except ValueError:
-                    raise ValueError("{} normalization method not yet implemented".format(normalization))
+            try:
+                normalization_class = getattr(monai.transforms, normalization)
+            except ValueError:
+                raise ValueError("{} normalization method not yet implemented".format(normalization))
             transforms.append(normalization_class(keys=("image",), **normalization_kwargs))
 
         transform = Compose(transforms, lazy=True)
