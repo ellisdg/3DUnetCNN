@@ -11,7 +11,7 @@ from functools import partial
 class SegmentationDatasetPersistent(PersistentDataset):
     def __init__(self, filenames, cache_dir, labels=None, inference="auto", desired_shape=None,
                  normalization="zero_mean", normalization_kwargs=None, crop_foreground=False,
-                 foreground_percentile=0.1, random_crop=True, resample=False):
+                 foreground_percentile=0.1, random_crop=False, resample=False):
         transforms = list()
         if inference == "auto":
             # Look at the first set and determine if label is present
