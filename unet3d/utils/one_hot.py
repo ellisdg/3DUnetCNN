@@ -20,7 +20,6 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, ret
         data = torch.round(data, decimals=0)
     new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
     y = MetaTensor(torch.zeros(new_shape, dtype=dtype), meta=data.meta)
-    print(torch.unique(data), labels, n_labels)
     for label_index in range(n_labels):
         if labels is not None:
             if type(labels[label_index]) == list:
