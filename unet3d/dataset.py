@@ -1,4 +1,5 @@
 import monai
+import torch
 from monai.data import PersistentDataset
 from monai.transforms import LoadImageD, ResizeWithPadOrCropD, Compose, NormalizeIntensityD, ResizeD, CropForegroundD
 from unet3d.transforms import LabelMapToOneHotD
@@ -20,7 +21,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
             keys = ("image",)
         else:
             keys = ("image", "label")
-        transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True))
+        transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True, dtype=("float32", "int")))
 
         if crop_foreground:
             foreground_func = partial(percentile_threshold, percentile=foreground_percentile)
