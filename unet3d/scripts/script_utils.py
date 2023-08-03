@@ -201,10 +201,9 @@ def write_dataset_examples(n_test_cases, training_dataset, output_dir):
         x_image.to_filename(os.path.join(output_dir, "input_test_{}.nii.gz".format(index)))
         if len(y.shape) >= 3:
             src_filename = y.meta['filename_or_obj']
-            print(src_filename)
             y = np.moveaxis(y.numpy(), 0, -1)
             y_image = nib.Nifti1Image(y.squeeze(), affine=affine)
-            y_image.to_filename(os.path.join(output_dir, "target_test_{}.nii.gz".format(src_filename)))
+            y_image.to_filename(os.path.join(output_dir, "target_test_{}".format(os.path.basename(src_filename))))
 
 
 def check_hierarchy(config):
