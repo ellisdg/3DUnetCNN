@@ -13,7 +13,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
                  foreground_percentile=0.1):
         transforms = list()
         if inference == "auto":
-            # Look at the first set and determine if labels are present
+            # Look at the first set and determine if label is present
             inference = "label" not in filenames[0].keys()
 
         if inference:
