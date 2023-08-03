@@ -1,7 +1,8 @@
 from unittest import TestCase
 import numpy as np
 
-from unet3d.utils.utils import convert_one_hot_to_label_map, split_left_right
+from unet3d.utils.utils import split_left_right
+from unet3d.utils.one_hot import convert_one_hot_to_label_map
 
 
 class TestSegment(TestCase):

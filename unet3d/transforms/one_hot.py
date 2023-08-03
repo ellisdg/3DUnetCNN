@@ -1,6 +1,6 @@
 from monai.transforms import Transform, MapTransform
 from monai.transforms.utils import TransformBackends
-from unet3d.utils.utils import compile_one_hot_encoding
+from unet3d.utils.one_hot import compile_one_hot_encoding
 import torch
 
 

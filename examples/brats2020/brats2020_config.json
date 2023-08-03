@@ -110,8 +110,8 @@
         "lr": 0.001
     },
     "loss": {
-        "name": "GeneralizedDiceLoss",
-        "include_background": false,
+        "name": "DiceLoss",
+        "include_background": true,
         "sigmoid": true
     },
     "cross_validation": [
