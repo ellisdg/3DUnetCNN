@@ -55,9 +55,8 @@ config["scheduler"] = {'name': 'ReduceLROnPlateau',
 config["dataset"] = {'name': 'SegmentationDatasetPersistent',  # 'Persistent' means that it will save the preprocessed outputs generated during the first epoch
 # However, using 'Persistent', does also increase the time of the first epoch compared to the other epochs, which should run faster
   'desired_shape': [128, 128, 128],  # resize the images to this shape, increase this to get higher resolution images (increases computation time and memory usage)
-  'labels': [1, 3, 2],  # 1: edema; 2: enhancing tumor, 3: necrotic center
-  'setup_label_hierarchy': True,  # changes the labels to whole tumor (1, 3, 2), tumor core (3, 2), and enhancing tumor (2) to be consistent with the challenge
-  'normalization': 'NormalizeIntensityD',  # z score normalize the input images to zero mean unit standard deviation
+  'labels': [2, 1, 4],  # 1: necrotic center; 2: edema, 3: enhancing tumor
+  'setup_label_hierarchy': True,  # changes the labels to whole tumor (2, 1, 4), tumor core (1, 4), and enhancing tumor (4) to be consistent with the challenge  'normalization': 'NormalizeIntensityD',  # z score normalize the input images to zero mean unit standard deviation
   'normalization_kwargs': {'channel_wise': True, "nonzero": False},  # perform the normalization channel wise and include the background
   'resample': True,  # resample the images when resizing them, otherwise the resize could crop out regions of interest
   'crop_foreground': True,  # crop the foreground of the images

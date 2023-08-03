@@ -134,9 +134,9 @@
             128
         ],
         "labels": [
+            2,
             1,
-            3,
-            2
+            4
         ],
         "setup_label_hierarchy": true,
         "normalization": "NormalizeIntensityD",
