@@ -4,7 +4,7 @@ from scipy.ndimage import binary_erosion
 from monai.data import MetaTensor
 
 
-def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, return_4d=True):
+def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, return_4d=True, round=True):
     """
     Translates a label map into a set of binary labels.
     :param data: numpy array containing the label map with shape: (n_samples, 1, ...).
@@ -16,6 +16,8 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, ret
     while len(data.shape) < 5:
         data = data[None]
     assert data.shape[1] == 1
+    if round:
+        data = torch.round(data, decimals=0)
     new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
     y = MetaTensor(torch.zeros(new_shape, dtype=dtype), meta=data.meta)
     print(torch.unique(data), labels, n_labels)
