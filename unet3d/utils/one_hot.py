@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from scipy.ndimage import binary_erosion
+from monai.data import MetaTensor
 
 
 def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, return_4d=True):
@@ -16,7 +17,7 @@ def compile_one_hot_encoding(data, n_labels, labels=None, dtype=torch.uint8, ret
         data = data[None]
     assert data.shape[1] == 1
     new_shape = [data.shape[0], n_labels] + list(data.shape[2:])
-    y = torch.zeros(new_shape, dtype=dtype)
+    y = MetaTensor(torch.zeros(new_shape, dtype=dtype), meta=data.meta)
     for label_index in range(n_labels):
         if labels is not None:
             if type(labels[label_index]) == list:
