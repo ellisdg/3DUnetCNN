@@ -15,7 +15,7 @@
 
 
 ## Tutorials <a name="tutorials"></a>
-### [Brain Tumor Segmentation (BraTS 2022)](examples/brats2020)
+### [Brain Tumor Segmentation (BraTS 2020)](examples/brats2020)
 [![Tumor Segmentation Example](doc/viz/tumor_segmentation_illusatration.gif)](examples/brats2020)
 
 ## Introduction <a name="introduction"></a>

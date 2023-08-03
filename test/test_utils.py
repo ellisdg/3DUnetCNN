@@ -6,8 +6,9 @@ import numpy as np
 from unet3d.utils.affine import resize_affine, get_spacing_from_affine
 from unet3d.utils.resample import resample, resample_image_to_spacing
 from unet3d.utils.nilearn_custom_utils.nilearn_utils import crop_img, reorder_affine
-from unet3d.utils.utils import (compile_one_hot_encoding, break_down_volume_into_half_size_volumes,
-                              combine_half_size_volumes)
+from unet3d.utils.utils import (break_down_volume_into_half_size_volumes,
+                                combine_half_size_volumes)
+from unet3d.utils.one_hot import compile_one_hot_encoding
 
 
 class TestUtils(TestCase):

@@ -3,7 +3,8 @@ import torch
 from monai.data import NibabelWriter
 from unet3d.utils.resample import resample_to_img
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
-from unet3d.utils.utils import one_hot_image_to_label_map, load_image
+from unet3d.utils.utils import load_image
+from unet3d.utils.one_hot import one_hot_image_to_label_map
 
 
 def load_volumetric_model(model_name, model_filename, n_gpus, strict, **kwargs):
