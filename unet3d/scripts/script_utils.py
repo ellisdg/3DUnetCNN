@@ -10,6 +10,7 @@ from copy import deepcopy
 from unet3d import losses
 from unet3d.utils.utils import load_json, dump_json
 from unet3d.models.build import build_or_load_model
+import unet3d.utils.lr_scheduler
 
 
 def add_machine_config_to_parser(parser):
@@ -181,7 +182,7 @@ def build_scheduler_from_config(config, optimizer):
     if "scheduler" not in config:
         scheduler = None
     else:
-        scheduler_class = getattr(torch.optim.lr_scheduler, config["scheduler"].pop("name"))
+        scheduler_class = getattr(unet3d.utils.lr_scheduler, config["scheduler"].pop("name"))
         scheduler = scheduler_class(optimizer, **config["scheduler"])
     return scheduler
 
