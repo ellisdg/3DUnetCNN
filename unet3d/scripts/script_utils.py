@@ -136,8 +136,7 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
     return training_loader, validation_loader, metric_to_monitor
 
 
-def build_inference_loaders_from_config(config, dataset_class, system_config):
-    inference_dataloaders = list()
+def fetch_inference_dataset_kwargs_from_config(config):
     if "inference" in config:
         inference_dataset_kwargs = in_config("dataset", config["inference"], dict())
         batch_size = in_config("batch_size", config["inference"], 1)
@@ -146,6 +145,12 @@ def build_inference_loaders_from_config(config, dataset_class, system_config):
         inference_dataset_kwargs = dict()
         batch_size = 1
         prefetch_factor = 1
+    return inference_dataset_kwargs, batch_size, prefetch_factor
+
+
+def build_inference_loaders_from_config(config, dataset_class, system_config):
+    inference_dataloaders = list()
+    inference_dataset_kwargs, batch_size, prefetch_factor = fetch_inference_dataset_kwargs_from_config(config)
     for key in config:
         if "_filenames" in key and key.split("_filenames")[0] not in ("training",):
             name = key.split("_filenames")[0]
