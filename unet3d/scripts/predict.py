@@ -46,7 +46,7 @@ def run_inference(namespace):
     system_config = get_machine_config(namespace)
     label_hierarchy = check_hierarchy(config)
     cache_dir = os.path.join(work_dir, "cache")
-    os.makedirs(cache_dir)
+    os.makedirs(cache_dir, exist_ok=True)
     logging.info("Cache dir: %s", cache_dir)
     dataset_class = load_dataset_class(config["dataset"],
                                        cache_dir=cache_dir)
