@@ -25,7 +25,7 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
                              "The script will look for a key in the configuration file that lists the filenames "
                              "to read in and make predictions on.")
     parser.add_argument("--activation",
-                        "Specify whether to apply an activation function to the outputs of the model before writing to "
+                        help="Specify whether to apply an activation function to the outputs of the model before writing to "
                         "file.")
 
     format_segmentation_parser(parser, sub_command=True)
