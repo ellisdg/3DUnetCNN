@@ -84,7 +84,8 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                                            verbose=verbose)
 
 
-def volumetric_predictions(model, dataloader, prediction_dir, interpolation="linear",
+def volumetric_predictions(model, dataloader, prediction_dir, activation=None,
+                           interpolation="linear",
                            segmentation=False, segmentation_labels=None,
                            sum_then_threshold=True, threshold=0.5, label_hierarchy=None):
 
@@ -95,6 +96,12 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
             # TODO: pass desired device to this function
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
             predictions = model(x)
+            if activation == "sigmoid":
+                predictions = torch.sigmoid(predictions)
+            elif activation == "softmax":
+                predictions = torch.softmax(predictions, dim=1)
+            else:
+                predictions = getattr(torch, activation)(predictions)
             batch_size = x.shape[0]
             for idx in range(batch_size):
                 _prediction = predictions[idx]

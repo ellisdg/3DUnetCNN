@@ -24,6 +24,9 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
                         help="Name of the group of filenames to make predictions on. The default is 'test'. "
                              "The script will look for a key in the configuration file that lists the filenames "
                              "to read in and make predictions on.")
+    parser.add_argument("--activation",
+                        "Specify whether to apply an activation function to the outputs of the model before writing to "
+                        "file.")
 
     format_segmentation_parser(parser, sub_command=True)
     return parser
@@ -34,6 +37,8 @@ def parse_args():
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     namespace = parse_args()
     run_inference(namespace)
 
@@ -77,6 +82,7 @@ def run_inference(namespace):
     volumetric_predictions(model=model,
                            dataloader=dataloader,
                            prediction_dir=prediction_dir,
+                           activation=namespace.activation,
                            interpolation="linear",  # TODO
                            segmentation=False,  # TODO
                            segmentation_labels=None,  # TODO: segment the labels
