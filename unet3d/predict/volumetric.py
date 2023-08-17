@@ -103,11 +103,11 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None,
             else:
                 predictions = getattr(torch, activation)(predictions)
             batch_size = x.shape[0]
-            for idx in range(batch_size):
-                _prediction = predictions[idx]
-                _x = x[idx]
+            for batch_idx in range(batch_size):
+                _prediction = predictions[batch_idx]
+                _x = x[batch_idx]
                 writer = NibabelWriter()
                 writer.set_data_array(_prediction)
-                writer.set_metadata(_x.meta, resample=True)
+                writer.set_metadata(_x.meta, resample=False)
                 out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"]))
                 writer.write(out_filename, verbose=True)
