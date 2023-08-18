@@ -1,6 +1,7 @@
 import os
 import torch
 from monai.data import NibabelWriter
+from monai.transforms import ResampleToMatch, LoadImage
 from unet3d.utils.resample import resample_to_img
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
 from unet3d.utils.utils import load_image
@@ -84,11 +85,11 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                                            verbose=verbose)
 
 
-def volumetric_predictions(model, dataloader, prediction_dir, activation=None,
-                           interpolation="linear",
-                           segmentation=False, segmentation_labels=None,
-                           sum_then_threshold=True, threshold=0.5, label_hierarchy=None):
-
+def volumetric_predictions(model, dataloader, prediction_dir, activation=None, resample=False,
+                           interpolation="trilinear"):
+    if resample:
+        resampler = ResampleToMatch(mode=interpolation)
+        loader = LoadImage(image_only=True, ensure_channel_first=True)
     print("Dataset: ", len(dataloader))
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
@@ -106,6 +107,9 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None,
             for batch_idx in range(batch_size):
                 _prediction = predictions[batch_idx]
                 _x = x[batch_idx]
+                if resample:
+                    _x_reference = loader(os.path.abspath(_x.meta["filename_or_obj"]))
+                    _prediction = resampler(_prediction, _x_reference)
                 writer = NibabelWriter()
                 writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=False)

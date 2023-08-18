@@ -148,12 +148,8 @@ def run(config_filename, output_dir, namespace):
             volumetric_predictions(model=model,
                                    dataloader=_dataloader,
                                    prediction_dir=prediction_dir,
-                                   interpolation="linear",  # TODO
-                                   segmentation=False,  # TODO
-                                   segmentation_labels=None,  # TODO: segment the labels
-                                   threshold=0.5,
-                                   sum_then_threshold=False,
-                                   label_hierarchy=label_hierarchy)
+                                   interpolation="trilinear",
+                                   resample=in_config("resample", config, False))
 
 
 def main():
