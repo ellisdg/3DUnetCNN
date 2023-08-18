@@ -100,7 +100,7 @@ def run(config_filename, output_dir, namespace):
         print("Model: ", model_filename)
 
         if namespace.training_log_filename:
-            training_log_filename = namespace.model_filename
+            training_log_filename = namespace.training_log_filename
         else:
             training_log_filename = os.path.join(work_dir, "training_log.csv")
         print("Log: ", training_log_filename)
