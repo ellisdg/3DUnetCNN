@@ -149,7 +149,7 @@ def run(config_filename, output_dir, namespace):
                                    dataloader=_dataloader,
                                    prediction_dir=prediction_dir,
                                    interpolation="trilinear",
-                                   resample=in_config("resample", config, False))
+                                   resample=in_config("resample", config["dataset"], False))
 
 
 def main():

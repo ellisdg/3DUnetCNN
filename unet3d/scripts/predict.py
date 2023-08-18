@@ -84,7 +84,7 @@ def run_inference(namespace):
                            prediction_dir=prediction_dir,
                            activation=namespace.activation,
                            interpolation="trilinear",
-                           resample=in_config("resample", config, False))
+                           resample=in_config("resample", config["dataset"], False))
 
 
 if __name__ == '__main__':
