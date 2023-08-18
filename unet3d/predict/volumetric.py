@@ -100,7 +100,7 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None,
                 predictions = torch.sigmoid(predictions)
             elif activation == "softmax":
                 predictions = torch.softmax(predictions, dim=1)
-            else:
+            elif activation is not None:
                 predictions = getattr(torch, activation)(predictions)
             batch_size = x.shape[0]
             for batch_idx in range(batch_size):
