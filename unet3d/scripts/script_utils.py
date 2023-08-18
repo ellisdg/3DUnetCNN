@@ -1,4 +1,5 @@
 import monai.losses
+import logging
 import torch
 import nibabel as nib
 from monai.data import DataLoader
@@ -28,7 +29,13 @@ def add_machine_config_to_parser(parser):
 
 
 def in_config(string, dictionary, if_not_in_config_return=None):
-    return dictionary[string] if string in dictionary else if_not_in_config_return
+    if string in dictionary:
+        value = dictionary[string]
+        logging.debug("Found value {} for key '{}'".format(value, string))
+    else:
+        value = if_not_in_config_return
+        logging.debug("Could not find value for key {}; default to {}".format(string, value))
+    return value
 
 
 def get_machine_config(namespace):
