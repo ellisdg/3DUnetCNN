@@ -1,6 +1,7 @@
 import os
 import torch
 from monai.data import NibabelWriter
+from monai.transforms import ResampleToMatch, LoadImage
 from unet3d.utils.resample import resample_to_img
 from unet3d.predict.utils import pytorch_predict_batch_array, get_feature_filename_and_subject_id
 from unet3d.utils.utils import load_image
@@ -84,10 +85,12 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
                                            verbose=verbose)
 
 
-def volumetric_predictions(model, dataloader, prediction_dir, interpolation="linear",
-                           segmentation=False, segmentation_labels=None,
-                           sum_then_threshold=True, threshold=0.5, label_hierarchy=None):
-
+def volumetric_predictions(model, dataloader, prediction_dir, activation=None, resample=False,
+                           interpolation="trilinear"):
+    writer = NibabelWriter()
+    if resample:
+        resampler = ResampleToMatch(mode=interpolation)
+        loader = LoadImage(image_only=True, ensure_channel_first=True)
     print("Dataset: ", len(dataloader))
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
@@ -95,12 +98,20 @@ def volumetric_predictions(model, dataloader, prediction_dir, interpolation="lin
             # TODO: pass desired device to this function
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
             predictions = model(x)
+            if activation == "sigmoid":
+                predictions = torch.sigmoid(predictions)
+            elif activation == "softmax":
+                predictions = torch.softmax(predictions, dim=1)
+            elif activation is not None:
+                predictions = getattr(torch, activation)(predictions)
             batch_size = x.shape[0]
-            for idx in range(batch_size):
-                _prediction = predictions[idx]
-                _x = x[idx]
-                writer = NibabelWriter()
+            for batch_idx in range(batch_size):
+                _prediction = predictions[batch_idx]
+                _x = x[batch_idx]
+                if resample:
+                    _x = loader(os.path.abspath(_x.meta["filename_or_obj"]))
+                    _prediction = resampler(_prediction, _x)
                 writer.set_data_array(_prediction)
-                writer.set_metadata(_x.meta, resample=True)
+                writer.set_metadata(_x.meta, resample=False)
                 out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"]))
                 writer.write(out_filename, verbose=True)

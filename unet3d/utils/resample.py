@@ -23,13 +23,13 @@ def resample_image_to_spacing(image, new_spacing, interpolation='bilinear'):
     return resample_to_img(image, new_image, interpolation=interpolation)
 
 
-def resample_image(source_image, target_image, interpolation="bilinear", pad=False):
+def resample_image(source_image, target_image, interpolation="trilinear", pad=False):
     if pad:
         source_image = pad_image(source_image)
     return resample_to_img(source_image, target_image, interpolation=interpolation)
 
 
-def resample(image, target_affine, target_shape, interpolation='bilinear', pad=False, dtype=None, align_corners=True,
+def resample(image, target_affine, target_shape, interpolation='trilinear', pad=False, dtype=None, align_corners=True,
              margin=1e-6):
     """
     Resample an image to a target affine and shape.
@@ -61,6 +61,6 @@ def monai_interpolation_mode(interpolation):
     return interpolation
 
 
-def resample_to_img(source_image, target_image, interpolation='bilinear', align_corners=True):
+def resample_to_img(source_image, target_image, interpolation='trilinear', align_corners=True):
     return resample(source_image, target_image.affine, target_image.shape[1:], interpolation=interpolation,
                     align_corners=align_corners)

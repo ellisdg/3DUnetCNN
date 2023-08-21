@@ -100,7 +100,7 @@ def run(config_filename, output_dir, namespace):
         print("Model: ", model_filename)
 
         if namespace.training_log_filename:
-            training_log_filename = namespace.model_filename
+            training_log_filename = namespace.training_log_filename
         else:
             training_log_filename = os.path.join(work_dir, "training_log.csv")
         print("Log: ", training_log_filename)
@@ -148,12 +148,8 @@ def run(config_filename, output_dir, namespace):
             volumetric_predictions(model=model,
                                    dataloader=_dataloader,
                                    prediction_dir=prediction_dir,
-                                   interpolation="linear",  # TODO
-                                   segmentation=False,  # TODO
-                                   segmentation_labels=None,  # TODO: segment the labels
-                                   threshold=0.5,
-                                   sum_then_threshold=False,
-                                   label_hierarchy=label_hierarchy)
+                                   interpolation="trilinear",
+                                   resample=in_config("resample", config["dataset"], False))
 
 
 def main():

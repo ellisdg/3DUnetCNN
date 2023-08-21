@@ -37,7 +37,11 @@ class SegmentationDatasetPersistent(PersistentDataset):
             if random_crop:
                 transforms.append(RandSpatialCropD(keys=keys, roi_size=desired_shape, lazy=True))
             elif resample:
-                transforms.append(ResizeD(keys=keys, spatial_size=desired_shape, mode=("trilinear", "nearest"),
+                if inference:
+                    mode = ("trilinear",)
+                else:
+                    mode = ("trilinear", "nearest")
+                transforms.append(ResizeD(keys=keys, spatial_size=desired_shape, mode=mode,
                                           lazy=True))
             else:
                 transforms.append(ResizeWithPadOrCropD(keys=keys, spatial_size=desired_shape, lazy=True))
