@@ -87,6 +87,7 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
 
 def volumetric_predictions(model, dataloader, prediction_dir, activation=None, resample=False,
                            interpolation="trilinear"):
+    writer = NibabelWriter()
     if resample:
         resampler = ResampleToMatch(mode=interpolation)
         loader = LoadImage(image_only=True, ensure_channel_first=True)
@@ -108,9 +109,8 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
                 _prediction = predictions[batch_idx]
                 _x = x[batch_idx]
                 if resample:
-                    _x_reference = loader(os.path.abspath(_x.meta["filename_or_obj"]))
-                    _prediction = resampler(_prediction, _x_reference)
-                writer = NibabelWriter()
+                    _x = loader(os.path.abspath(_x.meta["filename_or_obj"]))
+                    _prediction = resampler(_prediction, _x)
                 writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=False)
                 out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"]))
