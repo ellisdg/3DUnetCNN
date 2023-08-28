@@ -36,10 +36,6 @@ def parse_args():
                              "the model that was being trained initially. Therefore, if you are resuming training "
                              "it is best to not set the pretrained_model_filename.",
                         required=False)
-    parser.add_argument("--training_log_filename",
-                        help="CSV filename to save the to save the training and validation results for each epoch. "
-                             "Default is '{output_dir}/{config_basename}/training_log.csv'",
-                        required=False)
     parser.add_argument("--batch_size", help="Override the batch size from the config file.", type=int)
     parser.add_argument("--debug", action="store_true", default=False,
                         help="Raises an error if a training file is not found. The default is to silently skip"
@@ -99,10 +95,7 @@ def run(config_filename, output_dir, namespace):
         model_filename = os.path.join(work_dir, "model.pth")
         logging.info("Model: ", model_filename)
 
-        if namespace.training_log_filename:
-            training_log_filename = namespace.training_log_filename
-        else:
-            training_log_filename = os.path.join(work_dir, "training_log.csv")
+        training_log_filename = os.path.join(work_dir, "training_log.csv")
         logging.info("Log: ", training_log_filename)
 
         label_hierarchy = check_hierarchy(config)
