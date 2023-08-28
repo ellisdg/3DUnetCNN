@@ -2,7 +2,7 @@
 import argparse
 import os
 import warnings
-
+import logging
 from unet3d.train import run_training
 from unet3d.utils.utils import load_json
 from unet3d.predict import volumetric_predictions
@@ -55,12 +55,12 @@ def parse_args():
 
 
 def run(config_filename, output_dir, namespace):
-    print("Config: ", config_filename)
+    logging.info("Config: ", config_filename)
     config = load_json(config_filename)
     load_filenames_from_config(config)
 
     work_dir = os.path.join(output_dir, os.path.basename(config_filename).split(".")[0])
-    print("Work Dir:", work_dir)
+    logging.info("Work Dir:", work_dir)
     os.makedirs(work_dir, exist_ok=True)
 
     if "cross_validation" in config:
@@ -75,10 +75,10 @@ def run(config_filename, output_dir, namespace):
                                                                                       cross_validation_config,
                                                                                       25)):
             if not namespace.setup_crossval_only:
-                print("Running cross validation fold:", _config_filename)
+                logging.info("Running cross validation fold:", _config_filename)
                 run(_config_filename, work_dir, namespace)
             else:
-                print("Setup cross validation fold:", _config_filename)
+                logging.info("Setup cross validation fold:", _config_filename)
     else:
         # run the training
         system_config = get_machine_config(namespace)
@@ -97,13 +97,13 @@ def run(config_filename, output_dir, namespace):
             config["training"]["batch_size"] = namespace.batch_size
 
         model_filename = os.path.join(work_dir, "model.pth")
-        print("Model: ", model_filename)
+        logging.info("Model: ", model_filename)
 
         if namespace.training_log_filename:
             training_log_filename = namespace.training_log_filename
         else:
             training_log_filename = os.path.join(work_dir, "training_log.csv")
-        print("Log: ", training_log_filename)
+        logging.info("Log: ", training_log_filename)
 
         label_hierarchy = check_hierarchy(config)
         dataset_class = load_dataset_class(config["dataset"], cache_dir=os.path.join(work_dir, "cache"))
