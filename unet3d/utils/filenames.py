@@ -185,4 +185,9 @@ def load_bias(bias_filename):
 def load_dataset_class(dataset_kwargs, cache_dir="./cache"):
     if "Persistent" in dataset_kwargs["name"] and "cache_dir" not in dataset_kwargs:
         dataset_kwargs["cache_dir"] = os.path.abspath(cache_dir)
+    # TODO: figure out a way to not "pop" the name of the dataset class as we might need it later.
+    #   the reason why the name is popped now is to keep it from being passed along with the other kwargs when the
+    #   loss object is initialized. So if we copied the kwargs except the name, this would work around the issue and
+    #   keep the name of the dataset class in the config for reference later. This would apply to some other areas
+    #   of the project as well.
     return getattr(datasets, dataset_kwargs.pop("name"))
