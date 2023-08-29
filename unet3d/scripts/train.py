@@ -51,12 +51,12 @@ def parse_args():
 
 
 def run(config_filename, output_dir, namespace):
-    logging.info("Config: ", config_filename)
+    logging.info("Config: %s", config_filename)
     config = load_json(config_filename)
     load_filenames_from_config(config)
 
     work_dir = os.path.join(output_dir, os.path.basename(config_filename).split(".")[0])
-    logging.info("Work Dir:", work_dir)
+    logging.info("Work Dir: %s", work_dir)
     os.makedirs(work_dir, exist_ok=True)
 
     if "cross_validation" in config:
@@ -71,10 +71,10 @@ def run(config_filename, output_dir, namespace):
                                                                                       cross_validation_config,
                                                                                       25)):
             if not namespace.setup_crossval_only:
-                logging.info("Running cross validation fold:", _config_filename)
+                logging.info("Running cross validation fold: %s", _config_filename)
                 run(_config_filename, work_dir, namespace)
             else:
-                logging.info("Setup cross validation fold:", _config_filename)
+                logging.info("Setup cross validation fold: %s", _config_filename)
     else:
         # run the training
         system_config = get_machine_config(namespace)
@@ -93,10 +93,10 @@ def run(config_filename, output_dir, namespace):
             config["training"]["batch_size"] = namespace.batch_size
 
         model_filename = os.path.join(work_dir, "model.pth")
-        logging.info("Model: ", model_filename)
+        logging.info("Model: %s", model_filename)
 
         training_log_filename = os.path.join(work_dir, "training_log.csv")
-        logging.info("Log: ", training_log_filename)
+        logging.info("Log: %s", training_log_filename)
 
         label_hierarchy = check_hierarchy(config)
         dataset_class = load_dataset_class(config["dataset"], cache_dir=os.path.join(work_dir, "cache"))
