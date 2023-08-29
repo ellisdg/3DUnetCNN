@@ -49,12 +49,13 @@ def get_machine_config(namespace):
 
 
 def build_or_load_model_from_config(config, model_filename, n_gpus, strict=False):
-    return build_or_load_model(config["model"].pop("name"), model_filename, n_gpus=n_gpus, **config["model"],
+    return build_or_load_model(config["model"]["name"], model_filename, n_gpus=n_gpus,
+                               **get_kwargs(config["model"]),
                                strict=strict)
 
 
 def load_criterion_from_config(config, n_gpus):
-    return load_criterion(config['loss'].pop("name"), n_gpus=n_gpus, loss_kwargs=config["loss"])
+    return load_criterion(config['loss']["name"], n_gpus=n_gpus, loss_kwargs=get_kwargs(config["loss"]))
 
 
 def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
@@ -100,19 +101,21 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
                        test_input=1, batch_size=1, validation_batch_size=1, prefetch_factor=1,
                        ):
     if "training" in config["dataset"]:
-        training_kwargs = config["dataset"].pop("training")
+        training_kwargs = config["dataset"]["training"]
     else:
         training_kwargs = dict()
 
     if "validation" in config["dataset"]:
-        validation_kwargs = config["dataset"].pop("validation")
+        validation_kwargs = config["dataset"]["validation"]
     else:
         validation_kwargs = dict()
+
+    dataset_kwargs = get_kwargs(config["dataset"], ["name", "training", "validation"])
 
     # Create datasets
     training_dataset = dataset_class(filenames=config['training_filenames'],
                                      **training_kwargs,
-                                     **config["dataset"])
+                                     **dataset_kwargs)
 
     training_loader = DataLoader(training_dataset,
                                  batch_size=batch_size,
@@ -193,8 +196,8 @@ def build_scheduler_from_config(config, optimizer):
     if "scheduler" not in config:
         scheduler = None
     else:
-        scheduler_class = getattr(torch.optim.lr_scheduler, config["scheduler"].pop("name"))
-        scheduler = scheduler_class(optimizer, **config["scheduler"])
+        scheduler_class = get_class(config["scheduler"], torch.optim.lr_scheduler)
+        scheduler = scheduler_class(optimizer, **get_kwargs(config["scheduler"]))
     return scheduler
 
 
@@ -274,3 +277,22 @@ def load_filenames(filenames):
         return np.load(filenames, allow_pickle=True).tolist()
     else:
         raise (RuntimeError("Could not load filenames: {}".format(filenames)))
+
+
+def get_class(_dict, _module, _class_key="name"):
+    return getattr(_module, _dict[_class_key])
+
+
+def get_kwargs(_dict, skip_keys=("name",)):
+    kwargs = dict()
+    for key, value in _dict.iteritems():
+        if key not in skip_keys:
+            kwargs[key] = value
+    return kwargs
+
+
+def build_inferer_from_config(config):
+    inference_class = get_class(config["inference"], monai.inferers)
+    inference_kwargs = get_kwargs(config["inference"])
+    return inference_class(**inference_kwargs)
+

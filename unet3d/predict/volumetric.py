@@ -86,7 +86,7 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
 
 
 def volumetric_predictions(model, dataloader, prediction_dir, activation=None, resample=False,
-                           interpolation="trilinear"):
+                           interpolation="trilinear", inferer=None):
     writer = NibabelWriter()
     if resample:
         resampler = ResampleToMatch(mode=interpolation)
@@ -97,7 +97,10 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
             x = item["image"]
             # TODO: pass desired device to this function
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
-            predictions = model(x)
+            if inferer:
+                predictions = inferer(x, model)
+            else:
+                predictions = model(x)
             if activation == "sigmoid":
                 predictions = torch.sigmoid(predictions)
             elif activation == "softmax":

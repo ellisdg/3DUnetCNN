@@ -11,7 +11,8 @@ from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_
                                          build_or_load_model_from_config, load_criterion_from_config, in_config,
                                          build_data_loaders_from_config, build_scheduler_from_config,
                                          setup_cross_validation, load_filenames_from_config,
-                                         build_inference_loaders_from_config, check_hierarchy)
+                                         build_inference_loaders_from_config, check_hierarchy,
+                                         build_inferer_from_config)
 
 
 def parse_args():
@@ -121,6 +122,12 @@ def run(config_filename, output_dir, namespace):
                                     **config["optimizer"])
         scheduler = build_scheduler_from_config(config, optimizer)
 
+        # build the inferer (e.g. sliding window inferer) that allows for inference to be distinct from training
+        if "inference" in config:
+            inferer = build_inferer_from_config(config)
+        else:
+            inferer = None
+
         run_training(model=model.train(), optimizer=optimizer, criterion=criterion,
                      n_epochs=in_config("n_epochs", config["training"], 1000),
                      training_loader=training_loader, validation_loader=validation_loader,
@@ -134,7 +141,8 @@ def run(config_filename, output_dir, namespace):
                      save_last_n_models=in_config("save_last_n_models", config["training"], None),
                      amp=in_config("amp", config["training"], None),
                      scheduler=scheduler,
-                     samples_per_epoch=in_config("samples_per_epoch", config["training"], None))
+                     samples_per_epoch=in_config("samples_per_epoch", config["training"], None),
+                     inferer=inferer)
 
         for _dataloader, _name in build_inference_loaders_from_config(config,
                                                                       dataset_class=dataset_class,
@@ -145,7 +153,8 @@ def run(config_filename, output_dir, namespace):
                                    dataloader=_dataloader,
                                    prediction_dir=prediction_dir,
                                    interpolation="trilinear",
-                                   resample=in_config("resample", config["dataset"], False))
+                                   resample=in_config("resample", config["dataset"], False),
+                                   inferer=inferer)
 
 
 def main():

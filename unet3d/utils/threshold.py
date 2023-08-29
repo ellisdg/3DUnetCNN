@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import monai.inferers
 
 
 def percentile_threshold(image, percentile):
