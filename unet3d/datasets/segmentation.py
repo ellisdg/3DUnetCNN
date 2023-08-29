@@ -1,7 +1,7 @@
 import monai
 from monai.data import PersistentDataset
 from monai.transforms import (LoadImageD, ResizeWithPadOrCropD, Compose, NormalizeIntensityD, ResizeD, CropForegroundD,
-                              RandSpatialCropD)
+                              RandSpatialCropD, OrientationD)
 from unet3d.transforms import LabelMapToOneHotD
 from unet3d.utils.threshold import percentile_threshold
 from unet3d.utils.utils import get_class, get_kwargs
@@ -10,10 +10,11 @@ from functools import partial
 
 
 class SegmentationDatasetPersistent(PersistentDataset):
+    # TODO: make a base class that includes the features that would be standard even for non-segmentation cases
     def __init__(self, filenames, cache_dir, labels=None, inference="auto", desired_shape=None,
                  normalization="zero_mean", normalization_kwargs=None, crop_foreground=False,
                  foreground_percentile=0.1, random_crop=False, resample=False, intensity_augmentations=None,
-                 spatial_augmentations=None):
+                 spatial_augmentations=None, orientation=None):
         transforms = list()
         if inference == "auto":
             # Look at the first set and determine if label is present
@@ -24,6 +25,9 @@ class SegmentationDatasetPersistent(PersistentDataset):
         else:
             keys = ("image", "label")
         transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True))
+
+        if orientation:
+            transforms.append(OrientationD(keys=keys, axcodes=orientation, lazy=True))
 
         if not inference:
             if labels is None:
