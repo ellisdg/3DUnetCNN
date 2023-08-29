@@ -100,6 +100,9 @@ def run(config_filename, output_dir, namespace):
 
         label_hierarchy = check_hierarchy(config)
         dataset_class = load_dataset_class(config["dataset"], cache_dir=os.path.join(work_dir, "cache"))
+        if namespace.n_examples:
+            logging.info('Setting config["training"]["test_input"]=%d', namespace.n_examples)
+            config["training"]["test_input"] = namespace.n_examples
         training_loader, validation_loader, metric_to_monitor = build_data_loaders_from_config(config,
                                                                                                system_config,
                                                                                                work_dir,
