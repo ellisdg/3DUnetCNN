@@ -135,7 +135,7 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
     else:
         validation_dataset = dataset_class(filenames=config['validation_filenames'],
                                            **validation_kwargs,
-                                           **config["dataset"])
+                                           **dataset_kwargs)
         validation_loader = DataLoader(validation_dataset,
                                        batch_size=validation_batch_size,
                                        shuffle=False,
