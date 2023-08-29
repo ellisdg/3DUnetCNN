@@ -142,7 +142,9 @@ def run(config_filename, output_dir, namespace):
                      amp=in_config("amp", config["training"], None),
                      scheduler=scheduler,
                      samples_per_epoch=in_config("samples_per_epoch", config["training"], None),
-                     inferer=inferer)
+                     inferer=inferer,
+                     training_iterations_per_epoch=in_config("training_iterations_per_epoch",
+                                                             config["training"], 1))
 
         for _dataloader, _name in build_inference_loaders_from_config(config,
                                                                       dataset_class=dataset_class,
