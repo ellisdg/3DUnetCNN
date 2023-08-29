@@ -35,7 +35,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
 
         if desired_shape:
             if random_crop:
-                transforms.append(RandSpatialCropD(keys=keys, roi_size=desired_shape, lazy=True))
+                transforms.append(RandSpatialCropD(keys=keys, roi_size=desired_shape, random_size=False, lazy=True))
             elif resample:
                 if inference:
                     mode = ("trilinear",)
@@ -51,7 +51,6 @@ class SegmentationDatasetPersistent(PersistentDataset):
         if normalization is not None:
             if normalization == "zero_mean":
                 normalization_class = NormalizeIntensityD
-                transforms.append(NormalizeIntensityD(keys=("image",), **normalization_kwargs))
             else:
                 try:
                     normalization_class = getattr(monai.transforms, normalization)

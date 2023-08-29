@@ -146,6 +146,9 @@ def run(config_filename, output_dir, namespace):
 
 
 def main():
+    # TODO: move this to only be set at debugging level when the debug flag is set
+    logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     namespace = parse_args()
     config_filename = os.path.abspath(namespace.config_filename)
     if namespace.output_dir:
