@@ -63,11 +63,15 @@ def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
         loss_kwargs = dict()
     try:
         criterion = getattr(losses, criterion_name)(**loss_kwargs)
+        package = "custom"
     except AttributeError:
         try:
             criterion = getattr(torch.nn, criterion_name)(**loss_kwargs)
+            package = "torch"
         except AttributeError:
             criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
+            package = "monai"
+    logging.debug("Using criterion {} from {} with kwargs: {}".format(criterion_name, package, loss_kwargs))
     if n_gpus > 0:
         criterion.cuda()
     return criterion
