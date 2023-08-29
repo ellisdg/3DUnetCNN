@@ -285,7 +285,7 @@ def get_class(_dict, _module, _class_key="name"):
 
 def get_kwargs(_dict, skip_keys=("name",)):
     kwargs = dict()
-    for key, value in _dict.iteritems():
+    for key, value in _dict.items():
         if key not in skip_keys:
             kwargs[key] = value
     return kwargs
