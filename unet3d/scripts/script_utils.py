@@ -9,7 +9,7 @@ import warnings
 from copy import deepcopy
 
 from unet3d import losses
-from unet3d.utils.utils import load_json, dump_json
+from unet3d.utils.utils import load_json, dump_json, get_class, get_kwargs
 from unet3d.models.build import build_or_load_model
 
 
@@ -280,18 +280,6 @@ def load_filenames(filenames):
         return np.load(filenames, allow_pickle=True).tolist()
     else:
         raise (RuntimeError("Could not load filenames: {}".format(filenames)))
-
-
-def get_class(_dict, _module, _class_key="name"):
-    return getattr(_module, _dict[_class_key])
-
-
-def get_kwargs(_dict, skip_keys=("name",)):
-    kwargs = dict()
-    for key, value in _dict.items():
-        if key not in skip_keys:
-            kwargs[key] = value
-    return kwargs
 
 
 def build_inferer_from_config(config):

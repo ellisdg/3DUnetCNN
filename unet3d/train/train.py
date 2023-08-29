@@ -53,7 +53,8 @@ def run_training(model, optimizer, criterion, n_epochs, training_loader, validat
         losses = list()
         for i in range(training_iterations_per_epoch):
             losses.append(epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch,
-                                         n_gpus=n_gpus, scaler=scaler, samples_per_epoch=samples_per_epoch))
+                                         n_gpus=n_gpus, scaler=scaler, samples_per_epoch=samples_per_epoch,
+                                         iteration=i+1))
         loss = np.mean(losses)
 
         # Clear the cache from the GPUs
