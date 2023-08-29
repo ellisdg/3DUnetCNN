@@ -50,7 +50,8 @@ class SegmentationDatasetPersistent(PersistentDataset):
 
         if spatial_augmentations is not None:
             for augmentation in spatial_augmentations:
-                transforms.append(get_class(augmentation, monai.transforms)(**get_kwargs(augmentation)))
+                transforms.append(get_class(augmentation, monai.transforms)(keys=keys,
+                                                                            **get_kwargs(augmentation)))
 
         if normalization_kwargs is None:
             normalization_kwargs = dict()
@@ -66,7 +67,8 @@ class SegmentationDatasetPersistent(PersistentDataset):
 
         if intensity_augmentations is not None:
             for augmentation in intensity_augmentations:
-                transforms.append(get_class(augmentation, monai.transforms)(**get_kwargs(augmentation)))
+                transforms.append(get_class(augmentation, monai.transforms)(keys=("image",),
+                                                                            **get_kwargs(augmentation)))
 
         transform = Compose(transforms, lazy=True)
         super().__init__(data=filenames, cache_dir=cache_dir, transform=transform)
