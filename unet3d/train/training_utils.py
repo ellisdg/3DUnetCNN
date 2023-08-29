@@ -22,10 +22,14 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
+    if iteration > 1:
+        prefix = "Epoch: [{}({})]".format(epoch, iteration)
+    else:
+        prefix = "Epoch: [{}]".format(epoch)
     progress = ProgressMeter(
         len(train_loader),
         [batch_time, data_time, losses],
-        prefix="Epoch: [{}({})]".format(epoch, iteration))
+        prefix=prefix)
 
     use_amp = scaler is not None
 
