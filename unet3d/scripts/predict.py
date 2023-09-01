@@ -26,7 +26,7 @@ def format_parser(parser=argparse.ArgumentParser(), sub_command=False):
                              "to read in and make predictions on.")
     parser.add_argument("--activation",
                         help="Specify whether to apply an activation function to the outputs of the model before writing to "
-                        "file.")
+                             "file.")
 
     format_segmentation_parser(parser, sub_command=True)
     return parser
@@ -66,7 +66,8 @@ def run_inference(config, output_directory, model_filename, group, activation, s
 
     dataloader = build_inference_loader(filenames=config[key],
                                         dataset_class=dataset_class,
-                                        dataset_kwargs=get_kwargs(config["dataset"], ["name", "training", "validation"]),
+                                        dataset_kwargs=get_kwargs(config["dataset"],
+                                                                  ["name", "training", "validation"]),
                                         inference_kwargs=inference_dataset_kwargs,
                                         batch_size=batch_size,
                                         num_workers=in_config("n_workers", system_config, 1),
@@ -83,12 +84,12 @@ def run_inference(config, output_directory, model_filename, group, activation, s
 
     prediction_dir = os.path.join(work_dir, "predictions")
     os.makedirs(prediction_dir, exist_ok=True)
-    volumetric_predictions(model=model,
-                           dataloader=dataloader,
-                           prediction_dir=prediction_dir,
-                           activation=activation,
-                           interpolation="trilinear",
-                           resample=in_config("resample", config["dataset"], False))
+    return volumetric_predictions(model=model,
+                                  dataloader=dataloader,
+                                  prediction_dir=prediction_dir,
+                                  activation=activation,
+                                  interpolation="trilinear",
+                                  resample=in_config("resample", config["dataset"], False))
 
 
 if __name__ == '__main__':
