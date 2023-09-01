@@ -66,7 +66,7 @@ def run_inference(config, output_directory, model_filename, group, activation, s
 
     dataloader = build_inference_loader(filenames=config[key],
                                         dataset_class=dataset_class,
-                                        dataset_kwargs=get_kwargs(config["dataset"]),
+                                        dataset_kwargs=get_kwargs(config["dataset"], ["name", "training", "validation"]),
                                         inference_kwargs=inference_dataset_kwargs,
                                         batch_size=batch_size,
                                         num_workers=in_config("n_workers", system_config, 1),
