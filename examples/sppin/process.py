@@ -213,6 +213,8 @@ def predict(*, inputs: Inputs) -> Outputs:
         SimpleITK.WriteImage(image, out_filename)
         image_filenames.append(out_filename)
 
+    del t1, t2, dwi_b0, dwi_b100
+
     #  1. register the images to the T1w image
     fixed = ants.image_read(image_filenames[0])
     final_image_filenames = [image_filenames[0]]
@@ -222,6 +224,8 @@ def predict(*, inputs: Inputs) -> Outputs:
         out_filename = os.path.join(_tmp_dir, f"aligned_{os.path.basename(moving_filename)}")
         ants.image_write(result["warpedmovout"], out_filename)
         final_image_filenames.append(out_filename)
+
+    del result
 
     #  2. predict the segmentation image
     with open("/model/multi_resample_config_v1.json", "r") as op:
