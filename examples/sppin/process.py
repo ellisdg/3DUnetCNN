@@ -267,7 +267,7 @@ def predict(*, inputs: Inputs) -> Outputs:
 
     # Threshold and select the largest connected component
     binary_image = SimpleITK.BinaryThreshold(
-            image1=prediction, lowerThreshold=0.5, insideValue=0, outsideValue=1
+            image1=prediction, lowerThreshold=0.5, insideValue=1, outsideValue=0
         )
     component_image = SimpleITK.ConnectedComponent(binary_image)
     sorted_component_image = SimpleITK.RelabelComponent(component_image, sortByObjectSize=True)
