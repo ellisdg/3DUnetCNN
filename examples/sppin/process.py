@@ -246,7 +246,7 @@ def predict(*, inputs: Inputs) -> Outputs:
     
         output_filenames = run_inference(config=config,
                                          output_directory=_output_dir,
-                                         model_filename="/model/model.pth",
+                                         model_filename=model_filename,
                                          group="test", activation="sigmoid",
                                          system_config={"n_gpus": 1, "n_workers": 8})
         prediction_images.append(nib.load(output_filenames[0]))
