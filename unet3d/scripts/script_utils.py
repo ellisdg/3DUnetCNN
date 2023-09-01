@@ -153,7 +153,8 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
 def fetch_inference_dataset_kwargs_from_config(config):
     inference_dataset_kwargs = in_config("validation", config["dataset"], dict())
     batch_size = in_config("validation_batch_size", config["training"], 1)
-    prefetch_factor = in_config("prefetch_factor", config["training"], 1)
+    # TODO: figure out the best setting for prefetch_factor
+    prefetch_factor = in_config("prefetch_factor", config["training"], None)
     return inference_dataset_kwargs, batch_size, prefetch_factor
 
 
