@@ -261,10 +261,13 @@ def predict(*, inputs: Inputs) -> Outputs:
     #  3. read in the output images back into sitk
     prediction = SimpleITK.ReadImage(prediction_filename)
 
-    # TO DO: Replace the binary threshold with your own segmentation algoritme
-    segmentation = SimpleITK.BinaryThreshold(
+    # Threshold and select the largest connected component
+    binary_image = SimpleITK.BinaryThreshold(
             image1=prediction, lowerThreshold=0.5, insideValue=0, outsideValue=1
         )
+    component_image = SimpleITK.ConnectedComponent(binary_image)
+    sorted_component_image = SimpleITK.RelabelComponent(component_image, sortByObjectSize=True)
+    segmentation = sorted_component_image == 1
     
     outputs = Outputs(
         mri_segmentation_of_pediatric_neuroblastoma = segmentation
