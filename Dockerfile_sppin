@@ -23,7 +23,11 @@ COPY --chown=user:user examples/sppin/process.py /opt/app/
 COPY --chown=user:user unet3d /unet/unet3d
 ENV PYTHONPATH="/unet":${PYTHONPATH}
 
-COPY --chown=user:user examples/sppin/model.pth /model/
+COPY --chown=user:user examples/sppin/model1.pth /model/
+COPY --chown=user:user examples/sppin/model2.pth /model/
+COPY --chown=user:user examples/sppin/model3.pth /model/
+COPY --chown=user:user examples/sppin/model4.pth /model/
+COPY --chown=user:user examples/sppin/model5.pth /model/
 COPY --chown=user:user examples/sppin/multi_resample_config_v1.json /model/
 
 ENTRYPOINT [ "python", "-m", "process" ]

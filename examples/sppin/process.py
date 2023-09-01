@@ -236,8 +236,9 @@ def predict(*, inputs: Inputs) -> Outputs:
     config["test_filenames"] = [{"image": final_image_filenames}]
 
     prediction_images = list()
-    model_filenames = ["/model/model.pth"]
-    for moedl_filename in model_filenames:
+    model_filenames = ["/model/model1.pth", "/model/model2.pth", "/model/model3.pth", "/model/model4.pth",
+                       "/model/model5.pth"]
+    for model_filename in model_filenames:
         model_basename = os.path.basename(model_filename).split(".")[0]
     
         _output_dir = os.path.join(_tmp_dir, "predictions", model_basename)
@@ -251,7 +252,7 @@ def predict(*, inputs: Inputs) -> Outputs:
         prediction_images.append(nib.load(output_filenames[0]))
 
     prediction_filename = os.path.join(_tmp_dir, "predictions", "prediction.nii.gz")
-    os.path.makedirs(os.path.dirname(prediction_filename), exist_ok=True)
+    os.makedirs(os.path.dirname(prediction_filename), exist_ok=True)
     combined_data = np.stack([np.asarray(im.dataobj) for im in prediction_images])
     mean_data = np.mean(combined_data, axis=0)
     prediction_image = prediction_images[0].__class__(dataobj=mean_data, affine=prediction_images[0].affine)
