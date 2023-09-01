@@ -248,7 +248,7 @@ def predict(*, inputs: Inputs) -> Outputs:
                                          output_directory=_output_dir,
                                          model_filename="/model/model.pth",
                                          group="test", activation="sigmoid",
-                                         system_config={"ngpus": 1, "nthreads": 8})
+                                         system_config={"n_gpus": 1, "n_workers": 8})
         prediction_images.append(nib.load(output_filenames[0]))
 
     prediction_filename = os.path.join(_tmp_dir, "predictions", "prediction.nii.gz")
