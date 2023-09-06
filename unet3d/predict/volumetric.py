@@ -117,7 +117,8 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
                     _prediction = resampler(_prediction, _x)
                 writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=False)
-                out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"]))
+                out_filename = os.path.join(prediction_dir,
+                                            os.path.basename(_x.meta["filename_or_obj"]).split(".")[0] + ".nii.gz")
                 writer.write(out_filename, verbose=True)
                 output_filenames.append(out_filename)
     return output_filenames
