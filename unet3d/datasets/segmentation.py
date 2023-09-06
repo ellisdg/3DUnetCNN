@@ -14,7 +14,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
     def __init__(self, filenames, cache_dir, labels=None, inference="auto", desired_shape=None,
                  normalization="zero_mean", normalization_kwargs=None, crop_foreground=False,
                  foreground_percentile=0.1, random_crop=False, resample=False, intensity_augmentations=None,
-                 spatial_augmentations=None, orientation=None):
+                 spatial_augmentations=None, orientation=None, reader=None):
         transforms = list()
         if inference == "auto":
             # Look at the first set and determine if label is present
@@ -24,7 +24,10 @@ class SegmentationDatasetPersistent(PersistentDataset):
             keys = ("image",)
         else:
             keys = ("image", "label")
-        transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True))
+        if reader is not None:
+            transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True, reader=reader))
+        else:
+            transforms.append(LoadImageD(keys=keys, image_only=True, ensure_channel_first=True))
 
         if orientation:
             transforms.append(OrientationD(keys=keys, axcodes=orientation, lazy=True))
