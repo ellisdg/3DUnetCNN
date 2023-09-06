@@ -57,7 +57,7 @@ class SegmentationDatasetPersistent(PersistentDataset):
 
         if spatial_augmentations is not None:
             for augmentation in spatial_augmentations:
-                transforms.append(get_class(augmentation, monai.transforms)(keys=keys,
+                transforms.append(get_class(augmentation, monai.transforms)(keys=keys, lazy=True,
                                                                             **get_kwargs(augmentation)))
 
         if normalization_kwargs is None:
