@@ -96,7 +96,6 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
             x = item["image"]
-            # TODO: pass desired device to this function
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
             if inferer:
                 predictions = inferer(x, model)
@@ -112,7 +111,7 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
             for batch_idx in range(batch_size):
                 _prediction = predictions[batch_idx]
                 _x = x[batch_idx]
-                if resample:
+                if False:
                     _x = loader(os.path.abspath(_x.meta["filename_or_obj"]))
                     _prediction = resampler(_prediction, _x)
                 writer.set_data_array(_prediction)
