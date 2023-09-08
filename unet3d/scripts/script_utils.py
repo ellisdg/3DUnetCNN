@@ -213,16 +213,17 @@ def write_dataset_examples(n_test_cases, training_dataset, output_dir):
         item = training_dataset[index]
         x = item["image"]
         y = item["label"]
-        affine = x.affine
+        x_affine = x.affine
         src_filename = x.meta['filename_or_obj']
         x = np.moveaxis(x.numpy(), 0, -1).squeeze()
-        x_image = nib.Nifti1Image(x, affine=affine)
+        x_image = nib.Nifti1Image(x, affine=x_affine)
         x_image.to_filename(os.path.join(output_dir,
                                          "input_test_{}.nii.gz".format(os.path.basename(src_filename).split(".")[0])))
         if len(y.shape) >= 3:
+            y_affine = y.affine
             src_filename = y.meta['filename_or_obj']
             y = np.moveaxis(y.numpy(), 0, -1)
-            y_image = nib.Nifti1Image(y.squeeze(), affine=affine)
+            y_image = nib.Nifti1Image(y.squeeze(), affine=y_affine)
             y_image.to_filename(os.path.join(output_dir,
                                              "target_test_{}.nii.gz".format(os.path.basename(
                                                  src_filename).split(".")[0])))
