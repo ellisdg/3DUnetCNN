@@ -61,6 +61,11 @@ def run_inference(config, output_directory, model_filename, group, activation, s
                                        cache_dir=cache_dir)
     key = f"{group}_filenames"
     logging.info("Filenames key: %s", key)
+    if key not in config:
+        raise ValueError("Could not find key {} in the configuration file. Use the change the group "
+                         "('--group' on commandline) to the name of the group of filenames "
+                         "(e.g., 'validation' to use 'validation_filenames') "
+                         "that you want to predict.")
 
     inference_dataset_kwargs, batch_size, prefetch_factor = fetch_inference_dataset_kwargs_from_config(config)
 

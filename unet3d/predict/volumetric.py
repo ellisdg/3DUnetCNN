@@ -111,8 +111,9 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
             for batch_idx in range(batch_size):
                 _prediction = predictions[batch_idx]
                 _x = x[batch_idx]
-                if False:
+                if resample:
                     _x = loader(os.path.abspath(_x.meta["filename_or_obj"]))
+                    print(_x.shape)
                     _prediction = resampler(_prediction, _x)
                 writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=False)
