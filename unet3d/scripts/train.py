@@ -12,7 +12,7 @@ from unet3d.scripts.script_utils import (get_machine_config, add_machine_config_
                                          build_data_loaders_from_config, build_scheduler_from_config,
                                          setup_cross_validation, load_filenames_from_config,
                                          build_inference_loaders_from_config, check_hierarchy,
-                                         build_inferer_from_config)
+                                         build_inferer_from_config, get_activation_from_config)
 
 
 def parse_args():
@@ -156,7 +156,8 @@ def run(config_filename, output_dir, namespace):
                                    prediction_dir=prediction_dir,
                                    interpolation="trilinear",
                                    resample=in_config("resample", config["dataset"], False),
-                                   inferer=inferer)
+                                   inferer=inferer,
+                                   activation=get_activation_from_config(config))
 
 
 def main():

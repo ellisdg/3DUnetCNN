@@ -292,3 +292,8 @@ def build_inferer_from_config(config):
     inference_kwargs = get_kwargs(config["inference"])
     return inference_class(**inference_kwargs)
 
+
+def get_activation_from_config(config):
+    for activation in ("sigmoid", "softmax"):
+        if in_config(activation, config["loss"], False):
+            return activation
