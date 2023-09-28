@@ -228,7 +228,7 @@ def predict(*, inputs: Inputs) -> Outputs:
     del result
 
     #  2. predict the segmentation image
-    with open("/model/multi_resample_config_v1.json", "r") as op:
+    with open("/model/sppin_config.json", "r") as op:
         config = json.load(op)
     # make sure the model doesn't predict any other filenames
     keys_to_remove = list()

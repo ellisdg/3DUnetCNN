@@ -29,6 +29,6 @@ COPY --chown=user:user examples/sppin/model2.pth /model/
 COPY --chown=user:user examples/sppin/model3.pth /model/
 COPY --chown=user:user examples/sppin/model4.pth /model/
 COPY --chown=user:user examples/sppin/model5.pth /model/
-COPY --chown=user:user examples/sppin/multi_resample_config_v1.json /model/
+COPY --chown=user:user examples/sppin/sppin_config.json /model/
 
 ENTRYPOINT [ "python", "-m", "process" ]
