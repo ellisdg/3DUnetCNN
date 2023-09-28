@@ -9,7 +9,7 @@ import warnings
 from copy import deepcopy
 
 from unet3d import losses
-from unet3d.utils.utils import load_json, dump_json
+from unet3d.utils.utils import load_json, dump_json, get_class, get_kwargs
 from unet3d.models.build import build_or_load_model
 
 
@@ -49,12 +49,13 @@ def get_machine_config(namespace):
 
 
 def build_or_load_model_from_config(config, model_filename, n_gpus, strict=False):
-    return build_or_load_model(config["model"].pop("name"), model_filename, n_gpus=n_gpus, **config["model"],
+    return build_or_load_model(config["model"]["name"], model_filename, n_gpus=n_gpus,
+                               **get_kwargs(config["model"]),
                                strict=strict)
 
 
 def load_criterion_from_config(config, n_gpus):
-    return load_criterion(config['loss'].pop("name"), n_gpus=n_gpus, loss_kwargs=config["loss"])
+    return load_criterion(config['loss']["name"], n_gpus=n_gpus, loss_kwargs=get_kwargs(config["loss"]))
 
 
 def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
@@ -62,11 +63,15 @@ def load_criterion(criterion_name, n_gpus=0, loss_kwargs=None):
         loss_kwargs = dict()
     try:
         criterion = getattr(losses, criterion_name)(**loss_kwargs)
+        package = "custom"
     except AttributeError:
         try:
             criterion = getattr(torch.nn, criterion_name)(**loss_kwargs)
+            package = "torch"
         except AttributeError:
             criterion = getattr(monai.losses, criterion_name)(**loss_kwargs)
+            package = "monai"
+    logging.debug("Using criterion {} from {} with kwargs: {}".format(criterion_name, package, loss_kwargs))
     if n_gpus > 0:
         criterion.cuda()
     return criterion
@@ -100,19 +105,21 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
                        test_input=1, batch_size=1, validation_batch_size=1, prefetch_factor=1,
                        ):
     if "training" in config["dataset"]:
-        training_kwargs = config["dataset"].pop("training")
+        training_kwargs = config["dataset"]["training"]
     else:
         training_kwargs = dict()
 
     if "validation" in config["dataset"]:
-        validation_kwargs = config["dataset"].pop("validation")
+        validation_kwargs = config["dataset"]["validation"]
     else:
         validation_kwargs = dict()
+
+    dataset_kwargs = get_kwargs(config["dataset"], ["name", "training", "validation"])
 
     # Create datasets
     training_dataset = dataset_class(filenames=config['training_filenames'],
                                      **training_kwargs,
-                                     **config["dataset"])
+                                     **dataset_kwargs)
 
     training_loader = DataLoader(training_dataset,
                                  batch_size=batch_size,
@@ -132,7 +139,7 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
     else:
         validation_dataset = dataset_class(filenames=config['validation_filenames'],
                                            **validation_kwargs,
-                                           **config["dataset"])
+                                           **dataset_kwargs)
         validation_loader = DataLoader(validation_dataset,
                                        batch_size=validation_batch_size,
                                        shuffle=False,
@@ -144,14 +151,10 @@ def build_data_loaders(config, output_dir, dataset_class, metric_to_monitor="val
 
 
 def fetch_inference_dataset_kwargs_from_config(config):
-    if "inference" in config:
-        inference_dataset_kwargs = in_config("dataset", config["inference"], dict())
-        batch_size = in_config("batch_size", config["inference"], 1)
-        prefetch_factor = in_config("prefetch_factor", config["inference"], 1)
-    else:
-        inference_dataset_kwargs = dict()
-        batch_size = 1
-        prefetch_factor = 1
+    inference_dataset_kwargs = in_config("validation", config["dataset"], dict())
+    batch_size = in_config("validation_batch_size", config["training"], 1)
+    # TODO: figure out the best setting for prefetch_factor
+    prefetch_factor = in_config("prefetch_factor", config["training"], None)
     return inference_dataset_kwargs, batch_size, prefetch_factor
 
 
@@ -161,10 +164,13 @@ def build_inference_loaders_from_config(config, dataset_class, system_config):
     for key in config:
         if "_filenames" in key and key.split("_filenames")[0] not in ("training",):
             name = key.split("_filenames")[0]
-            print("Found inference filenames: {} (n={})".format(name, len(config[key])))
+            logging.info("Found inference filenames: {} (n={})".format(name, len(config[key])))
             inference_dataloaders.append([build_inference_loader(filenames=config[key],
                                                                  dataset_class=dataset_class,
-                                                                 dataset_kwargs=config["dataset"],
+                                                                 dataset_kwargs=get_kwargs(config["dataset"],
+                                                                                           skip_keys=["name",
+                                                                                                      "training",
+                                                                                                      "validation"]),
                                                                  inference_kwargs=inference_dataset_kwargs,
                                                                  batch_size=batch_size,
                                                                  num_workers=in_config("n_workers", system_config, 1),
@@ -193,8 +199,8 @@ def build_scheduler_from_config(config, optimizer):
     if "scheduler" not in config:
         scheduler = None
     else:
-        scheduler_class = getattr(torch.optim.lr_scheduler, config["scheduler"].pop("name"))
-        scheduler = scheduler_class(optimizer, **config["scheduler"])
+        scheduler_class = get_class(config["scheduler"], torch.optim.lr_scheduler)
+        scheduler = scheduler_class(optimizer, **get_kwargs(config["scheduler"]))
     return scheduler
 
 
@@ -207,15 +213,20 @@ def write_dataset_examples(n_test_cases, training_dataset, output_dir):
         item = training_dataset[index]
         x = item["image"]
         y = item["label"]
-        affine = x.affine
+        x_affine = x.affine
+        src_filename = x.meta['filename_or_obj']
         x = np.moveaxis(x.numpy(), 0, -1).squeeze()
-        x_image = nib.Nifti1Image(x, affine=affine)
-        x_image.to_filename(os.path.join(output_dir, "input_test_{}.nii.gz".format(index)))
+        x_image = nib.Nifti1Image(x, affine=x_affine)
+        x_image.to_filename(os.path.join(output_dir,
+                                         "input_test_{}.nii.gz".format(os.path.basename(src_filename).split(".")[0])))
         if len(y.shape) >= 3:
+            y_affine = y.affine
             src_filename = y.meta['filename_or_obj']
             y = np.moveaxis(y.numpy(), 0, -1)
-            y_image = nib.Nifti1Image(y.squeeze(), affine=affine)
-            y_image.to_filename(os.path.join(output_dir, "target_test_{}".format(os.path.basename(src_filename))))
+            y_image = nib.Nifti1Image(y.squeeze(), affine=y_affine)
+            y_image.to_filename(os.path.join(output_dir,
+                                             "target_test_{}.nii.gz".format(os.path.basename(
+                                                 src_filename).split(".")[0])))
 
 
 def check_hierarchy(config):
@@ -274,3 +285,15 @@ def load_filenames(filenames):
         return np.load(filenames, allow_pickle=True).tolist()
     else:
         raise (RuntimeError("Could not load filenames: {}".format(filenames)))
+
+
+def build_inferer_from_config(config):
+    inference_class = get_class(config["inference"], monai.inferers)
+    inference_kwargs = get_kwargs(config["inference"])
+    return inference_class(**inference_kwargs)
+
+
+def get_activation_from_config(config):
+    for activation in ("sigmoid", "softmax"):
+        if in_config(activation, config["loss"], False):
+            return activation

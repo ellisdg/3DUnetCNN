@@ -18,14 +18,18 @@ except ModuleNotFoundError:
 
 
 def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None, print_frequency=1,
-                   print_gpu_memory=False, scaler=None, samples_per_epoch=None):
+                   print_gpu_memory=False, scaler=None, samples_per_epoch=None, iteration=1):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
+    if iteration > 1:
+        prefix = "Epoch: [{}({})]".format(epoch, iteration)
+    else:
+        prefix = "Epoch: [{}]".format(epoch)
     progress = ProgressMeter(
         len(train_loader),
         [batch_time, data_time, losses],
-        prefix="Epoch: [{}]".format(epoch))
+        prefix=prefix)
 
     use_amp = scaler is not None
 
@@ -81,7 +85,7 @@ def epoch_training(train_loader, model, criterion, optimizer, epoch, n_gpus=None
     return losses.avg
 
 
-def batch_loss(model, images, target, criterion, n_gpus=0, use_amp=None):
+def batch_loss(model, images, target, criterion, n_gpus=0, use_amp=None, inferer=None):
     if n_gpus is not None:
         images = images.cuda()
         target = target.cuda()
@@ -89,19 +93,26 @@ def batch_loss(model, images, target, criterion, n_gpus=0, use_amp=None):
     if use_amp:
         from torch.cuda.amp import autocast
         with autocast():
-            return _batch_loss(model, images, target, criterion)
+            return _batch_loss(model, images, target, criterion, inferer=inferer)
     else:
-        return _batch_loss(model, images, target, criterion)
+        return _batch_loss(model, images, target, criterion, inferer=inferer)
 
 
-def _batch_loss(model, images, target, criterion):
-    output = model(images)
+def _batch_loss(model, images, target, criterion, inferer=None):
+    """
+    inferer: should take in the inputs and the model and output the prediction. This is based on the MONAI Inferer
+    classes.
+    """
+    if inferer is not None:
+        output = inferer(images, model).to(images.device)
+    else:
+        output = model(images)
     batch_size = images.size(0)
     loss = criterion(output, target)
     return loss, batch_size
 
 
-def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, use_amp=False):
+def epoch_validation(val_loader, model, criterion, n_gpus, print_freq=1, use_amp=False, inferer=None):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     progress = ProgressMeter(
@@ -117,7 +128,8 @@ def epoch_validatation(val_loader, model, criterion, n_gpus, print_freq=1, use_a
         for i, item in enumerate(val_loader):
             images = item["image"]
             target = item["label"]
-            loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus,  use_amp=use_amp)
+            loss, batch_size = batch_loss(model, images, target, criterion, n_gpus=n_gpus,  use_amp=use_amp,
+                                          inferer=inferer)
 
             # measure accuracy and record loss
             losses.update(loss.item(), batch_size)

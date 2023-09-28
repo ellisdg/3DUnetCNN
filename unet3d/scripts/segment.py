@@ -61,4 +61,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise RuntimeError("segment.py is not setup to work with the latest version of the project.")

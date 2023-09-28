@@ -1,0 +1,34 @@
+# This Dockerfile must be moved to the parent 3DUnetCNN/ directory for it to work properly
+FROM python:3.8-slim
+
+RUN groupadd -r user && useradd -m --no-log-init -r -g user user
+
+RUN mkdir -p /opt/app /input /output /model /unet \
+    && chown user:user /opt/app /input /output /model /unet
+
+USER user
+WORKDIR /opt/app
+
+ENV PATH="/home/user/.local/bin:${PATH}"
+
+RUN python -m pip install --user -U pip && python -m pip install --user pip-tools
+
+
+
+COPY --chown=user:user examples/sppin/requirements.txt /opt/app/
+RUN python -m piptools sync requirements.txt
+
+
+
+COPY --chown=user:user examples/sppin/process.py /opt/app/
+COPY --chown=user:user unet3d /unet/unet3d
+ENV PYTHONPATH="/unet":${PYTHONPATH}
+
+COPY --chown=user:user examples/sppin/model1.pth /model/
+COPY --chown=user:user examples/sppin/model2.pth /model/
+COPY --chown=user:user examples/sppin/model3.pth /model/
+COPY --chown=user:user examples/sppin/model4.pth /model/
+COPY --chown=user:user examples/sppin/model5.pth /model/
+COPY --chown=user:user examples/sppin/sppin_config.json /model/
+
+ENTRYPOINT [ "python", "-m", "process" ]

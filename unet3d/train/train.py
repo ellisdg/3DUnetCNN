@@ -5,14 +5,13 @@ import pandas as pd
 import torch
 import torch.nn
 
-from .training_utils import epoch_training, epoch_validatation
+from .training_utils import epoch_training, epoch_validation
 
 
 def run_training(model, optimizer, criterion, n_epochs, training_loader, validation_loader, training_log_filename,
-                 model_filename, metric_to_monitor="val_loss", early_stopping_patience=None,
-                 save_best=False, n_gpus=1, save_every_n_epochs=None,
-                 save_last_n_models=None, amp=False, scheduler=None,
-                 samples_per_epoch=None):
+                 model_filename, metric_to_monitor="val_loss", early_stopping_patience=None, save_best=False, n_gpus=1,
+                 save_every_n_epochs=None, save_last_n_models=None, amp=False, scheduler=None, samples_per_epoch=None,
+                 inferer=None, training_iterations_per_epoch=1):
     training_log = list()
     if os.path.exists(training_log_filename):
         training_log.extend(pd.read_csv(training_log_filename).values)
@@ -51,8 +50,12 @@ def run_training(model, optimizer, criterion, n_epochs, training_loader, validat
             break
 
         # train the model
-        loss = epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch, n_gpus=n_gpus,
-                              scaler=scaler, samples_per_epoch=samples_per_epoch)
+        losses = list()
+        for i in range(training_iterations_per_epoch):
+            losses.append(epoch_training(training_loader, model, criterion, optimizer=optimizer, epoch=epoch,
+                                         n_gpus=n_gpus, scaler=scaler, samples_per_epoch=samples_per_epoch,
+                                         iteration=i+1))
+        loss = np.mean(losses)
 
         # Clear the cache from the GPUs
         if n_gpus:
@@ -60,8 +63,8 @@ def run_training(model, optimizer, criterion, n_epochs, training_loader, validat
 
         # predict validation data
         if validation_loader:
-            val_loss = epoch_validatation(validation_loader, model, criterion, n_gpus=n_gpus,
-                                          use_amp=scaler is not None)
+            val_loss = epoch_validation(validation_loader, model, criterion, n_gpus=n_gpus, use_amp=scaler is not None,
+                                        inferer=inferer)
         else:
             val_loss = None
 

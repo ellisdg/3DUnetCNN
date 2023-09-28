@@ -163,3 +163,15 @@ def split_left_right(data):
     left[:center_index] = data[:center_index]
     right[center_index:] = data[center_index:]
     return left, right
+
+
+def get_class(_dict, _module, _class_key="name"):
+    return getattr(_module, _dict[_class_key])
+
+
+def get_kwargs(_dict, skip_keys=("name",)):
+    kwargs = dict()
+    for key, value in _dict.items():
+        if key not in skip_keys:
+            kwargs[key] = value
+    return kwargs

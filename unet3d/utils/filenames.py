@@ -1,7 +1,7 @@
 import os
 from functools import partial, update_wrapper
 
-from unet3d import dataset as pytorch_datasets
+from unet3d import datasets
 from unet3d.utils.utils import load_image, load_json
 
 unet3d_path = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -185,4 +185,4 @@ def load_bias(bias_filename):
 def load_dataset_class(dataset_kwargs, cache_dir="./cache"):
     if "Persistent" in dataset_kwargs["name"] and "cache_dir" not in dataset_kwargs:
         dataset_kwargs["cache_dir"] = os.path.abspath(cache_dir)
-    return getattr(pytorch_datasets, dataset_kwargs.pop("name"))
+    return getattr(datasets, dataset_kwargs["name"])

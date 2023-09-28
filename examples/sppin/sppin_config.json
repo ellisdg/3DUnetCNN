@@ -1,0 +1,843 @@
+{
+    "model": {
+        "name": "DynUNet",
+        "in_channels": 4,
+        "out_channels": 1,
+        "spatial_dims": 3,
+        "deep_supervision": false,
+        "strides": [
+            [
+                1,
+                1,
+                1
+            ],
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ]
+        ],
+        "filters": [
+            64,
+            96,
+            128,
+            192,
+            256,
+            384
+        ],
+        "kernel_size": [
+            [
+                3,
+                3,
+                3
+            ],
+            [
+                3,
+                3,
+                3
+            ],
+            [
+                3,
+                3,
+                3
+            ],
+            [
+                3,
+                3,
+                3
+            ],
+            [
+                3,
+                3,
+                3
+            ],
+            [
+                3,
+                3,
+                3
+            ]
+        ],
+        "upsample_kernel_size": [
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ],
+            [
+                2,
+                2,
+                2
+            ]
+        ]
+    },
+    "optimizer": {
+        "name": "Adam",
+        "lr": 0.001
+    },
+    "loss": {
+        "name": "DiceLoss",
+        "include_background": true,
+        "sigmoid": true,
+        "batch": false
+    },
+    "cross_validation": [
+        {
+            "folds": 5,
+            "seed": 25
+        }
+    ],
+    "scheduler": {
+        "name": "ReduceLROnPlateau",
+        "patience": 20,
+        "factor": 0.5,
+        "min_lr": 1e-08
+    },
+    "dataset": {
+        "name": "SegmentationDatasetPersistent",
+        "desired_shape": [
+            192,
+            192,
+            192
+        ],
+        "labels": [
+            1
+        ],
+        "orientation": "RAS",
+        "normalization": "NormalizeIntensityD",
+        "normalization_kwargs": {
+            "channel_wise": true,
+            "nonzero": false
+        },
+        "resample": true,
+        "crop_foreground": true,
+        "foreground_percentile": 0.9,
+        "training": {
+            "spatial_augmentations": [
+                {
+                    "name": "RandFlipD",
+                    "spatial_axis": 0,
+                    "prob": 0.5
+                },
+                {
+                    "name": "RandFlipD",
+                    "spatial_axis": 1,
+                    "prob": 0.5
+                },
+                {
+                    "name": "RandRotateD",
+                    "prob": 0.5,
+                    "range_x": 0.2,
+                    "range_y": 0.2,
+                    "range_z": 0.2
+                }
+            ],
+            "intensity_augmentations": [
+                {
+                    "name": "RandScaleIntensityD",
+                    "factors": 0.1,
+                    "prob": 1.0
+                },
+                {
+                    "name": "RandShiftIntensityD",
+                    "offsets": 0.1,
+                    "prob": 1.0
+                }
+            ]
+        }
+    },
+    "training": {
+        "batch_size": 2,
+        "validation_batch_size": 2,
+        "amp": false,
+        "early_stopping_patience": null,
+        "n_epochs": 1000,
+        "save_every_n_epochs": null,
+        "save_last_n_models": null,
+        "save_best": true
+    },
+    "training_filenames": [
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_06/20180628/PT_06_T1_gd_20180628.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_06/20180628/PT_06_T2_20180628.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_06/20180628/PT_06_DWI_b0_20180628.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_06/20180628/PT_06_DWI_b100_20180628.nii.gz"
+            ],
+            "label": "./aligned/PT_06/20180628/PT_06_NB_20180628.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20180801/PT_07_T1_gd_20180801.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20180801/PT_07_T2_20180801.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20180801/PT_07_DWI_b0_20180801.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20180801/PT_07_DWI_b100_20180801.nii.gz"
+            ],
+            "label": "./aligned/PT_07/20180801/PT_7_NB_20180801.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20181109/PT_07_T1_gd_20181109.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20181109/PT_07_T2_20181109.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20181109/PT_07_DWI_b0_20181109.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_07/20181109/PT_07_DWI_b100_20181109.nii.gz"
+            ],
+            "label": "./aligned/PT_07/20181109/PT_07_NB_201811.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_10/20180815/PT_10_T1_gd_20180815.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_10/20180815/PT_10_T2_20180815.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_10/20180815/PT_10_DWI_b0_20180815.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_10/20180815/PT_10_DWI_b100_20180815.nii.gz"
+            ],
+            "label": "./aligned/PT_10/20180815/PT_10_NB_20180815.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20181024/PT_11_T1_gd_20181024.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20181024/PT_11_T2_20181024.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20181024/PT_11_DWI_b0_20181024.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20181024/PT_11_DWI_b100_20181024.nii.gz"
+            ],
+            "label": "./aligned/PT_11/20181024/PT_11_NB_20181024.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20190717/PT_11_T1_gd_20190717.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20190717/PT_11_T2_20190717.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20190717/PT_11_DWI_b0_20190717.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_11/20190717/PT_11_DWI_b100_20190717.nii.gz"
+            ],
+            "label": "./aligned/PT_11/20190717/PT_11_NB20190717.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20220712/PT_16_T1_gd_20220712.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20220712/PT_16_T2_20220712.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20220712/PT_16_DWI_b0_20220712.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20220712/PT_16_DWI_b100_20220712.nii.gz"
+            ],
+            "label": "./aligned/PT_16/20220712/PT_16_NB_20220712.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20221007/PT_16_T1_gd_20221007.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20221007/PT_16_T2_20221007.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20221007/PT_16_DWI_b0_20221007.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_16/20221007/PT_16_DWI_b100_20211007.nii.gz"
+            ],
+            "label": "./aligned/PT_16/20221007/PT_16_NB_20221007.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210409/PT_17_T1_gd_20210409.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210409/PT_17_T2_20210409.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210409/PT_17_DWI_b0_20210409.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210409/PT_17_DWI_b100_20210409.nii.gz"
+            ],
+            "label": "./aligned/PT_17/20210409/PT_17_NB_20210409.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210526/PT_17_T1_gd_20210526.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210526/PT_17_T2_20210526.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210526/PT_17_ DWI_b0_20210526.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210526/PT_17_DWI_b100_20210526.nii.gz"
+            ],
+            "label": "./aligned/PT_17/20210526/PT_17_NB_20210526.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210702/PT_17_T1_gd_20210702.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210702/PT_17_T2_20210702.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210702/PT_17_DWI_b0_20210702.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_17/20210702/PT_17_DWI_b100_20210702.nii.gz"
+            ],
+            "label": "./aligned/PT_17/20210702/PT_17_NB_20210702.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_21/20210521/PT_21_T1_gd_20210521.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_21/20210521/PT_21_T2_20210521.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_21/20210521/PT_21_DWI_b0_20210521.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_21/20210521/PT_21_DWI_b100_20210521.nii.gz"
+            ],
+            "label": "./aligned/PT_21/20210521/PT_21_NB_20210521.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210413/PT_24_T1_gd_20210413.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210413/PT_24_T2_20210413.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210413/PT_24_DWI_b0_20210413.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210413/PT_24_DWI_b100_20210413.nii.gz"
+            ],
+            "label": "./aligned/PT_24/20210413/PT_24_NB_20210413.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210521/PT_24_T1_gd_20210521.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210521/PT_24_T2_20210521.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210521/PT_24_DWI_b0_20210521.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20210521/PT_24_DWI_b100_20210521.nii.gz"
+            ],
+            "label": "./aligned/PT_24/20210521/PT_24_NB_20210521.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20211019/PT_24_T1_gd_20211019.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20211019/PT_24_T2_20211019.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20211019/PT_24_DWI_b0_20211019.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_24/20211019/PT_24_DWI_b100_20211019.nii.gz"
+            ],
+            "label": "./aligned/PT_24/20211019/PT_24_NB_20211019.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20180824/PT_27_T1_gd_20180824.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20180824/PT_27_T2_20180824.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20180824/PT_27_DWI_b0_20180824.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20180824/PT_27_DWI_b100_20180824.nii.gz"
+            ],
+            "label": "./aligned/PT_27/20180824/PT_27_NB_20180824.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20190626/PT_27_T1_gd_20190626.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20190626/PT_27_T2_20190626.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20190626/PT_27_DWI_b0_20190626.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_27/20190626/PT_27_DWI_b100_20190626.nii.gz"
+            ],
+            "label": "./aligned/PT_27/20190626/PT_27_NB_20190626.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20180903/PT_30_T1_gd_20180903.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20180903/PT_30_T2_20180903.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20180903/PT_30_DWI_b0_20180903.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20180903/PT_30_DWI_b100_20180903.nii.gz"
+            ],
+            "label": "./aligned/PT_30/20180903/PT_30_NB_20180903.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20181005/PT_30_T1_gd_20181005.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20181005/PT_30_T2_20181005.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20181005/PT_30_DWI_b0_20181005.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20181005/PT_30_DWI_b100_20181005.nii.gz"
+            ],
+            "label": "./aligned/PT_30/20181005/PT_30_NB_20181005.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20190103/PT_30_T1_gd_20190103.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20190103/PT_30_T2_20190103.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20190103/PT_30_DWI_b0_20190103.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_30/20190103/PT_30_DWI_b100_20190103.nii.gz"
+            ],
+            "label": "./aligned/PT_30/20190103/PT_30_NB_20190103.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190322/PT_34_T1_gd_20190322.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190322/PT_34_T2_20190322.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190322/PT_34_DWI_b0_20190322.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190322/PT_34_DWI_b100_20190322.nii.gz"
+            ],
+            "label": "./aligned/PT_34/20190322/PT_34_NB_20190322.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190501/PT_34_T1_gd_20190501.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190501/PT_34_T2_20190501.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190501/PT_34_DWI_b0_20190501.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190501/PT_34_DWI_b100_20190501.nii.gz"
+            ],
+            "label": "./aligned/PT_34/20190501/PT_34_NB_20190501.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190614/PT_34_T1_gd_20190614.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190614/PT_34_T2_20190604.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190614/PT_34_DWI_b0_20190614.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20190614/PT_34_DWI_b100_20190614.nii.gz"
+            ],
+            "label": "./aligned/PT_34/20190614/PT_34_NB_20190614.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200306/PT_34_T1_gd_20200306.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200306/PT_34_T2_20200306.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200306/PT_34_DWI_b0_20200306.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200306/PT_34_DWI_b100_20200306.nii.gz"
+            ],
+            "label": "./aligned/PT_34/20200306/PT_34_NB_20200306.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200417/PT_34_T1_gd_20200417.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200417/PT_34_T2_20200417.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200417/PT_34_DWI_b0_20200417.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_34/20200417/PT_34_DWI_b100_20200417.nii.gz"
+            ],
+            "label": "./aligned/PT_34/20200417/PT_34_NB_20200417.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20211230/PT_38_T1_gd_20211230.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20211230/PT_38_T2_20211230.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20211230/PT_38_DWI_b0_20211230.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20211230/PT_38_DWI_b100_20211230.nii.gz"
+            ],
+            "label": "./aligned/PT_38/20211230/PT_38_NB_20211230.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20220408/PT_38_T1_gd_20220408.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20220408/PT_38_T2_20220408.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20220408/PT_38_DWI_b0_20220408.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_38/20220408/PT_38_DWI_b100_20220408.nii.gz"
+            ],
+            "label": "./aligned/PT_38/20220408/PT_38_NB_20220408.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_39/20190522/PT_38_T1_gd_20190522.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_39/20190522/PT_38_T2_20190522.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_39/20190522/PT_38_DWI_b0_20190522.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_39/20190522/PT_38_DWI_b100_20190522.nii.gz"
+            ],
+            "label": "./aligned/PT_39/20190522/PT_38_NB_20190522.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_49/20220610/PT_49_T1_gd_20220610.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_49/20220610/PT_49_T2_20220610.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_49/20220610/PT_49_DWI_b0_20220610.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_49/20220610/PT_49_DWI_b100_20220610.nii.gz"
+            ],
+            "label": "./aligned/PT_49/20220610/PT_49_NB_20220610.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200228/PT_52_T1_gd_20200228.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200228/PT_52_T2_20200228.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200228/PT_52_8DWI_b0_20200228.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200228/PT_52_DWI_b100_20200228.nii.gz"
+            ],
+            "label": "./aligned/PT_52/20200228/PT_52_NB_20200228.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200416/PT_52_T1_gd_20200416.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200416/PT_52_T2_20200416.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200416/PT_52_DWI_b0_20200416.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20200416/PT_52_DWI_b100_20200416.nii.gz"
+            ],
+            "label": "./aligned/PT_52/20200416/PT_52_NB_20200416.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20201021/PT_52_T1_gd_20201021.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20201021/PT_521_T2_20201021.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20201021/PT_52_DWI_b0_20201021.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_52/20201021/PT_52_DWI_b100_20201021.nii.gz"
+            ],
+            "label": "./aligned/PT_52/20201021/PT_52_NB_20201021.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220103/PT_53_T1_gd_20220103.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220103/PT_53_T2_20220103.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220103/PT_53_DWI_b0_20220103.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220103/PT_53_DWI_b100_20220103.nii.gz"
+            ],
+            "label": "./aligned/PT_53/20220103/PT_53_NB_20220103.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220218/PT_53_T1_gd_20220218.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220218/PT_53_T2_20220218.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220218/PT_53_DWI_b0_20220218.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220218/PT_53_DWI_b100_20220218.nii.gz"
+            ],
+            "label": "./aligned/PT_53/20220218/PT_53_NB_20220218.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220401/PT_53_T1_gd_20220401.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220401/PT_53_T2_20220401.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220401/PT_53_DWI_b0_20220401.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_53/20220401/PT_53_DWI_b100_20220401.nii.gz"
+            ],
+            "label": "./aligned/PT_53/20220401/PT_53_NB_20220401.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20210618/PT_56_T1_gd_20210618.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20210618/PT_56_T2_20210618.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20210618/PT_56_DWI_b0_20210618.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20210618/PT_56_DWI_b100_20210618.nii.gz"
+            ],
+            "label": "./aligned/PT_56/20210618/PT_56_NB_20210618.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20211022/PT_56_T1_gd_20211022.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20211022/PT_56_T2_20211022.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20211022/PT_56_DWI_b0_20211022.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20211022/PT_56_DWI_b100_20211022.nii.gz"
+            ],
+            "label": "./aligned/PT_56/20211022/PT_56_NB_20211022.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20220126/PT_56_T1_gd_20220126.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20220126/PT_56_T2_20220126.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20220126/PT_56_DWI_b0_20220126.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_56/20220126/PT_65_DWI_b100_20220126.nii.gz"
+            ],
+            "label": "./aligned/PT_56/20220126/PT_56_NB_2022012.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_58/20211105/PT_58_T1_gd_20211105.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_58/20211105/PT_58_T2_20211105.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_58/20211105/PT_58_DWI_b0_20211105.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_58/20211105/PT_58_DWI_b100_20211105.nii.gz"
+            ],
+            "label": "./aligned/PT_58/20211105/PT_58_NB_20211105.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_59/20200109/PT_59_T1_gd_20200109.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_59/20200109/PT_59_T2_20200109.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_59/20200109/PT_59_DWI_b0_20200109.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_59/20200109/PT_59_DWI_b100_20200109.nii.gz"
+            ],
+            "label": "./aligned/PT_59/20200109/PT_59_NB_20200109.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210519/PT_60_T1_gd_202100519.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210519/PT_60_T2_20210519.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210519/PT_60_DWI_b0_20210519.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210519/PT_60_DWI_b100_20210519.nii.gz"
+            ],
+            "label": "./aligned/PT_60/20210519/PT_60_NB_20210519.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210630/PT_60_T1_gd_20210630.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210630/PT_60_T2_20210630.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210630/PT_60_DWI_b0_20210630.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210630/PT_60_DWI_b100_20210630.nii.gz"
+            ],
+            "label": "./aligned/PT_60/20210630/PT_60_NB_20210630.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210813/PT_60_T1_gd_20210813.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210813/PT_60_T2_20210813.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210813/PT_60_DWI_b0_20210813.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_60/20210813/PT_60_DWI_b100_20210813.nii.gz"
+            ],
+            "label": "./aligned/PT_60/20210813/PT_60_NB_20210813.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220308/PT_61_T1_gd_20220308.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220308/PT_61_T2_20220308.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220308/PT_61_DWI_b0_20220308.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220308/PT_61_DWI_b100_20220308.nii.gz"
+            ],
+            "label": "./aligned/PT_61/20220308/PT_61_NB_20220308.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220603/PT_61_T1_gd_20220603.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220603/PT_61_T2_20220603.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220603/PT_61_DWI_b0_202206033.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20220603/PT_61_DWI_b100_20220603.nii.gz"
+            ],
+            "label": "./aligned/PT_61/20220603/PT_61_NB_20220603.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20221019/PT_61_T1_gd_20221019.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20221019/PT_61_T2_20221019.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20221019/PT_61_DWI_b0_20221019.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_61/20221019/PT_61_DWI_b100_20221019.nii.gz"
+            ],
+            "label": "./aligned/PT_61/20221019/PT_61_NB_20221019.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200629/PT_62_T1_gd_2020029.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200629/PT_62_T2_20200629.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200629/PT_62_DWI_b0_20200629.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200629/PT_62_DWI_b100_20200629.nii.gz"
+            ],
+            "label": "./aligned/PT_62/20200629/PT_62_NB_20200629.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200812/PT_62_T1_gd_20200812.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200812/PT_62_T2_20200812.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200812/PT_62_DWI_b0_20200812.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200812/PT_62_DWI_b100_20200812.nii.gz"
+            ],
+            "label": "./aligned/PT_62/20200812/PT_62_NB_20200812.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200925/PT_62_T1_gd_20200925.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200925/PT_62_T2_20200925.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200925/PT_62_DWI_b0_20200925.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_62/20200925/PT_62_DWI_b100_20200925.nii.gz"
+            ],
+            "label": "./aligned/PT_62/20200925/PT_62_NB_20200925.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190404/PT_63_T1_gd_201904040.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190404/PT_63_T2_20190404.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190404/PT_63_DWI_b0_20190404.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190404/PT_63_DWI_b100_20190404.nii.gz"
+            ],
+            "label": "./aligned/PT_63/20190404/PT_63_NB_20190404.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190515/PT_63_T1_gd_20190515.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190515/PT_63_T2_20190515.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190515/PT_63_DWI_b0_20190515.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190515/PT_63_DWI_b100_20190515.nii.gz"
+            ],
+            "label": "./aligned/PT_63/20190515/PT_63_NB_20190515.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190815/PT_63_T1_gd_20190815.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190815/PT_63_T2_20190815.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190815/PT_63_DWI_b0_20190815.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_63/20190815/PT_63_DWI_b100_20190815.nii.gz"
+            ],
+            "label": "./aligned/PT_63/20190815/PT_63_NB_20190815.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20220826/PT_65_T1_gd_20220826.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20220826/PT_65_T2_20220826.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20220826/PT_65_DWI_b0_20220826.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20220826/PT_65_DWI_b100_20220826.nii.gz"
+            ],
+            "label": "./aligned/PT_65/20220826/PT_65_NB_20220826.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20221007/PT_65_T1_gd_20221007.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20221007/PT_65_T2_20221007.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20221007/PT_65_DWI_b0_20221007.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_65/20221007/PT_65_DWI_b100_20221007.nii.gz"
+            ],
+            "label": "./aligned/PT_65/20221007/PT_65_NB_20221007.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_71/20190808/PT_71_T1_gd_20190808.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_71/20190808/PT_71_T2_20190808.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_71/20190808/PT_71_DWI_b0_20190808.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_71/20190808/PT_71_DWI_b100_20190808.nii.gz"
+            ],
+            "label": "./aligned/PT_71/20190808/PT_71_NB_20190808.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190410/PT_72_T1_gd_20190410.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190410/PT_72_T2_20190410.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190410/PT_72_DWI_b0_20190410.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190410/PT_72_DWI_b100_20190410.nii.gz"
+            ],
+            "label": "./aligned/PT_72/20190410/PT_72_NB_20190410.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190522/PT_72_T1_gd_20190522.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190522/PT_72_T2_20190522.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190522/PT_72_DWI_b0_20190522.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20190522/PT_72_DWI_b100_20190522.nii.gz"
+            ],
+            "label": "./aligned/PT_72/20190522/PT_72_NB_20190522.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20191115/PT_72_T1_gd_20191115.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20191115/PT_72_T2_20191115.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20191115/PT_72_DWI_b0_20191115.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_72/20191115/PT_72_DWI_b100_20191115.nii.gz"
+            ],
+            "label": "./aligned/PT_72/20191115/PT_72_NB_20191115.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_77/20210507/PT_77_T1_gd_20210507.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_77/20210507/PT_77_T2)29210507.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_77/20210507/PT_77_DWI_b0_20210507.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_77/20210507/PT_77_DWI_b100_20210507.nii.gz"
+            ],
+            "label": "./aligned/PT_77/20210507/PT_77_NB_20210507.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190410/PT_80_T1_gd_20190410.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190410/PT_80_T2_20190410.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190410/PT_80_DWI_b0.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190410/PT_80_DWI_b100.nii.gz"
+            ],
+            "label": "./aligned/PT_80/20190410/PT_80_NB_20190410.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190704/PT_80_T1_gd_20190704.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190704/PT_80_T2_20190704.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190704/PT_80_DWI_b0_20190704.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_80/20190704/PT_80_DWI_b100_20190704.nii.gz"
+            ],
+            "label": "./aligned/PT_80/20190704/PT_80_NB_20190704.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20190424/PT_81_T1_gd_20190424.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20190424/PT_81_T2_20190424.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20190424/PT_81_DWI_b0_20190424.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20190424/PT_81_DWI_b100_20190424.nii.gz"
+            ],
+            "label": "./aligned/PT_81/20190424/PT_81_NB_20190424.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20191003/PT_81_T1_gd_20191003.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20191003/PT_81_T2_20191003.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20191003/PT_81_DWI_b0_20191003.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20191003/PT_81_DWI_b100_20191003.nii.gz"
+            ],
+            "label": "./aligned/PT_81/20191003/PT_81_NB_20191003.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200129/PT_81_T1_gd_20200129.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200129/PT_81_T2_20200129.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200129/PT_81_DWI_b0_20200129.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200129/PT_81_DWI_b100_20200129.nii.gz"
+            ],
+            "label": "./aligned/PT_81/20200129/PT_81_NB_20200129.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200515/PT_81_T1_gd_20200515.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200515/PT_81_t2_20200515.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200515/PT_81_DWI_b0_20200515.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_81/20200515/PT_81_DWI_b100_20200515.nii.gz"
+            ],
+            "label": "./aligned/PT_81/20200515/PT_81_NB_20200515.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_83/20191129/PT_83_T1_gd_20191129.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_83/20191129/PT_83_T2_20191129.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_83/20191129/PT_83_DWI_b0_20191129.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_83/20191129/PT_83_DWI_b100_20191129.nii.gz"
+            ],
+            "label": "./aligned/PT_83/20191129/PT_83_NB_20191129.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_84/20211229/PT_84_T1_gd_20211229.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_84/20211229/PT_84_T2_20211229.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_84/20211229/PT_84_DWI_b0_20211229.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_84/20211229/PT_84_DWI_b100_20211229.nii.gz"
+            ],
+            "label": "./aligned/PT_84/20211229/PT_84_NB_20211229.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20201008/PT_86_T1_gd_20201008.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20201008/PT_86_T2_20201008.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20201008/PT_86_DWI_b0_20201008.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20201008/PT_86_DWI_b100_20201008.nii.gz"
+            ],
+            "label": "./aligned/PT_86/20201008/PT_86_NB_20201008.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20210903/PT_86_T1_gd_20210903.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20210903/PT_86_T2_20210903.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20210903/PT_86_DWI_b0_20210903.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20210903/PT_86_DWI_b100_20210903.nii.gz"
+            ],
+            "label": "./aligned/PT_86/20210903/PT_86_NB_20210903.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20211029/PT_86_T1_gd_20211029.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20211029/PT_86_T2_20211029.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20211029/PT_86_DWI_b0_20211029.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_86/20211029/PT_86_DWI_b100_20211029.nii.gz"
+            ],
+            "label": "./aligned/PT_86/20211029/PT_86_NB_20211029.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_88/20190501/PT_88_T1_gd_20190501.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_88/20190501/PT_88_T2_20190501.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_88/20190501/PT_88_DWI_b0_20190501.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_88/20190501/PT_88_DWI_b100_20190501.nii.gz"
+            ],
+            "label": "./aligned/PT_88/20190501/PT_88_NB_20190501.nii.gz"
+        },
+        {
+            "image": [
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_92/20181026/PT_92_T1_gd_20181026.nii",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_92/20181026/PT_92_T2_20181026.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_92/20181026/PT_92_DWI_b0_20181026.nii.gz",
+                "/lustre/work/aizenberg/dgellis/MICCAI23/code/3DUnetCNN/examples/sppin/aligned/PT_92/20181026/PT_92_DWI_b100_20181026.nii.gz"
+            ],
+            "label": "./aligned/PT_92/20181026/PT_92_NB_20181026.nii.gz"
+        }
+    ]
+}

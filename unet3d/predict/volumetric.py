@@ -86,7 +86,8 @@ def predict_volumetric_batch(model, batch, batch_references, batch_subjects, bat
 
 
 def volumetric_predictions(model, dataloader, prediction_dir, activation=None, resample=False,
-                           interpolation="trilinear"):
+                           interpolation="trilinear", inferer=None):
+    output_filenames = list()
     writer = NibabelWriter()
     if resample:
         resampler = ResampleToMatch(mode=interpolation)
@@ -95,9 +96,11 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
             x = item["image"]
-            # TODO: pass desired device to this function
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
-            predictions = model(x)
+            if inferer:
+                predictions = inferer(x, model)
+            else:
+                predictions = model(x)
             if activation == "sigmoid":
                 predictions = torch.sigmoid(predictions)
             elif activation == "softmax":
@@ -113,5 +116,8 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
                     _prediction = resampler(_prediction, _x)
                 writer.set_data_array(_prediction)
                 writer.set_metadata(_x.meta, resample=False)
-                out_filename = os.path.join(prediction_dir, os.path.basename(_x.meta["filename_or_obj"]))
+                out_filename = os.path.join(prediction_dir,
+                                            os.path.basename(_x.meta["filename_or_obj"]).split(".")[0] + ".nii.gz")
                 writer.write(out_filename, verbose=True)
+                output_filenames.append(out_filename)
+    return output_filenames
