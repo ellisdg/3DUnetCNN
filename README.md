@@ -6,10 +6,7 @@
 * [Introduction](#introduction)
 * [Quick Start Guide](#quickstart)
   * [Installation](#installation)
-  * [Configuration](#configuration)
-  * [Training](#training)
-  * [Inference](#inference)
-  * [Evaluation](#evaluation)
+  * [Example](#brats2020)
 * [Documentation](#documentation)
 * [Citation](#citation)
 
@@ -36,42 +33,9 @@ How to train a UNet on your own data.
 <sup>*</sup>It is highly recommended that an Anaconda environment or a virtual environment is used to 
 manage dependcies and avoid conflicts with existing packages.
 
-### Setup the configuration file <a name="configuration"></a>
-1. Copy the default configuration file: <br />
-```cp examples/default_config.json <your_config>.json```<br /><br />
-2. Add the ```training_filenames``` and ```validation_filenames``` for your dataset to the configuration file.
-<br /><br />
-Example:<br />
-```"training_filenames": [[["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"], "sub01/labelmap.nii.gz"], ...]``` <br />
-* ```["sub01/t1w.nii.gz", "sub01/t2w.nii.gz"]``` is the set of input filenames for a single subject.
-* ```"sub01/labelmap.nii.gz"``` is the labelmap filename for that same subject.
-* This should be repeated for all the subjects in the dataset.
-  (It is probably easiest to add these filenames using a Python script.)
-3. (optional) Change model and training configuration settings as desired. (see [Configuration File Guide](doc/Configuration.md))
+### Create configuration file and run training <a name="brats2020"></a>
+See the [Brats 2020 example](https://github.com/ellisdg/3DUnetCNN/tree/master/examples/brats2020) for a description on how to create a configuration and train a model.
 
-### Train the model <a name="training"></a>
-Run the model training:<br />
-```3DUnetCNN/scripts/train.py --configuration_filename <your_config>.json --model_filename <your_model>.pth --training_log_filename <your_training>.txt``` <br />
-* Change ```<your_config>.json``` to the configuration file you created above.
-* Change ```<your_model>.pth``` to the filename where you want the training to save the model file.
-* Change ```<your_training>.txt``` to filename where you want the training to save the training and validation losses for each epoch.
-* (optional) set ```--ngpus``` and ```--nthreads``` to the number of gpus and threads available. (default is ngpus=1, nthreads=8)
-
-### Predict Validation Cases <a name="inference"></a>
-Run model inference on the ```validation_filenames```:<br />
-```3DUnetCNN/scripts/predict.py --configuration_filename <your_config>.json --model_filename <your_model>.pth --output_directory <your_predictions_folder>```
-* Change ```<your_config>.json``` to the same configuration used in training.
-* Change ```<your_model>.pth``` to the model filename specified during training.
-* Change ```<your_prediction_folder>``` to the folder where you want the predictions to be saved.
-* (optional) setting ```--group test``` will tell the script to look for ```test_filenames``` in the configuration file
- instead of ```validation_filenames```. 
-This is helpful for predicting cases that are in a separate test set.
-
-### Evaluate Results <a name="evaluation"></a>
-```3DUnetCNN/scripts/evaluate.py --directory <your_prediction_folder> --config_filename <your_config>.json --output_filename <your_results>.csv```
-* Change ```<your_prediction_folder>``` to the folder path from the prediction phase.
-* Change ```<your_config>.json``` to your configuration filename.
-* Change ```<your_results>.csv``` to the location where you want to save the evaluation scores as a CSV file.
 
 ## Documentation <a name="documentation"></a>
 * [Configuration Guide](doc/Configuration.md)
