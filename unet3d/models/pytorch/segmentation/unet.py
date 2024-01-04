@@ -35,13 +35,13 @@ class UNetDecoder(MirroredDecoder):
         return x
 
 
-class UNet(ConvolutionalAutoEncoder):
+class UNet3D(ConvolutionalAutoEncoder):
     def __init__(self, *args, encoder_class=UNetEncoder, decoder_class=UNetDecoder, n_outputs=1, **kwargs):
         super().__init__(*args, encoder_class=encoder_class, decoder_class=decoder_class, n_outputs=n_outputs, **kwargs)
         self.set_final_convolution(n_outputs=n_outputs)
 
 
-class AutocastUNet(UNet):
+class AutocastUNet(UNet3D):
     def forward(self, *args, **kwargs):
         from torch.cuda.amp import autocast
         with autocast():
@@ -49,7 +49,7 @@ class AutocastUNet(UNet):
         return output
 
 
-class AutoImplantUNet(UNet):
+class AutoImplantUNet(UNet3D):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
