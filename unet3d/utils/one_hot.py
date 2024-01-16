@@ -99,10 +99,21 @@ def shape_without_channels(tensor, dim=0):
 
 
 def convert_one_hot_to_label_map_using_hierarchy(one_hot_encoding, labels, threshold=0.5, axis=0, dtype=torch.int16):
+    # each label in a hierarchy is a contained within the roi of the previous label
+    # therefore, each label in the hierarchy is defined by positive predictions in the current label
+    # and those from the previous label.
+    # For example, the BraTS hierarchy is: Whole Tumor (WT), Tumor Core (TC), and Enhancing Tumor (ET)
+    # The TC is defined as a subset of the WT, and the ET is defined as a subset of the TC.
+    # So we first need to define the WT, then the TC, and then the ET.
+    # the variable "roi" defines the positive predictions from the previous label in the hierarchy
+    # the initial roi is the entire image
     roi = torch.ones(shape_without_channels(one_hot_encoding, axis), dtype=torch.bool)
+    # the initial label map is all zeros
     label_map = torch.zeros(roi.shape, dtype=dtype)
     for index, label in enumerate(labels):
+        # refine the roi with the current positive predictions
         roi = torch.logical_and(one_hot_encoding[index] > threshold, roi)
+        # assign the current label to the current roi
         label_map[roi] = label
     return label_map
 
