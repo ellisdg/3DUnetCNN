@@ -30,6 +30,15 @@ class UNetDecoder(MirroredDecoder):
             x = lay(x)
             x = pre(x)
             x = up(x)
+
+            diffZ = inputs[i + 1].size()[2] - x.size()[2]
+            diffY = inputs[i + 1].size()[3] - x.size()[3]
+            diffX = inputs[i + 1].size()[4] - x.size()[4]
+
+            x = F.pad(x, [diffX // 2, diffX - diffX // 2,
+                          diffY // 2, diffY - diffY // 2,
+                          diffZ // 2, diffZ - diffZ // 2])
+
             x = torch.cat((x, inputs[i + 1]), 1)
         x = self.layers[-1](x)
         return x
