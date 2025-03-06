@@ -33,7 +33,7 @@ idna==3.4
     # via requests
 imageio[tifffile]==2.31.1
     # via evalutils
-jinja2==3.1.2
+jinja2==3.1.6
     # via
     #   cookiecutter
     #   jinja2-time
