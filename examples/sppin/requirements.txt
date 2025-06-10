@@ -74,7 +74,7 @@ pytz==2023.3
     # via pandas
 pyyaml==6.0
     # via cookiecutter
-requests==2.31.0
+requests==2.32.4
     # via cookiecutter
 scikit-learn==1.2.2
     # via evalutils
