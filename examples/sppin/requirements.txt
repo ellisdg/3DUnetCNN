@@ -96,7 +96,7 @@ tomli==2.0.1
     # via
     #   build
     #   pyproject-hooks
-urllib3==2.0.3
+urllib3==2.5.0
     # via requests
 wheel==0.40.0
     # via pip-tools
