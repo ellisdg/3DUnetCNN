@@ -20,7 +20,7 @@ def _validate_image_has_affine(image):
     Validate that an image has the 'affine' attribute.
     
     Args:
-        image: The image object to validate
+        image (Image or MetaTensor): The image object to validate
         
     Raises:
         TypeError: If the image lacks the 'affine' attribute

@@ -13,9 +13,9 @@ def _validate_has_meta_attribute(tensor, idx, batch_idx=None):
     Validate that a tensor has the 'meta' attribute.
     
     Args:
-        tensor: The tensor to validate
-        idx: Dataset index for error reporting
-        batch_idx: Optional batch index for error reporting
+        tensor (MetaTensor): The tensor to validate
+        idx (int): Dataset index for error reporting
+        batch_idx (int, optional): Batch index for error reporting
         
     Raises:
         TypeError: If the tensor lacks the 'meta' attribute
@@ -35,9 +35,9 @@ def _validate_has_filename_in_meta(tensor, idx, batch_idx=None):
     Validate that a tensor's metadata contains the 'filename_or_obj' key.
     
     Args:
-        tensor: The tensor to validate
-        idx: Dataset index for error reporting
-        batch_idx: Optional batch index for error reporting
+        tensor (MetaTensor): The tensor to validate
+        idx (int): Dataset index for error reporting
+        batch_idx (int, optional): Batch index for error reporting
         
     Raises:
         KeyError: If the metadata lacks 'filename_or_obj'
