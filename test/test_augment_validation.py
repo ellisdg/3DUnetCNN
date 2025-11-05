@@ -1,8 +1,6 @@
 import unittest
 import torch
-import numpy as np
-from monai.data.meta_tensor import MetaTensor
-from unet3d.utils.image import Image
+
 from unet3d.utils.augment import translate_image, find_image_center, scale_image, smooth_img
 
 
