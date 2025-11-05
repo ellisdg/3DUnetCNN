@@ -73,7 +73,7 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
                                         translation_scale=translation_scale)
         resampled_image = resample_to_img(source_image=distorted_image, target_image=image, interpolation=interpolation)
         data_list.append(resampled_image)
-    data = torch.tensor(data_list)
+    data = torch.stack(data_list)  # Use torch.stack to preserve Image/MetaTensor properties
     if background_correction:
         data = data + background
     if noise_factor is not None:
@@ -231,6 +231,12 @@ def translate_image(image, translation_scales, interpolation="linear"):
     randomly translated on average (0.05 for example).
     :return: translated image
     """
+    if not hasattr(image, 'affine'):
+        raise TypeError(
+            f"Input image does not have 'affine' attribute. "
+            f"Expected an Image or MetaTensor object, but got {type(image)}. "
+            "Ensure your transforms preserve the affine matrix metadata."
+        )
     affine = image.affine.detach().clone()
     translation = torch.multiply(translation_scales, get_extent_from_image(image))
     affine[:3, 3] = affine[:3, 3] + translation
@@ -265,6 +271,12 @@ def _rotate_affine(affine, shape, rotation):
 
 
 def find_image_center(image, ndim=3):
+    if not hasattr(image, 'affine'):
+        raise TypeError(
+            f"Input image does not have 'affine' attribute. "
+            f"Expected an Image or MetaTensor object, but got {type(image)}. "
+            "Ensure your transforms preserve the affine matrix metadata."
+        )
     return find_center(image.affine, image.shape, ndim=ndim)
 
 
@@ -274,6 +286,12 @@ def find_center(affine, shape, ndim=3):
 
 
 def scale_image(image, scale, ndim=3, interpolation='linear'):
+    if not hasattr(image, 'affine'):
+        raise TypeError(
+            f"Input image does not have 'affine' attribute. "
+            f"Expected an Image or MetaTensor object, but got {type(image)}. "
+            "Ensure your transforms preserve the affine matrix metadata."
+        )
     affine = scale_affine(image.affine, image.shape, scale=scale, ndim=ndim)
     return resample(image, affine, image.shape, interpolation=interpolation)
 
@@ -333,6 +351,12 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
 
 
 def smooth_img(image, fwhm):
+    if not hasattr(image, 'affine'):
+        raise TypeError(
+            f"Input image does not have 'affine' attribute. "
+            f"Expected an Image or MetaTensor object, but got {type(image)}. "
+            "Ensure your transforms preserve the affine matrix metadata."
+        )
     sigma = torch.divide(fwhm, get_spacing_from_affine(image.affine))
     array = GaussianSmooth(sigma=sigma)(image)
     return image.make_similar(array)

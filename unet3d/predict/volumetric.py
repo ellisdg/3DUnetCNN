@@ -96,6 +96,16 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
             x = item["image"]
+            
+            # Validate that the input has the required metadata
+            if not hasattr(x, "meta"):
+                raise TypeError(
+                    f"Input image at index {idx} does not have 'meta' attribute. "
+                    "The dataloader must return MONAI MetaTensor objects with metadata. "
+                    "Ensure your dataset uses transforms like LoadImageD that preserve metadata, "
+                    "and that image_only=False (or not set, as False is the default) in LoadImageD."
+                )
+            
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
             if inferer:
                 predictions = inferer(x, model)
@@ -111,6 +121,23 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
             for batch_idx in range(batch_size):
                 _prediction = predictions[batch_idx]
                 _x = x[batch_idx]
+                
+                # Validate that the indexed tensor still has metadata
+                if not hasattr(_x, "meta"):
+                    raise TypeError(
+                        f"Input image at batch index {batch_idx} (dataset index {idx}) does not have 'meta' attribute after indexing. "
+                        "This might be due to tensor operations that convert MetaTensor to regular Tensor. "
+                        "Ensure your dataloader and transforms preserve MONAI MetaTensor type."
+                    )
+                
+                # Validate that the metadata contains the required filename field
+                if "filename_or_obj" not in _x.meta:
+                    raise KeyError(
+                        f"Input image at batch index {batch_idx} (dataset index {idx}) is missing 'filename_or_obj' in metadata. "
+                        f"Available meta keys: {list(_x.meta.keys()) if isinstance(_x.meta, dict) else 'N/A'}. "
+                        "Ensure your dataset uses LoadImageD to load images, which populates this field."
+                    )
+                
                 if resample:
                     _x = loader(os.path.abspath(_x.meta["filename_or_obj"]))
                     _prediction = resampler(_prediction, _x)
