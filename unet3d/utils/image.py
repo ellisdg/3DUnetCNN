@@ -1,6 +1,5 @@
 import torch
 from monai.data.meta_tensor import MetaTensor
-from copy import deepcopy
 
 
 class Image(MetaTensor):
@@ -14,8 +13,12 @@ class Image(MetaTensor):
         if hasattr(data, "array"):
             data = data.array
         if copy_meta:
-            meta = deepcopy(Image.meta)
-            meta.pop("affine")
+            # Copy instance meta, not the class property, and drop affine from meta as it is passed separately
+            try:
+                meta = dict(self.meta) if getattr(self, "meta", None) is not None else {}
+            except Exception:
+                meta = {}
+            meta.pop("affine", None)
         else:
             meta = dict()
         return Image(x=data, affine=affine, meta=meta)
@@ -26,7 +29,7 @@ class Image(MetaTensor):
             _data = torch.moveaxis(self, 0, -1)
         else:
             _data = self
-        _image = nib.Nifti1Image(dataobj=_data.squeeze().numpy(), affine=self.affine)
+        _image = nib.Nifti1Image(dataobj=_data.squeeze().numpy(), affine=self.affine.cpu().numpy())
         _image.to_filename(filename)
 
 
