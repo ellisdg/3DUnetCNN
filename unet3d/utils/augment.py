@@ -15,6 +15,24 @@ from .nilearn_custom_utils.nilearn_utils import get_background_values
 from .utils import copy_image
 
 
+def _validate_image_has_affine(image):
+    """
+    Validate that an image has the 'affine' attribute.
+    
+    Args:
+        image: The image object to validate
+        
+    Raises:
+        TypeError: If the image lacks the 'affine' attribute
+    """
+    if not hasattr(image, 'affine'):
+        raise TypeError(
+            f"Input image does not have 'affine' attribute. "
+            f"Expected an Image or MetaTensor object, but got {type(image)}. "
+            "Ensure your transforms preserve the affine matrix metadata."
+        )
+
+
 def flip_image(image, axis):
     new_data = image.detach().clone()
     new_data = torch.flip(new_data, dims=axis)
@@ -231,12 +249,7 @@ def translate_image(image, translation_scales, interpolation="linear"):
     randomly translated on average (0.05 for example).
     :return: translated image
     """
-    if not hasattr(image, 'affine'):
-        raise TypeError(
-            f"Input image does not have 'affine' attribute. "
-            f"Expected an Image or MetaTensor object, but got {type(image)}. "
-            "Ensure your transforms preserve the affine matrix metadata."
-        )
+    _validate_image_has_affine(image)
     affine = image.affine.detach().clone()
     translation = torch.multiply(translation_scales, get_extent_from_image(image))
     affine[:3, 3] = affine[:3, 3] + translation
@@ -271,12 +284,7 @@ def _rotate_affine(affine, shape, rotation):
 
 
 def find_image_center(image, ndim=3):
-    if not hasattr(image, 'affine'):
-        raise TypeError(
-            f"Input image does not have 'affine' attribute. "
-            f"Expected an Image or MetaTensor object, but got {type(image)}. "
-            "Ensure your transforms preserve the affine matrix metadata."
-        )
+    _validate_image_has_affine(image)
     return find_center(image.affine, image.shape, ndim=ndim)
 
 
@@ -286,12 +294,7 @@ def find_center(affine, shape, ndim=3):
 
 
 def scale_image(image, scale, ndim=3, interpolation='linear'):
-    if not hasattr(image, 'affine'):
-        raise TypeError(
-            f"Input image does not have 'affine' attribute. "
-            f"Expected an Image or MetaTensor object, but got {type(image)}. "
-            "Ensure your transforms preserve the affine matrix metadata."
-        )
+    _validate_image_has_affine(image)
     affine = scale_affine(image.affine, image.shape, scale=scale, ndim=ndim)
     return resample(image, affine, image.shape, interpolation=interpolation)
 
@@ -351,12 +354,7 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
 
 
 def smooth_img(image, fwhm):
-    if not hasattr(image, 'affine'):
-        raise TypeError(
-            f"Input image does not have 'affine' attribute. "
-            f"Expected an Image or MetaTensor object, but got {type(image)}. "
-            "Ensure your transforms preserve the affine matrix metadata."
-        )
+    _validate_image_has_affine(image)
     sigma = torch.divide(fwhm, get_spacing_from_affine(image.affine))
     array = GaussianSmooth(sigma=sigma)(image)
     return image.make_similar(array)
