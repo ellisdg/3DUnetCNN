@@ -114,11 +114,10 @@
         "include_background": true,
         "sigmoid": true
     },
-    "cross_validation":
-        {
-            "n_folds": 5,
-            "random_seed": 25
-        },
+    "cross_validation": {
+        "n_folds": 5,
+        "random_seed": 25
+    },
     "scheduler": {
         "name": "ReduceLROnPlateau",
         "patience": 10,
