@@ -126,7 +126,7 @@
         "min_lr": 1e-08
     },
     "dataset": {
-        "name": "SegmentationDatasetPersistent",
+        "name": "SegmentationDataset",
         "desired_shape": [
             128,
             128,
