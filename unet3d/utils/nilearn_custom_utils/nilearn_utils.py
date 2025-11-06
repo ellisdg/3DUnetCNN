@@ -92,10 +92,10 @@ def image_slices_to_affine(image, slices):
 
     linear_part = affine[:3, :3]
     old_origin = affine[:3, 3]
-    new_origin_voxel = torch.as_tensor([s.start for s in slices])
+    new_origin_voxel = torch.as_tensor([s.start for s in slices], dtype=affine.dtype, device=affine.device)
     new_origin = old_origin + torch.matmul(linear_part, new_origin_voxel)
 
-    new_affine = torch.eye(4)
+    new_affine = torch.eye(4, dtype=affine.dtype, device=affine.device)
     new_affine[:3, :3] = linear_part
     new_affine[:3, 3] = new_origin
     return new_affine

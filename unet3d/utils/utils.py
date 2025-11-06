@@ -45,7 +45,7 @@ def extract_polydata_vertices(polydata):
 
 
 def copy_image(image):
-    return image.detach.clone()
+    return image.detach().clone()
 
 
 def update_progress(progress, bar_length=30, message=""):
@@ -154,15 +154,6 @@ def combine_half_size_volumes(volumes):
     data[::2, 1::2, 1::2] = volumes[6]  # y and z shifted
     data[::2, ::2, 1::2] = volumes[7]  # z shifted
     return data
-
-
-def split_left_right(data):
-    center_index = data.shape[0] // 2
-    left = np.zeros(data.shape, dtype=data.dtype)
-    right = np.copy(left)
-    left[:center_index] = data[:center_index]
-    right[center_index:] = data[center_index:]
-    return left, right
 
 
 def get_class(_dict, _module, _class_key="name"):

@@ -8,6 +8,49 @@ from unet3d.utils.utils import load_image
 from unet3d.utils.one_hot import one_hot_image_to_label_map
 
 
+def _validate_has_meta_attribute(tensor, idx, batch_idx=None):
+    """
+    Validate that a tensor has the 'meta' attribute.
+    
+    Args:
+        tensor (MetaTensor): The tensor to validate
+        idx (int): Dataset index for error reporting
+        batch_idx (int, optional): Batch index for error reporting
+        
+    Raises:
+        TypeError: If the tensor lacks the 'meta' attribute
+    """
+    if not hasattr(tensor, "meta"):
+        location = f"batch index {batch_idx} (dataset index {idx})" if batch_idx is not None else f"index {idx}"
+        raise TypeError(
+            f"Input image at {location} does not have 'meta' attribute. "
+            "The dataloader must return MONAI MetaTensor objects with metadata. "
+            "Ensure your dataset uses transforms like LoadImageD that preserve metadata, "
+            "and that image_only=False (or not set, as False is the default) in LoadImageD."
+        )
+
+
+def _validate_has_filename_in_meta(tensor, idx, batch_idx=None):
+    """
+    Validate that a tensor's metadata contains the 'filename_or_obj' key.
+    
+    Args:
+        tensor (MetaTensor): The tensor to validate
+        idx (int): Dataset index for error reporting
+        batch_idx (int, optional): Batch index for error reporting
+        
+    Raises:
+        KeyError: If the metadata lacks 'filename_or_obj'
+    """
+    if "filename_or_obj" not in tensor.meta:
+        location = f"batch index {batch_idx} (dataset index {idx})" if batch_idx is not None else f"index {idx}"
+        raise KeyError(
+            f"Input image at {location} is missing 'filename_or_obj' in metadata. "
+            f"Available meta keys: {list(tensor.meta.keys()) if isinstance(tensor.meta, dict) else 'N/A'}. "
+            "Ensure your dataset uses LoadImageD to load images, which populates this field."
+        )
+
+
 def load_volumetric_model(model_name, model_filename, n_gpus, strict, **kwargs):
     from unet3d.models.build import build_or_load_model
     model = build_or_load_model(model_name=model_name, model_filename=model_filename, n_gpus=n_gpus, strict=strict,
@@ -96,6 +139,10 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
     with torch.no_grad():
         for idx, item in enumerate(dataloader):
             x = item["image"]
+            
+            # Validate that the input has the required metadata
+            _validate_has_meta_attribute(x, idx)
+            
             x = x.to(next(model.parameters()).device)  # Set the input to the same device as the model parameters
             if inferer:
                 predictions = inferer(x, model)
@@ -111,6 +158,13 @@ def volumetric_predictions(model, dataloader, prediction_dir, activation=None, r
             for batch_idx in range(batch_size):
                 _prediction = predictions[batch_idx]
                 _x = x[batch_idx]
+                
+                # Validate that the indexed tensor still has metadata
+                _validate_has_meta_attribute(_x, idx, batch_idx)
+                
+                # Validate that the metadata contains the required filename field
+                _validate_has_filename_in_meta(_x, idx, batch_idx)
+                
                 if resample:
                     _x = loader(os.path.abspath(_x.meta["filename_or_obj"]))
                     _prediction = resampler(_prediction, _x)

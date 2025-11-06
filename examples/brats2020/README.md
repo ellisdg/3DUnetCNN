@@ -34,3 +34,13 @@ results will be saved.
 Any filenames in training script will also try to predict the outputs of any of keys listed in the configuration as "_filenames"
 except for the "training_filenames".
 For the configuration given, this means that there will be prediction folders for bratsvalidation and validation sets.
+
+6. Run inference on validation data for fold 1
+```
+python /path/to/unet3d/scripts/predict.py\
+ --config_filename brats2020_config.json\
+ --output_directory ./fold1_predictions\
+ --config_filename brats2020_config.json\
+ --model_filename ./brats2020_config/fold1/model_best.pth\
+ --ngpus 1 --nthreads 10 --group bratsvalidation --activation sigmoid
+```

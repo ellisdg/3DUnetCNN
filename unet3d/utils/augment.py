@@ -1,7 +1,6 @@
 import numpy as np
 from monai.transforms import GaussianSmooth
 import random
-import itertools
 from collections.abc import Iterable
 from scipy.ndimage.interpolation import map_coordinates
 from scipy.ndimage.filters import gaussian_filter
@@ -13,6 +12,24 @@ from .image import get_image
 from .resample import resample, resample_to_img
 from .nilearn_custom_utils.nilearn_utils import get_background_values
 from .utils import copy_image
+
+
+def _validate_image_has_affine(image):
+    """
+    Validate that an image has the 'affine' attribute.
+    
+    Args:
+        image (Image or MetaTensor): The image object to validate
+        
+    Raises:
+        TypeError: If the image lacks the 'affine' attribute
+    """
+    if not hasattr(image, 'affine'):
+        raise TypeError(
+            f"Input image does not have 'affine' attribute. "
+            f"Expected an Image or MetaTensor object, but got {type(image)}. "
+            "Ensure your transforms preserve the affine matrix metadata."
+        )
 
 
 def flip_image(image, axis):
@@ -49,6 +66,7 @@ def distort_image(image, flip_axis=None, scale_factor=None, translation_scale=No
 
 def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_factor=None, background_correction=False,
                  translation_deviation=None, interpolation="linear"):
+    background = None
     if background_correction:
         background = get_background_values(data)
         data[:] -= background
@@ -73,8 +91,8 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
                                         translation_scale=translation_scale)
         resampled_image = resample_to_img(source_image=distorted_image, target_image=image, interpolation=interpolation)
         data_list.append(resampled_image)
-    data = torch.tensor(data_list)
-    if background_correction:
+    data = torch.stack(data_list)  # Use torch.stack to preserve Image/MetaTensor properties
+    if background_correction and background is not None:
         data = data + background
     if noise_factor is not None:
         data = add_noise(data, sigma_factor=noise_factor)
@@ -89,21 +107,41 @@ def augment_data(data, truth, affine, scale_deviation=None, flip=False, noise_fa
 
 def generate_permutation_keys():
     """
-    This function returns a set of "keys" that represent the 48 unique rotations &
-    reflections of a 3D matrix.
+    Return 48 unique keys representing all rotations & reflections of a 3D matrix.
 
-    Each item of the set is a tuple:
-    ((rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose)
+    Each key is a tuple: ((rotate_x, rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose)
+    and is used by `permute_data` to realize the transform. For backward compatibility,
+    a key whose rotation tuple has only 2 elements is interpreted as (0, ry, rz).
 
-    As an example, ((0, 1), 0, 1, 0, 1) represents a permutation in which the data is
-    rotated 90 degrees around the z-axis, then reversed on the y-axis, and then
-    transposed.
-
-    48 unique rotations & reflections:
-    https://en.wikipedia.org/wiki/Octahedral_symmetry#The_isometries_of_the_cube
+    Implementation detail: we enumerate a superset of candidates using rotations
+    k in {0,1,2,3} for all three axes and all flips. We then filter keys down to
+    those that actually yield unique permutations on a canonical tensor. We set
+    transpose=0 for all generated keys (not needed to span the group) and dedupe
+    by realized output. This guarantees exactly 48 unique transforms.
     """
-    return set(itertools.product(
-        itertools.combinations_with_replacement(range(2), 2), range(2), range(2), range(2), range(2)))
+    # Canonical cubic tensor as in tests: shape (1, 4, 4, 4)
+    base = torch.arange(4 * 4 * 4, dtype=torch.int64).reshape(1, 4, 4, 4)
+
+    unique_signatures = {}
+    unique_keys = []
+
+    for rx in range(4):
+        for ry in range(4):
+            for rz in range(4):
+                for fx in (0, 1):
+                    for fy in (0, 1):
+                        for fz in (0, 1):
+                            transpose = 0
+                            key = ((rx, ry, rz), fx, fy, fz, transpose)
+                            permuted = permute_data(base, key)
+                            sig = tuple(permuted.reshape(-1).tolist())
+                            if sig not in unique_signatures:
+                                unique_signatures[sig] = key
+                                unique_keys.append(key)
+                                if len(unique_keys) == 48:
+                                    return set(unique_keys)
+
+    return set(unique_keys)
 
 
 def random_permutation_key():
@@ -114,7 +152,8 @@ def random_permutation_key():
     return random.choice(list(generate_permutation_keys()))
 
 
-def permute_data(data, key):
+def permute_data(data,
+                 key):
     """
     Permutes the given data according to the specification of the given key. Input data
     must be of shape (n_modalities, x, y, z).
@@ -126,21 +165,35 @@ def permute_data(data, key):
     transposed.
     """
     data = data.detach().clone()
-    (rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose = key
+    rotation_tuple, flip_x, flip_y, flip_z, transpose = key
 
+    # Backward compatibility: accept 2-tuple (ry, rz) and treat rx=0
+    if len(rotation_tuple) == 2:
+        rotate_x = 0
+        rotate_y, rotate_z = rotation_tuple
+    else:
+        rotate_x, rotate_y, rotate_z = rotation_tuple
+
+    # Apply rotations: Rx (about x: dims (2,3)), Ry (about y: dims (1,3)), Rz (about z: dims (1,2))
+    if rotate_x != 0:
+        data = torch.rot90(data, rotate_x, dims=(2, 3))
     if rotate_y != 0:
         data = torch.rot90(data, rotate_y, dims=(1, 3))
     if rotate_z != 0:
-        data = torch.rot90(data, rotate_z, dims=(2, 3))
+        data = torch.rot90(data, rotate_z, dims=(1, 2))
+
+    # Flips
     if flip_x:
-        data = data[:, ::-1]
+        data = torch.flip(data, dims=(1,))
     if flip_y:
-        data = data[:, :, ::-1]
+        data = torch.flip(data, dims=(2,))
     if flip_z:
-        data = data[:, :, :, ::-1]
+        data = torch.flip(data, dims=(3,))
+
+    # Transpose (swap last two spatial axes) - retained for backward compatibility
     if transpose:
-        for i in range(data.shape[0]):
-            data[i] = data[i].T
+        data = data.transpose(2, 3)
+
     return data
 
 
@@ -162,29 +215,52 @@ def random_permutation_x_y(x_data, y_data, channel_axis=0):
 
 
 def reverse_permute_data(data, key):
-    key = reverse_permutation_key(key)
-    data = data.detach().clone()
-    (rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose = key
+    """
+    Reverse a permutation applied by `permute_data` without converting to numpy.
+    This function works with torch.Tensor or MONAI MetaTensor and avoids
+    detaching/cloning which can drop MetaTensor metadata.
+    """
+    if not torch.is_tensor(data):
+        raise TypeError("reverse_permute_data expects a torch.Tensor or MONAI MetaTensor")
 
+    # Compute inverse key (rotation values will be the modular inverse mod 4)
+    (rotate_x, rotate_y, rotate_z), flip_x, flip_y, flip_z, transpose = reverse_permutation_key(key)
+
+    x = data
+
+    # Reverse transpose first (if original permute transposed at the end)
     if transpose:
-        for i in range(data.shape[0]):
-            data[i] = data[i].T
+        x = x.transpose(2, 3)
+
+    # Reverse flips (same axes as applied originally)
     if flip_z:
-        data = data[:, :, :, ::-1]
+        x = torch.flip(x, dims=(3,))
     if flip_y:
-        data = data[:, :, ::-1]
+        x = torch.flip(x, dims=(2,))
     if flip_x:
-        data = data[:, ::-1]
+        x = torch.flip(x, dims=(1,))
+
+    # Reverse rotations (apply inverse rotation amounts)
     if rotate_z != 0:
-        data = torch.rot90(data, rotate_z, dims=(2, 3))
+        x = torch.rot90(x, rotate_z, dims=(1, 2))
     if rotate_y != 0:
-        data = torch.rot90(data, rotate_y, dims=(1, 3))
-    return data
+        x = torch.rot90(x, rotate_y, dims=(1, 3))
+    if rotate_x != 0:
+        x = torch.rot90(x, rotate_x, dims=(2, 3))
+
+    return x
 
 
 def reverse_permutation_key(key):
-    rotation = tuple([-rotate for rotate in key[0]])
-    return rotation, key[1], key[2], key[3], key[4]
+    rotation = key[0]
+    if len(rotation) == 2:
+        # Backward compatible inverse: only (ry, rz) provided
+        ry, rz = rotation
+        rotation_inv = (0, -ry, -rz)
+    else:
+        rx, ry, rz = rotation
+        rotation_inv = (-rx, -ry, -rz)
+    return rotation_inv, key[1], key[2], key[3], key[4]
 
 
 def add_noise(data, mean=0., sigma_factor=0.1):
@@ -231,6 +307,7 @@ def translate_image(image, translation_scales, interpolation="linear"):
     randomly translated on average (0.05 for example).
     :return: translated image
     """
+    _validate_image_has_affine(image)
     affine = image.affine.detach().clone()
     translation = torch.multiply(translation_scales, get_extent_from_image(image))
     affine[:3, 3] = affine[:3, 3] + translation
@@ -265,15 +342,17 @@ def _rotate_affine(affine, shape, rotation):
 
 
 def find_image_center(image, ndim=3):
+    _validate_image_has_affine(image)
     return find_center(image.affine, image.shape, ndim=ndim)
 
 
 def find_center(affine, shape, ndim=3):
-    center_voxel = torch.divide(shape[:ndim], 2)
+    center_voxel = torch.divide(torch.tensor(shape[:ndim]), 2)
     return torch.matmul(affine, torch.cat((center_voxel, torch.ones(1))))[:ndim]
 
 
 def scale_image(image, scale, ndim=3, interpolation='linear'):
+    _validate_image_has_affine(image)
     affine = scale_affine(image.affine, image.shape, scale=scale, ndim=ndim)
     return resample(image, affine, image.shape, interpolation=interpolation)
 
@@ -333,6 +412,7 @@ def elastic_transform(image, alpha, sigma, target_image, random_state=None):
 
 
 def smooth_img(image, fwhm):
+    _validate_image_has_affine(image)
     sigma = torch.divide(fwhm, get_spacing_from_affine(image.affine))
     array = GaussianSmooth(sigma=sigma)(image)
     return image.make_similar(array)
